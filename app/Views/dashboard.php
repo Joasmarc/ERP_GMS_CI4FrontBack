@@ -9,12 +9,12 @@
     />
     <link
       rel="icon"
-      href="assets/img/kaiadmin/favicon.ico"
+      href="<?= base_url('public/assets/img/kaiadmin/favicon.ico') ?>"
       type="image/x-icon"
     />
 
     <!-- Fonts and icons -->
-    <script src="assets/js/plugin/webfont/webfont.min.js"></script>
+    <script src="<?= base_url('public/assets/js/plugin/webfont/webfont.min.js') ?>"></script>
     <script>
       WebFont.load({
         google: { families: ["Public Sans:300,400,500,600,700"] },
@@ -25,7 +25,7 @@
             "Font Awesome 5 Brands",
             "simple-line-icons",
           ],
-          urls: ["assets/css/fonts.min.css"],
+          urls: ["<?= base_url('public/assets/css/fonts.min.css') ?>"],
         },
         active: function () {
           sessionStorage.fonts = true;
@@ -34,12 +34,12 @@
     </script>
 
     <!-- CSS Files -->
-    <link rel="stylesheet" href="assets/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="assets/css/plugins.min.css" />
-    <link rel="stylesheet" href="assets/css/kaiadmin.min.css" />
+    <link rel="stylesheet" href="<?= base_url('public/assets/css/bootstrap.min.css') ?>" />
+    <link rel="stylesheet" href="<?= base_url('public/assets/css/plugins.min.css') ?>" />
+    <link rel="stylesheet" href="<?= base_url('public/assets/css/kaiadmin.min.css') ?>" />
 
     <!-- CSS Just for demo purpose, don't include it in your project -->
-    <link rel="stylesheet" href="assets/css/demo.css" />
+    <link rel="stylesheet" href="<?= base_url('public/assets/css/demo.css') ?>" />
   </head>
   <body>
     <div class="wrapper">
@@ -50,7 +50,7 @@
           <div class="logo-header" data-background-color="dark">
             <a href="index.html" class="logo">
               <img
-                src="assets/img/kaiadmin/logo_light.svg"
+                src="<?= base_url('public/assets/img/kaiadmin/logo_light.svg') ?>"
                 alt="navbar brand"
                 class="navbar-brand"
                 height="20"
@@ -334,7 +334,7 @@
             <div class="logo-header" data-background-color="dark">
               <a href="index.html" class="logo">
                 <img
-                  src="assets/img/kaiadmin/logo_light.svg"
+                  src="<?= base_url('public/assets/img/kaiadmin/logo_light.svg') ?>"
                   alt="navbar brand"
                   class="navbar-brand"
                   height="20"
@@ -432,7 +432,7 @@
                           <a href="#">
                             <div class="notif-img">
                               <img
-                                src="assets/img/jm_denis.jpg"
+                                src="<?= base_url('public/assets/img/jm_denis.jpg') ?>"
                                 alt="Img Profile"
                               />
                             </div>
@@ -445,7 +445,7 @@
                           <a href="#">
                             <div class="notif-img">
                               <img
-                                src="assets/img/chadengle.jpg"
+                                src="<?= base_url('public/assets/img/chadengle.jpg') ?>"
                                 alt="Img Profile"
                               />
                             </div>
@@ -458,7 +458,7 @@
                           <a href="#">
                             <div class="notif-img">
                               <img
-                                src="assets/img/mlane.jpg"
+                                src="<?= base_url('public/assets/img/mlane.jpg') ?>"
                                 alt="Img Profile"
                               />
                             </div>
@@ -473,7 +473,7 @@
                           <a href="#">
                             <div class="notif-img">
                               <img
-                                src="assets/img/talha.jpg"
+                                src="<?= base_url('public/assets/img/talha.jpg') ?>"
                                 alt="Img Profile"
                               />
                             </div>
@@ -541,7 +541,7 @@
                           <a href="#">
                             <div class="notif-img">
                               <img
-                                src="assets/img/profile2.jpg"
+                                src="<?= base_url('public/assets/img/profile2.jpg') ?>"
                                 alt="Img Profile"
                               />
                             </div>
@@ -659,7 +659,7 @@
                   >
                     <div class="avatar-sm">
                       <img
-                        src="assets/img/profile.jpg"
+                        src="<?= base_url('public/assets/img/profile.jpg') ?>"
                         alt="..."
                         class="avatar-img rounded-circle"
                       />
@@ -675,7 +675,7 @@
                         <div class="user-box">
                           <div class="avatar-lg">
                             <img
-                              src="assets/img/profile.jpg"
+                              src="<?= base_url('public/assets/img/profile.jpg') ?>"
                               alt="image profile"
                               class="avatar-img rounded"
                             />
@@ -768,39 +768,39 @@
       </div>
     </div>
     <!--   Core JS Files   -->
-    <script src="assets/js/core/jquery-3.7.1.min.js"></script>
-    <script src="assets/js/core/popper.min.js"></script>
-    <script src="assets/js/core/bootstrap.min.js"></script>
+    <script src="<?= base_url('public/assets/js/core/jquery-3.7.1.min.js') ?>"></script>
+    <script src="<?= base_url('public/assets/js/core/popper.min.js') ?>"></script>
+    <script src="<?= base_url('public/assets/js/core/bootstrap.min.js') ?>"></script>
 
     <!-- jQuery Scrollbar -->
-    <script src="assets/js/plugin/jquery-scrollbar/jquery.scrollbar.min.js"></script>
+    <script src="<?= base_url('public/assets/js/plugin/jquery-scrollbar/jquery.scrollbar.min.js') ?>"></script>
 
     <!-- Chart JS -->
-    <script src="assets/js/plugin/chart.js/chart.min.js"></script>
+    <script src="<?= base_url('public/assets/js/plugin/chart.js/chart.min.js') ?>"></script>
 
     <!-- jQuery Sparkline -->
-    <script src="assets/js/plugin/jquery.sparkline/jquery.sparkline.min.js"></script>
+    <script src="<?= base_url('public/assets/js/plugin/jquery.sparkline/jquery.sparkline.min.js') ?>"></script>
 
     <!-- Chart Circle -->
-    <script src="assets/js/plugin/chart-circle/circles.min.js"></script>
+    <script src="<?= base_url('public/assets/js/plugin/chart-circle/circles.min.js') ?>"></script>
 
     <!-- Datatables -->
-    <script src="assets/js/plugin/datatables/datatables.min.js"></script>
+    <script src="<?= base_url('public/assets/js/plugin/datatables/datatables.min.js') ?>"></script>
 
     <!-- Bootstrap Notify -->
-    <script src="assets/js/plugin/bootstrap-notify/bootstrap-notify.min.js"></script>
+    <script src="<?= base_url('public/assets/js/plugin/bootstrap-notify/bootstrap-notify.min.js') ?>"></script>
 
     <!-- jQuery Vector Maps -->
-    <script src="assets/js/plugin/jsvectormap/jsvectormap.min.js"></script>
-    <script src="assets/js/plugin/jsvectormap/world.js"></script>
+    <script src="<?= base_url('public/assets/js/plugin/jsvectormap/jsvectormap.min.js') ?>"></script>
+    <script src="<?= base_url('public/assets/js/plugin/jsvectormap/world.js') ?>"></script>
 
     <!-- Google Maps Plugin -->
-    <script src="assets/js/plugin/gmaps/gmaps.js"></script>
+    <script src="<?= base_url('public/assets/js/plugin/gmaps/gmaps.js') ?>"></script>
 
     <!-- Sweet Alert -->
-    <script src="assets/js/plugin/sweetalert/sweetalert.min.js"></script>
+    <script src="<?= base_url('public/assets/js/plugin/sweetalert/sweetalert.min.js') ?>"></script>
 
     <!-- Kaiadmin JS -->
-    <script src="assets/js/kaiadmin.min.js"></script>
+    <script src="<?= base_url('public/assets/js/kaiadmin.min.js') ?>"></script>
   </body>
 </html>
