@@ -40,9 +40,11 @@
 
     <!-- CSS Just for demo purpose, don't include it in your project -->
     <link rel="stylesheet" href="<?= base_url('public/assets/css/demo.css') ?>" />
+    <link rel="stylesheet" href="<?= base_url('public/assets/css/module/main.css') ?>" />
   </head>
   <body>
     <div class="wrapper">
+
       <!-- Sidebar -->
       <div class="sidebar" data-background-color="dark">
         <div class="sidebar-logo">
@@ -358,6 +360,12 @@
               </ul>
             </div>
             <div class="row">
+
+              <!-- loading -->
+              <div id='cont_loading' class="col-md-12 d-flex justify-content-center d-none">
+                <div class="loader_spinner"></div>
+              </div>
+
               <!-- 1.0 Card para crear implementos médicos -->
               <div class="col-md-12">
                 <div class="card">
@@ -1395,7 +1403,6 @@
               </div>
 
             </div>
-
           </div>
         </div>
 
