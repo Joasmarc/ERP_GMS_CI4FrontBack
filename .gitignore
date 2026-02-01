@@ -124,3 +124,28 @@ _modules/*
 
 /results/
 /phpunit*.xml
+
+# Ignorar archivos y carpetas de Docker
+docker-compose.override.yml
+.docker/
+docker/
+Dockerfile*
+*.dockerfile
+
+# Ignorar volúmenes y datos persistentes
+data/
+volumes/
+tmp/
+logs/
+
+# Ignorar imágenes y contenedores locales
+*.pid
+*.log
+*.sock
+
+# Ignorar configuraciones específicas de tu entorno
+.env
+.env.*
+
+# Ignorar streams de seguridad de Windows
+*Zone.Identifier
