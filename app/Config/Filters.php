@@ -72,8 +72,12 @@ class Filters extends BaseFilters
      */
     public array $globals = [
         'before' => [
+            // 1.0 Aplicar protecciones globales
+            // 1.1 Honeypot para detectar bots
             // 'honeypot',
+            // 1.2 CSRF para proteger contra ataques de falsificación de solicitudes
             // 'csrf',
+            // 1.3 Validar caracteres inválidos
             // 'invalidchars',
         ],
         'after' => [
