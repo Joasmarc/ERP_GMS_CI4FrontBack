@@ -11,7 +11,16 @@ class Product extends BaseController
     public function listing()
     {
         $model = new Products();
-        $data['products'] = $model->findAll();
+        $data = $model->findAll();
+
+        $cantidad = count($data);
+
+        $data = array(
+            "draw"            => 1,
+            "recordsTotal"    => $cantidad,
+            "recordsFiltered" => $cantidad,
+            "data"            => $data,
+        );
 
         exit(json_encode($data));
     }

@@ -1,4 +1,5 @@
 /* GLOBAL */
+const SITE_URL = window.location.hostname === 'localhost' ? 'http://localhost:/adminitradorgm' : '';
 
 const SCREENS = {
     dashboard: ['cont_dashboard', 'Inicio', 'Dashboard'],
@@ -12,7 +13,36 @@ $(function() {
 
     // Datatables
     $(document).ready(function () {
-        $("#basic-datatables").DataTable({});
+        $("#basic-datatables").DataTable({
+            ajax: SITE_URL + '/product/listing',
+            columns: [
+                { data: 'id'},
+                { data: 'nombre'},
+                { data: 'id_categoria'},
+                { data: 'presentacion'},
+                { data: 'id_marca'},
+                { data: 'observacion'},
+            ],
+            processing: true,
+            serverSide: false,
+            pageLength: 10,
+            language: {
+                processing: 'Procesando...',
+                lengthMenu: 'Mostrar _MENU_ registros',
+                zeroRecords: 'No se encontraron resultados',
+                emptyTable: 'No hay datos disponibles',
+                info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
+                infoEmpty: 'Mostrando 0 a 0 de 0 registros',
+                infoFiltered: '(filtrado de _MAX_ registros totales)',
+                search: 'Buscar:',
+                paginate: {
+                    first: 'Primero',
+                    last: 'Último',
+                    next: 'Siguiente',
+                    previous: 'Anterior'
+                }
+            }
+        });
     });
 
 });
@@ -31,6 +61,7 @@ $('#btn_open_product_create').on('click', function() {
 
 // Abrir productos listar
 $('#btn_open_product_list').on('click', function() {
+    
     showScreen(SCREENS.product_listing);
 });
 

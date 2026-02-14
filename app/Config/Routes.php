@@ -16,4 +16,8 @@ $routes->get('/', 'Home::index');
 $routes->get('dashboard', 'Main::dashboard');
 
 // Products
-$routes->get('products', 'Product::listing');
+
+$routes->group('product', ['filter' => 'cors'], static function ($routes) {
+    // $routes->options('(.*)', 'Home::cors');
+    $routes->get('listing', 'Product::listing');
+});
