@@ -14,3 +14,6 @@ $routes->get('logout', 'Auth::logout');
 // 2.0 Rutas principales
 $routes->get('/', 'Home::index');
 $routes->get('dashboard', 'Main::dashboard');
+
+// Products
+$routes->get('products', 'Product::listing');
