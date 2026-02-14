@@ -1423,6 +1423,7 @@
                             <th>Marca</th>
                             <th>Observación</th>
                             <th>Img</th>
+                            <th>Abrir</th>
                           </tr>
                         </thead>
                         <tfoot>
@@ -1434,6 +1435,7 @@
                             <th>Marca</th>
                             <th>Observación</th>
                             <th>Img</th>
+                            <th>Abrir</th>
                           </tr>
                         </tfoot>
                         <tbody>

@@ -23,25 +23,32 @@ $(function() {
                 { data: 'id_marca'},
                 { data: 'observacion'},
                 { data: 'img'},
+                { data: 'id'},
             ],
             columnDefs: [
-            {
-                targets: [0, 1, 2, 3, 4, 5], // Exclude the 6th column
-                render: function(data, type, row, meta) {
-                if (data === null || data === undefined) return data;
-                if (typeof data === 'string' && data.length > 0) {
-                    return data.charAt(0).toUpperCase() + data.slice(1);
+                {
+                    targets: [0, 1, 2, 3, 4, 5], // Exclude the 6th column
+                    render: function(data, type, row, meta) {
+                    if (data === null || data === undefined) return data;
+                    if (typeof data === 'string' && data.length > 0) {
+                        return data.charAt(0).toUpperCase() + data.slice(1);
+                    }
+                    return data;
+                    }
+                },
+                {
+                    targets: 6,
+                    render: function(data, type, row, meta) {
+                    if (data === null || data === undefined) return '';
+                    return '<img src="' + SITE_URL + data + '" alt="Producto" style="max-width: 50px; max-height: 50px;">';
+                    }
+                },
+                {
+                    targets: 7,
+                    render: function(data, type, row, meta) {
+                        return '<button class="btn btn-primary btn-sm"><i class="fas fa-share"></i></button>';
+                    }
                 }
-                return data;
-                }
-            },
-            {
-                targets: 6,
-                render: function(data, type, row, meta) {
-                if (data === null || data === undefined) return '';
-                return '<img src="' + SITE_URL + data + '" alt="Producto" style="max-width: 50px; max-height: 50px;">';
-                }
-            }
             ],
             processing: true,
             serverSide: false,
