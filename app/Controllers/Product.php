@@ -2,8 +2,6 @@
 
 namespace App\Controllers;
 
-use App\Models\Brands;
-use App\Models\Categories;
 use App\Models\Products;
 
 class Product extends BaseController
@@ -11,7 +9,21 @@ class Product extends BaseController
     public function listing()
     {
         $model = new Products();
-        $data = $model->findAll();
+
+        $data = $model->join('categories b', 'b.id = products.id_categoria', 'left')
+        ->join('brands c', 'c.id = products.id_marca', 'left')
+        ->join('pictures_products d', 'd.id_product = products.id', 'left')
+        ->join('pictures e', 'e.id = d.id_picture', 'left')
+        ->select("
+            products.id,
+            products.nombre,
+            products.presentacion,
+            products.observacion,
+            b.nombre as id_categoria,
+            c.nombre as id_marca,
+            e.path as img"
+        )  
+        ->get()->getResultArray();
 
         $cantidad = count($data);
 

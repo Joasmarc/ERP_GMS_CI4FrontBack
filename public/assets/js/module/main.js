@@ -1,5 +1,5 @@
 /* GLOBAL */
-const SITE_URL = window.location.hostname === 'localhost' ? 'http://localhost:/adminitradorgm' : '';
+const SITE_URL = window.location.hostname === 'localhost' ? 'http://localhost/adminitradorgm' : '';
 
 const SCREENS = {
     dashboard: ['cont_dashboard', 'Inicio', 'Dashboard'],
@@ -13,7 +13,7 @@ $(function() {
 
     // Datatables
     $(document).ready(function () {
-        $("#basic-datatables").DataTable({
+        $("#basic_datatables").DataTable({
             ajax: SITE_URL + '/product/listing',
             columns: [
                 { data: 'id'},
@@ -22,6 +22,26 @@ $(function() {
                 { data: 'presentacion'},
                 { data: 'id_marca'},
                 { data: 'observacion'},
+                { data: 'img'},
+            ],
+            columnDefs: [
+            {
+                targets: [0, 1, 2, 3, 4, 5], // Exclude the 6th column
+                render: function(data, type, row, meta) {
+                if (data === null || data === undefined) return data;
+                if (typeof data === 'string' && data.length > 0) {
+                    return data.charAt(0).toUpperCase() + data.slice(1);
+                }
+                return data;
+                }
+            },
+            {
+                targets: 6,
+                render: function(data, type, row, meta) {
+                if (data === null || data === undefined) return '';
+                return '<img src="' + SITE_URL + data + '" alt="Producto" style="max-width: 50px; max-height: 50px;">';
+                }
+            }
             ],
             processing: true,
             serverSide: false,

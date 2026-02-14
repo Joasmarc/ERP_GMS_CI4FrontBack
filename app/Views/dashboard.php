@@ -1413,7 +1413,7 @@
                   </div>
                   <div class="card-body">
                     <div class="table-responsive">
-                      <table id="basic-datatables" class="display table table-striped table-hover">
+                      <table id="basic_datatables" class="display table table-striped table-hover">
                         <thead>
                           <tr>
                             <th>ID</th>
@@ -1422,6 +1422,7 @@
                             <th>Presentación</th>
                             <th>Marca</th>
                             <th>Observación</th>
+                            <th>Img</th>
                           </tr>
                         </thead>
                         <tfoot>
@@ -1432,6 +1433,7 @@
                             <th>Presentación</th>
                             <th>Marca</th>
                             <th>Observación</th>
+                            <th>Img</th>
                           </tr>
                         </tfoot>
                         <tbody>
