@@ -1543,6 +1543,20 @@
                     </div>
                   </div>
                 </div>
+
+                <div class="col-md-5">
+                  <div class="card">
+                    <div class="card-header">
+                      <h4 class="card-title">Documentos</h4>
+                    </div>
+                    <div class="card-body">
+                      <ul class="nav nav-pills nav-secondary" id="pills-tab" role="tablist">
+                      </ul>
+                      <div class="tab-content mt-2 mb-3" id="pills-tabContent">
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
             </div>

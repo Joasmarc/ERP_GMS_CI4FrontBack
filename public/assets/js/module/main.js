@@ -162,6 +162,36 @@ $('#tbl_list_productos').on('click', '[data-selector="abrir"]', function () {
         }
     })
 
+    // Mostrar documentos 
+    $('#pills-tab').empty();
+    $('#pills-tabContent').empty();
+    $.ajax({
+        url: SITE_URL + '/product/document/' + row.id,
+        type: 'GET',
+        dataType: 'json',
+        success: function (resp) {
+            if (resp.documents[0].name !== null) {
+                let tabsHtml = '';
+                let contentHtml = '';
+                let first = false;
+                resp.documents.forEach((document, index) => {
+                    first = index === 0 ? 'active' : '';
+                    tabsHtml += `<li class="nav-item submenu" role="presentation"><a class="nav-link ${first}" id="pills-${index}-tab" data-bs-toggle="pill" href="#pills-${index}" role="tab" aria-controls="pills-${index}" aria-selected="true">${document.name}</a></li>`;
+                    contentHtml += `<div class="tab-pane fade show ${first}" id="pills-${index}" role="tabpanel" aria-labelledby="pills-${index}-tab"><iframe src="${SITE_URL}${document.path}" style="width: 100%; height: 500px;"></iframe></div>`;
+                });
+                $('#pills-tab').html(tabsHtml);
+                $('#pills-tabContent').html(contentHtml);
+            }
+        },
+        error: function (xhr, status, error) {
+            console.log(error);
+            Swal.fire('<h5> ❌ OC No pudo ser registrada</h5>')
+        },
+        complete: function () {
+            // always
+        }
+    })
+
 
 });
 

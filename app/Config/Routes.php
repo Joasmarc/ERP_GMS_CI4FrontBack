@@ -21,4 +21,5 @@ $routes->group('product', ['filter' => 'cors'], static function ($routes) {
     $routes->get('listing', 'Product::listing');
     $routes->get('img/(:num)', 'Product::listing_img/$1');
     $routes->get('video/(:num)', 'Product::listing_video/$1');
+    $routes->get('document/(:num)', 'Product::listing_document/$1');
 });

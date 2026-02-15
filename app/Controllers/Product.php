@@ -74,4 +74,22 @@ class Product extends BaseController
 
         exit(json_encode(['videoPaths' => array_column($data, 'video')]));
     }
+
+    public function listing_document()
+    {
+        $id_product = $this->request->getUri()->getSegment(3);
+        // Si estás en un controlador, ya tienes $this->request disponible
+
+        $model = new Products();
+
+        $data = $model->join('documents_products a', 'a.id_product = products.id', 'left')
+        ->join('documents b', 'b.id = a.id_document', 'left')
+        ->where('products.id', $id_product)
+        ->select("
+            b.path, b.name
+        ")
+        ->get()->getResultArray();
+
+        exit(json_encode(['documents' => $data]));
+    }
 }
