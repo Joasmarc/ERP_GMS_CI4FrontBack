@@ -1532,6 +1532,17 @@
                     </div>
                   </div>
                 </div>
+
+                <div class="col-md-7">
+                  <div class="card">
+                    <div class="card-header">
+                      <h4 class="card-title">Videos</h4>
+                    </div>
+                    <div class="card-body">
+                      <div id="cont_videos_producto"></div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
             </div>

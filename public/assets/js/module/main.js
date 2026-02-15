@@ -9,44 +9,44 @@ const SCREENS = {
 
 /* STATES */
 /* INIT */
-$(function() {
+$(function () {
 
     // Datatables
     $(document).ready(function () {
         $("#tbl_list_productos").DataTable({
             ajax: SITE_URL + '/product/listing',
             columns: [
-                { data: 'id'},
-                { data: 'nombre'},
-                { data: 'id_categoria'},
-                { data: 'presentacion'},
-                { data: 'id_marca'},
-                { data: 'observacion'},
-                { data: 'img'},
-                { data: 'id'},
+                { data: 'id' },
+                { data: 'nombre' },
+                { data: 'id_categoria' },
+                { data: 'presentacion' },
+                { data: 'id_marca' },
+                { data: 'observacion' },
+                { data: 'img' },
+                { data: 'id' },
             ],
             rowId: "id",
             columnDefs: [
                 {
                     targets: [0, 1, 2, 3, 4, 5], // Exclude the 6th column
-                    render: function(data, type, row, meta) {
-                    if (data === null || data === undefined) return data;
-                    if (typeof data === 'string' && data.length > 0) {
-                        return data.charAt(0).toUpperCase() + data.slice(1);
-                    }
-                    return data;
+                    render: function (data, type, row, meta) {
+                        if (data === null || data === undefined) return data;
+                        if (typeof data === 'string' && data.length > 0) {
+                            return data.charAt(0).toUpperCase() + data.slice(1);
+                        }
+                        return data;
                     }
                 },
                 {
                     targets: 6,
-                    render: function(data, type, row, meta) {
-                    if (data === null || data === undefined) return '';
-                    return '<img src="' + SITE_URL + data + '" alt="Producto" style="max-width: 50px; max-height: 50px;">';
+                    render: function (data, type, row, meta) {
+                        if (data === null || data === undefined) return '';
+                        return '<img src="' + SITE_URL + data + '" alt="Producto" style="max-width: 50px; max-height: 50px;">';
                     }
                 },
                 {
                     targets: 7,
-                    render: function(data, type, row, meta) {
+                    render: function (data, type, row, meta) {
                         return `<button class="btn btn-primary btn-sm" data-selector="abrir" data-id="${row.id}"><i class="fas fa-share"></i></button>`;
                     }
                 }
@@ -78,23 +78,23 @@ $(function() {
 /* EVENTS */
 
 // Abrir dashboard
-$('#btn_open_dashboard').on('click', function() {
+$('#btn_open_dashboard').on('click', function () {
     showScreen(SCREENS.dashboard);
 });
 
 // Abrir productos crear
-$('#btn_open_product_create').on('click', function() {
+$('#btn_open_product_create').on('click', function () {
     showScreen(SCREENS.product_create);
 });
 
 // Abrir productos listar
-$('#btn_open_product_list').on('click', function() {
-    
+$('#btn_open_product_list').on('click', function () {
+
     showScreen(SCREENS.product_listing);
 });
 
 // Abrir productos detallado
-$('#tbl_list_productos').on('click', '[data-selector="abrir"]', function() {
+$('#tbl_list_productos').on('click', '[data-selector="abrir"]', function () {
     const row = $('#tbl_list_productos').DataTable().row('#' + $(this).attr('data-id')).data();
 
     $('#cont_detalle_producto').removeClass('d-none');
@@ -110,75 +110,106 @@ $('#tbl_list_productos').on('click', '[data-selector="abrir"]', function() {
     $('#in_observacion_producto').val(row.observacion?.toUpperCase());
 
     // Mostrar imagen 
-    $('#cont_imagenes_producto').html('');
-    $.ajax({  
+    $('#cont_imagenes_producto').empty();
+    $.ajax({
         url: SITE_URL + '/product/img/' + row.id,
         type: 'GET',
-        dataType: 'json',  
+        dataType: 'json',
         success: function (resp) {
             let imagesHTML = '';
             resp.imagePaths.forEach(path => {
                 imagesHTML += `<img src="${SITE_URL}${path}" alt="Producto" style="max-width: 500px; max-height: 500px; margin: 5px;">`;
             });
             $('#cont_imagenes_producto').html(imagesHTML);
-        }, 
-        error: function (xhr, status, error) {  
+        },
+        error: function (xhr, status, error) {
             console.log(error);
             Swal.fire('<h5> ❌ OC No pudo ser registrada</h5>')
         },
-        complete: function(){
+        complete: function () {
             // always
         }
     })
-                    
+
+    // Mostrar video 
+    $('#cont_videos_producto').empty();
+    $.ajax({
+        url: SITE_URL + '/product/video/' + row.id,
+        type: 'GET',
+        dataType: 'json',
+        success: function (resp) {
+            let videosHTML = '';
+            resp.videoPaths.forEach(path => {
+                videosHTML += `<video 
+                    src="${SITE_URL}${path}" 
+                    controls 
+                    preload="metadata" 
+                    style="max-width: 500px; max-height: 500px; margin: 5px;"
+                    onerror="this.style.display='none'" 
+                    >
+                    Tu navegador no soporta el elemento de video.
+                </video>`;
+            });
+
+            $('#cont_videos_producto').html(videosHTML);
+        },
+        error: function (xhr, status, error) {
+            console.log(error);
+            Swal.fire('<h5> ❌ OC No pudo ser registrada</h5>')
+        },
+        complete: function () {
+            // always
+        }
+    })
+
 
 });
 
 
 /* Development */
 
-$('.en-desarrollo').on('click', function() {
-    $.notify({title: 'Advertencia', message:'Funcionalidad en desarollo',  icon:"fas fa-cogs"}, {
+$('.en-desarrollo').on('click', function () {
+    $.notify({ title: 'Advertencia', message: 'Funcionalidad en desarollo', icon: "fas fa-cogs" }, {
         type: 'warning',
         placement: {
-        from: 'top',
-        align: 'right',
+            from: 'top',
+            align: 'right',
         },
         time: 1000,
         delay: 100,
     });
 })
 
-$('#btn_open_product_modify').on('click', function() {
-    $.notify({title: 'Advertencia', message:'Modulo en desarollo',  icon:"fas fa-cogs"}, {
+$('#btn_open_product_modify').on('click', function () {
+    $.notify({ title: 'Advertencia', message: 'Modulo en desarollo', icon: "fas fa-cogs" }, {
         type: 'warning',
         placement: {
-        from: 'top',
-        align: 'right',
+            from: 'top',
+            align: 'right',
         },
         time: 1000,
         delay: 100,
     });
 })
 
-$('.module_bloq').on('click', function() {
-    $.notify({title: 'Advertencia', message:'Modulo bloqueado',  icon:"fas fa-unlock"}, {
+$('.module_bloq').on('click', function () {
+    $.notify({ title: 'Advertencia', message: 'Modulo bloqueado', icon: "fas fa-unlock" }, {
         type: 'danger',
         placement: {
-        from: 'top',
-        align: 'right',
+            from: 'top',
+            align: 'right',
         },
         time: 1000,
         delay: 100,
     });
 })
 
-$('.module_development').on('click', function() {
-    $.notify({title: 'Advertencia', message:'Modulo en desarollo',  icon:"fas fa-cogs"}, {
+$('.module_development').on('click', function () {
+    $.notify({ title: 'Advertencia', message: 'Modulo en desarollo', icon: "fas fa-cogs" }, {
         type: 'warning',
         placement: {
-        from: 'top',
-        align: 'right',
+            from: 'top',
+            align: 'right',
         },
         time: 1000,
         delay: 100,
@@ -188,27 +219,27 @@ $('.module_development').on('click', function() {
 
 /* UTILS */
 
-function toggleLoader(isLoading) {  
+function toggleLoader(isLoading) {
     // 1.4 Si isLoading es true, mostrar loader y bloquear
     if (isLoading === true) {
         $('#cont_loading').removeClass('d-none');
-        
+
         // 1.6 Bloquear la pantalla
         // wrapper.style.pointerEvents = 'none';
         // wrapper.style.opacity = '0.5';
-        
+
         // 1.7 Prevenir scroll
         // document.body.style.overflow = 'hidden';
     } else if (isLoading === false) {
         // 1.9 Remover clases del loader con transición suave
         $('#cont_loading').addClass('d-none');
-        
+
         // 1.10 Usar timeout para animar la desaparición
         // setTimeout(() => {
         //   // 1.11 Desbloquear la pantalla
         //   wrapper.style.pointerEvents = 'auto';
         //   wrapper.style.opacity = '1';
-        
+
         //   // 1.12 Permitir scroll nuevamente
         //   document.body.style.overflow = 'auto';
         // }, 300); // Esperar la transición CSS
@@ -218,7 +249,7 @@ function toggleLoader(isLoading) {
 function showScreen(screenId) {
     // 1.0 Ocultar todas las pantallas
     for (const key in SCREENS) {
-    $('#' + SCREENS[key]).addClass('d-none');
+        $('#' + SCREENS[key]).addClass('d-none');
     }
     // 1.1 Mostrar loader
     toggleLoader(true)
