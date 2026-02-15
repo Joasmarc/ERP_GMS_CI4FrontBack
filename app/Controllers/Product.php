@@ -21,8 +21,9 @@ class Product extends BaseController
             products.observacion,
             b.nombre as id_categoria,
             c.nombre as id_marca,
-            e.path as img"
-        )  
+            MAX(e.path) as img"
+        )
+        ->groupBy('products.id') 
         ->get()->getResultArray();
 
         $cantidad = count($data);
@@ -35,5 +36,23 @@ class Product extends BaseController
         );
 
         exit(json_encode($data));
+    }
+
+    public function listing_img()
+    {
+        $id_product = $this->request->getUri()->getSegment(3);
+        // Si estás en un controlador, ya tienes $this->request disponible
+
+        $model = new Products();
+
+        $data = $model->join('pictures_products a', 'a.id_product = products.id', 'left')
+        ->join('pictures b', 'b.id = a.id_picture', 'left')
+        ->where('products.id', $id_product)
+        ->select("
+            b.path as img"
+        )
+        ->get()->getResultArray();
+
+        exit(json_encode(['imagePaths' => array_column($data, 'img')]));
     }
 }

@@ -100,11 +100,36 @@ $('#tbl_list_productos').on('click', '[data-selector="abrir"]', function() {
     // Ir directamente a un elemento
     $('html, body').scrollTop($('#cont_detalle_producto').offset().top - 100);
 
-    $('#in_nombre_producto').val(row.nombre);
-    $('#in_categoria_producto').val(row.id_categoria);
-    $('#in_presentacion_producto').val(row.presentacion);
-    $('#in_marca_producto').val(row.id_marca);
-    $('#in_observacion_producto').val(row.observacion);
+    // Mostrar informacion general
+    $('#in_nombre_producto').val(row.nombre.toUpperCase());
+    $('#in_categoria_producto').val(row.id_categoria.toUpperCase());
+    $('#in_presentacion_producto').val(row.presentacion.toUpperCase());
+    $('#in_marca_producto').val(row.id_marca.toUpperCase());
+    $('#in_observacion_producto').val(row.observacion?.toUpperCase());
+
+    // Mostrar imagen 
+    $('#cont_imagenes_producto').html('');
+    $.ajax({  
+        url: SITE_URL + '/product/img/' + row.id,
+        type: 'GET',
+        dataType: 'json',  
+        success: function (resp) {
+            let imagesHTML = '';
+            resp.imagePaths.forEach(path => {
+                imagesHTML += `<img src="${SITE_URL}${path}" alt="Producto" style="max-width: 500px; max-height: 500px; margin: 5px;">`;
+            });
+            $('#cont_imagenes_producto').html(imagesHTML);
+        }, 
+        error: function (xhr, status, error) {  
+            console.log(error);
+            Swal.fire('<h5> ❌ OC No pudo ser registrada</h5>')
+        },
+        complete: function(){
+            // always
+        }
+    })
+                    
+
 });
 
 
