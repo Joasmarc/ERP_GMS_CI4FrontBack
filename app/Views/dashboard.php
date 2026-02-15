@@ -1405,7 +1405,7 @@
             </div>
             
             <div id="cont_product_list" class="row d-none">
-              <!-- x.0 Card de datatables de ejemplo -->
+
               <div class="col-md-12">
                 <div class="card">
                   <div class="card-header">
@@ -1413,7 +1413,7 @@
                   </div>
                   <div class="card-body">
                     <div class="table-responsive">
-                      <table id="basic_datatables" class="display table table-striped table-hover">
+                      <table id="tbl_list_productos" class="display table table-striped table-hover">
                         <thead>
                           <tr>
                             <th>ID</th>
@@ -1442,6 +1442,41 @@
                         </tbody>
                       </table>
                     </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-12 text-center" id="cont_detalle_producto">
+                <h1>Detalles</h1>
+              </div>
+
+              <div class="col-md-4">
+                <div class="card">
+                  <div class="card-header">
+                    <h4 class="card-title">General</h4>
+                  </div>
+                  <div class="card-body">
+                    <div class="form-group">
+                      <label for="in_nombre_producto">Nombre</label>
+                      <input id="in_nombre_producto" disabled type="text" class="form-control form-control-lg">
+                    </div>
+                    <div class="form-group">
+                      <label for="in_categoria_producto">Categoria</label>
+                      <input id="in_categoria_producto" disabled type="text" class="form-control form-control-lg">
+                    </div>
+                    <div class="form-group">
+                      <label for="in_presentacion_producto">Presentacion</label>
+                      <input id="in_presentacion_producto" disabled type="text" class="form-control form-control-lg">
+                    </div>
+                    <div class="form-group">
+                      <label for="in_marca_producto">Marca</label>
+                      <input id="in_marca_producto" disabled type="text" class="form-control form-control-lg">
+                    </div>
+                    <div class="form-group">
+                      <label for="in_comentario_producto">Comentario</label>
+                      <textarea id="in_comentario_producto" class="form-control" rows="5" disabled>                          </textarea>
+                    </div>
+                    
                   </div>
                 </div>
               </div>

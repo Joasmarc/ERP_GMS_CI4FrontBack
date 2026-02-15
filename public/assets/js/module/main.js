@@ -13,7 +13,7 @@ $(function() {
 
     // Datatables
     $(document).ready(function () {
-        $("#basic_datatables").DataTable({
+        $("#tbl_list_productos").DataTable({
             ajax: SITE_URL + '/product/listing',
             columns: [
                 { data: 'id'},
@@ -25,6 +25,7 @@ $(function() {
                 { data: 'img'},
                 { data: 'id'},
             ],
+            rowId: "id",
             columnDefs: [
                 {
                     targets: [0, 1, 2, 3, 4, 5], // Exclude the 6th column
@@ -46,7 +47,7 @@ $(function() {
                 {
                     targets: 7,
                     render: function(data, type, row, meta) {
-                        return '<button class="btn btn-primary btn-sm"><i class="fas fa-share"></i></button>';
+                        return `<button class="btn btn-primary btn-sm" data-selector="abrir" data-id="${row.id}"><i class="fas fa-share"></i></button>`;
                     }
                 }
             ],
@@ -91,6 +92,23 @@ $('#btn_open_product_list').on('click', function() {
     
     showScreen(SCREENS.product_listing);
 });
+
+// Abrir productos detallado
+$('#tbl_list_productos').on('click', '[data-selector="abrir"]', function() {
+    const row = $('#tbl_list_productos').DataTable().row('#' + $(this).attr('data-id')).data();
+
+    // Ir directamente a un elemento
+    $('html, body').scrollTop($('#cont_detalle_producto').offset().top - 100);
+
+    $('#in_nombre_producto').val(row.nombre);
+    $('#in_categoria_producto').val(row.id_categoria);
+    $('#in_presentacion_producto').val(row.presentacion);
+    $('#in_marca_producto').val(row.id_marca);
+    $('#in_observacion_producto').val(row.observacion);
+});
+
+
+/* Development */
 
 $('#btn_open_product_modify').on('click', function() {
     $.notify({title: 'Advertencia', message:'Modulo en desarollo',  icon:"fas fa-cogs"}, {
