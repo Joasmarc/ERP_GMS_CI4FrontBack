@@ -97,6 +97,8 @@ $('#btn_open_product_list').on('click', function() {
 $('#tbl_list_productos').on('click', '[data-selector="abrir"]', function() {
     const row = $('#tbl_list_productos').DataTable().row('#' + $(this).attr('data-id')).data();
 
+    $('#cont_detalle_producto').removeClass('d-none');
+
     // Ir directamente a un elemento
     $('html, body').scrollTop($('#cont_detalle_producto').offset().top - 100);
 
@@ -134,6 +136,18 @@ $('#tbl_list_productos').on('click', '[data-selector="abrir"]', function() {
 
 
 /* Development */
+
+$('.en-desarrollo').on('click', function() {
+    $.notify({title: 'Advertencia', message:'Funcionalidad en desarollo',  icon:"fas fa-cogs"}, {
+        type: 'warning',
+        placement: {
+        from: 'top',
+        align: 'right',
+        },
+        time: 1000,
+        delay: 100,
+    });
+})
 
 $('#btn_open_product_modify').on('click', function() {
     $.notify({title: 'Advertencia', message:'Modulo en desarollo',  icon:"fas fa-cogs"}, {

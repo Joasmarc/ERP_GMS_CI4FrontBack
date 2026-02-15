@@ -1446,51 +1446,94 @@
                 </div>
               </div>
 
-              <div class="col-md-12 text-center" id="cont_detalle_producto">
-                <h1>Detalles</h1>
-              </div>
+              <div class="row d-none" id="cont_detalle_producto">
 
-              <div class="col-md-4">
-                <div class="card">
-                  <div class="card-header">
-                    <h4 class="card-title">General</h4>
+                <div class="col-md-12 text-center">
+                  <h1>Detalles</h1>
+                </div>
+  
+                <div class="col-md-12">
+                  <div class="card">
+                    <div class="card-header">
+                      <h4 class="card-title">Opciones</h4>
+                    </div>
+                    <div class="card-body">
+                      
+                      <button class="btn btn-success en-desarrollo">
+                        <span class="btn-label">
+                          <i class="fa fa-link"></i>
+                        </span>
+                        Compartir
+                      </button>
+  
+                      <button class="btn btn-secondary en-desarrollo">
+                        <span class="btn-label">
+                          <i class="fa fa-edit"></i>
+                        </span>
+                        Modificar
+                      </button>
+  
+                      <button class="btn btn-info en-desarrollo">
+                        <span class="btn-label">
+                          <i class="fas fa-sticky-note"></i>
+                        </span>
+                        Agregar Nota
+                      </button>
+  
+                      <button class="btn btn-danger en-desarrollo">
+                        <span class="btn-label">
+                          <i class="fas fa-ban"></i>
+                        </span>
+                        Inactivar
+                      </button>
+  
+                    </div>
                   </div>
-                  <div class="card-body">
-                    <div class="form-group">
-                      <label for="in_nombre_producto">Nombre</label>
-                      <input id="in_nombre_producto" disabled type="text" class="form-control form-control-lg">
+                </div>
+  
+                <div class="col-md-4">
+                  <div class="card">
+                    <div class="card-header">
+                      <h4 class="card-title">General</h4>
                     </div>
-                    <div class="form-group">
-                      <label for="in_categoria_producto">Categoria</label>
-                      <input id="in_categoria_producto" disabled type="text" class="form-control form-control-lg">
+                    <div class="card-body">
+                      <div class="form-group">
+                        <label for="in_nombre_producto">Nombre</label>
+                        <input id="in_nombre_producto" disabled type="text" class="form-control form-control-lg">
+                      </div>
+                      <div class="form-group">
+                        <label for="in_categoria_producto">Categoria</label>
+                        <input id="in_categoria_producto" disabled type="text" class="form-control form-control-lg">
+                      </div>
+                      <div class="form-group">
+                        <label for="in_presentacion_producto">Presentacion</label>
+                        <input id="in_presentacion_producto" disabled type="text" class="form-control form-control-lg">
+                      </div>
+                      <div class="form-group">
+                        <label for="in_marca_producto">Marca</label>
+                        <input id="in_marca_producto" disabled type="text" class="form-control form-control-lg">
+                      </div>
+                      <div class="form-group">
+                        <label for="in_comentario_producto">Comentario</label>
+                        <textarea id="in_comentario_producto" class="form-control" rows="5" disabled>                          </textarea>
+                      </div>
+                      
                     </div>
-                    <div class="form-group">
-                      <label for="in_presentacion_producto">Presentacion</label>
-                      <input id="in_presentacion_producto" disabled type="text" class="form-control form-control-lg">
+                  </div>
+                </div>
+  
+                <div class="col-md-7">
+                  <div class="card">
+                    <div class="card-header">
+                      <h4 class="card-title">Imagenes</h4>
                     </div>
-                    <div class="form-group">
-                      <label for="in_marca_producto">Marca</label>
-                      <input id="in_marca_producto" disabled type="text" class="form-control form-control-lg">
+                    <div class="card-body">
+                      <div id="cont_imagenes_producto"></div>
                     </div>
-                    <div class="form-group">
-                      <label for="in_comentario_producto">Comentario</label>
-                      <textarea id="in_comentario_producto" class="form-control" rows="5" disabled>                          </textarea>
-                    </div>
-                    
                   </div>
                 </div>
               </div>
 
-              <div class="col-md-7">
-                <div class="card">
-                  <div class="card-header">
-                    <h4 class="card-title">Imagenes</h4>
-                  </div>
-                  <div class="card-body">
-                    <div id="cont_imagenes_producto"></div>
-                  </div>
-                </div>
-              </div>
             </div>
             <!-- SCREENS END -->
           </div>
