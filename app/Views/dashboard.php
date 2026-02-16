@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <title>Kaiadmin - Bootstrap 5 Admin Dashboard</title>
+    <title>Gm Suministros - SAS</title>
     <meta
       content="width=device-width, initial-scale=1.0, shrink-to-fit=no"
       name="viewport"
@@ -52,10 +52,10 @@
           <div class="logo-header" data-background-color="dark">
             <a href="index.html" class="logo">
               <img
-                src="<?= base_url('public/assets/img/kaiadmin/logo_light.svg') ?>"
+                src="<?= base_url('public/assets/img/kaiadmin/banner_gms.jpg') ?>"
                 alt="navbar brand"
                 class="navbar-brand"
-                height="20"
+                height="40"
               />
             </a>
             <div class="nav-toggle">
@@ -176,10 +176,10 @@
             <div class="logo-header" data-background-color="dark">
               <a href="index.html" class="logo">
                 <img
-                  src="<?= base_url('public/assets/img/kaiadmin/logo_light.svg') ?>"
+                  src="<?= base_url('public/assets/img/kaiadmin/banner_gms.jpg') ?>"
                   alt="navbar brand"
                   class="navbar-brand"
-                  height="20"
+                  height="40"
                 />
               </a>
               <div class="nav-toggle">
@@ -292,7 +292,7 @@
                     </div>
                     <span class="profile-username">
                       <span class="op-7">Hola,</span>
-                      <span class="fw-bold">Jose</span>
+                      <span class="fw-bold"><?= session()->get('name') ?></span>
                     </span>
                   </a>
                   <ul class="dropdown-menu dropdown-user animated fadeIn">

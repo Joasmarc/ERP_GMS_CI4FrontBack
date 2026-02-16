@@ -4,7 +4,8 @@
     <!-- 1.0 Configurar metadatos del documento -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $title ?></title>
+    <link rel="icon" type="image/x-icon" href="<?= base_url('public/assets/img/kaiadmin/favicon.ico') ?>">
+    <title>GM Suministros - SAS</title>
 
     <!-- 2.0 Estilos CSS básicos -->
     <style>
@@ -66,7 +67,7 @@
 
         /* 2.8 Estilos de campos de entrada */
         input[type="email"],
-        input[type="text"] {
+        input[type="password"] {
             width: 100%;
             padding: 12px;
             border: 1px solid #ddd;
@@ -84,7 +85,7 @@
 
         /* 2.9 Estilos del botón */
         button {
-            background-color: #4CAF50;
+            background-color: #5ebc42;
             color: white;
             padding: 12px;
             border: none;
@@ -147,6 +148,10 @@
         <!-- 3.1 Título del formulario -->
         <h1 class="login-title">Sistema de Administración</h1>
 
+        <center>
+            <img style="width: 50%;" src="<?= base_url('public/assets/img/logo_gms.png') ?>" alt="Banner GMS">
+        </center>
+
         <!-- 3.2 Mostrar mensajes de error -->
         <?php if (session()->has('error')): ?>
             <div class="alert-error">
@@ -196,7 +201,7 @@
             <div class="form-group">
                 <label for="pin">PIN de Seguridad</label>
                 <input 
-                    type="text" 
+                    type="password" 
                     id="pin" 
                     name="pin" 
                     placeholder="0000"
