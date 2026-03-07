@@ -79,14 +79,52 @@ class Auth extends BaseController
             'isLoggedIn' => true
         ];
 
-        // 3.8 Guardar sesión
+        // 3.8 Obtener Token de Siigo
+        $siigoToken = $this->getSiigoToken();
+
+        // 3.9 Guardar sesión
+        if ($siigoToken) {
+            $sessionData['siigo_token'] = $siigoToken['access_token'];
+            $sessionData['siigo_token_expires'] = time() + $siigoToken['expires_in'];
+        }
+
         session()->set($sessionData);
 
-        // 3.9 Redirigir al dashboard
+        // 4.0 Redirigir al dashboard
         return redirect()->to('dashboard')->with('success', 'Bienvenido: ' . $user['name']);
     }
 
-    // 4.0 Cerrar sesión
+    // 5.0 Obtener token de la API de Siigo
+    private function getSiigoToken()
+    {
+        $client = \Config\Services::curlrequest();
+
+        try {
+            $response = $client->post(env('SIIGO_AUTH_URL'), [
+                'headers' => [
+                    'Partner-Id'   => env('SIIGO_PARTNER_ID'),
+                    'Content-Type' => 'application/json',
+                ],
+                'json' => [
+                    'username'   => env('SIIGO_USERNAME'),
+                    'access_key' => env('SIIGO_ACCESS_KEY'),
+                ],
+                'http_errors' => false // Para manejar errores manualmente
+            ]);
+
+            if ($response->getStatusCode() === 200) {
+                return json_decode($response->getBody(), true);
+            }
+
+            log_message('error', 'Error al autenticar en Siigo: ' . $response->getBody());
+            return null;
+        } catch (\Exception $e) {
+            log_message('error', 'Excepción al conectar con Siigo: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    // 6.0 Cerrar sesión
     public function logout()
     {
         // 4.1 Destruir la sesión

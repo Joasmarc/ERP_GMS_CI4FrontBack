@@ -14,7 +14,7 @@ $(function () {
     // Datatables
     $(document).ready(function () {
         $("#tbl_list_productos").DataTable({
-            ajax: SITE_URL + '/product/listing',
+            ajax: SITE_URL + '/product/listing_siigo',
             columns: [
                 { data: 'id' },
                 { data: 'nombre' },
