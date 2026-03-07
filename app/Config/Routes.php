@@ -21,6 +21,10 @@ $routes->group('product', ['filter' => 'cors'], static function ($routes) {
     $routes->get('listing', 'Product::listing');
     $routes->get('listing_siigo', 'Product::listing_siigo');
     $routes->get('img/(:num)', 'Product::listing_img/$1');
+    $routes->get('img/(:any)', 'Product::listing_img/$1'); // Adicionado por precaución para UUID
     $routes->get('video/(:num)', 'Product::listing_video/$1');
+    $routes->get('video/(:any)', 'Product::listing_video/$1');
     $routes->get('document/(:num)', 'Product::listing_document/$1');
+    $routes->get('document/(:any)', 'Product::listing_document/$1');
+    $routes->post('upload_image', 'Product::upload_image');
 });

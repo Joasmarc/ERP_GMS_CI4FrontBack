@@ -201,4 +201,81 @@ class Product extends BaseController
         // 5.4 Retornar JSON
         exit(json_encode(['documents' => $data]));
     }
+
+    // 6.0 Subir imagen de producto
+    public function upload_image()
+    {
+        // 6.1 Validar método POST
+        if (!$this->request->is('post')) {
+            exit(json_encode(['status' => 'error', 'message' => 'Método no permitido']));
+        }
+
+        // 6.2 Obtener ID del producto
+        $productId = $this->request->getPost('id_product');
+        if (!$productId) {
+            exit(json_encode(['status' => 'error', 'message' => 'ID de producto requerido']));
+        }
+
+        // 6.3 Obtener archivo subido
+        $file = $this->request->getFile('product_image');
+
+        // 6.4 Validar archivo
+        if (!$file || !$file->isValid() || $file->hasMoved()) {
+            exit(json_encode(['status' => 'error', 'message' => 'Archivo no válido o ya subido']));
+        }
+
+        // 6.5 Generar nombre único
+        $newName = $file->getRandomName();
+
+        // 6.6 Mover archivo a writable/uploads/products
+        try {
+            $file->move(WRITEPATH . 'uploads/products', $newName);
+        } catch (\Exception $e) {
+            log_message('error', 'Error moviendo archivo: ' . $e->getMessage());
+            exit(json_encode(['status' => 'error', 'message' => 'Error al guardar el archivo en el servidor']));
+        }
+
+        // 6.7 Guardar en base de datos 
+        // Nota: Se requiere que la base de datos se actualice primero con la migración para aceptar VARCHAR en id_product
+        $db = \Config\Database::connect();
+        
+        try {
+            $db->transStart();
+
+            // Insertar en pictures
+            // Asumiendo que field es `path` o `url` según la query, voy a usar path
+            // Y de acuerdo a main.js que usa SITE_URL + data, usaremos un path relativo que Codeigniter pueda servir o asumiendo el uso actual
+            $pathData = [
+                'path' => 'writable/uploads/products/' . $newName,
+                'name' => $file->getClientName(),
+            ];
+            $db->table('pictures')->insert($pathData);
+            $pictureId = $db->insertID();
+
+            // Insertar en pictures_products
+            $assocData = [
+                'id_picture' => $pictureId,
+                'id_product' => $productId
+            ];
+            $db->table('pictures_products')->insert($assocData);
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                exit(json_encode(['status' => 'error', 'message' => 'Error al registrar la imagen en la base de datos']));
+            }
+
+            // 6.8 Retornar éxito
+            exit(json_encode([
+                'status' => 'success', 
+                'message' => 'Imagen subida correctamente',
+                'path' => $pathData['path']
+            ]));
+
+        } catch (\Exception $e) {
+            $db->transRollback();
+            log_message('error', 'Error en base de datos subiendo imagen: ' . $e->getMessage());
+            exit(json_encode(['status' => 'error', 'message' => 'Error interno de base de datos']));
+        }
+    }
 }

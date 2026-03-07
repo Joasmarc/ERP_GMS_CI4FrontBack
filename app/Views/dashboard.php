@@ -562,7 +562,7 @@
                         Compartir
                       </button>
   
-                      <button class="btn btn-secondary en-desarrollo">
+                      <button id="btn_product_edit" class="btn btn-secondary en-desarrollo">
                         <span class="btn-label">
                           <i class="fa fa-edit"></i>
                         </span>
@@ -670,6 +670,38 @@
         </footer>
       </div>
     </div>
+    
+    <!-- Modal para Carga de Imágenes -->
+    <div class="modal fade" id="modal_upload_image" tabindex="-1" aria-labelledby="modalUploadImageLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalUploadImageLabel">Cargar Imagen para el Producto</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <!-- Hidden input for Siigo Product ID -->
+            <input type="hidden" id="siigo_product_id_upload">
+            
+            <div id="drag_drop_area" class="border border-primary border-2 rounded p-5 text-center p-5 mb-3" style="border-style: dashed !important; cursor: pointer;">
+              <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+              <h5>Arrastra una imagen aquí o haz clic para seleccionar</h5>
+              <input type="file" id="file_input_image" class="d-none" accept="image/*">
+            </div>
+            
+            <div id="image_preview_container" class="text-center d-none">
+              <img id="image_preview" src="" alt="Vista previa" class="img-fluid rounded mb-3" style="max-height: 200px;">
+              <p id="image_filename" class="text-muted"></p>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="btn_upload_image">Subir Imagen</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
     <!--   Core JS Files   -->
     <script src="<?= base_url('public/assets/js/core/jquery-3.7.1.min.js') ?>"></script>
     <script src="<?= base_url('public/assets/js/core/popper.min.js') ?>"></script>

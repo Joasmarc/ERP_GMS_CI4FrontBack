@@ -102,6 +102,9 @@ $('#tbl_list_productos').on('click', '[data-selector="abrir"]', function () {
     // Ir directamente a un elemento
     $('html, body').scrollTop($('#cont_detalle_producto').offset().top - 100);
 
+    // Guardar el ID actual en el botón de modificar para poder subir la foto
+    $('#btn_product_edit').data('id', row.id);
+
     // Mostrar informacion general
     $('#in_nombre_producto').val(row.nombre.toUpperCase());
     $('#in_categoria_producto').val(row.id_categoria.toUpperCase());
@@ -198,7 +201,7 @@ $('#tbl_list_productos').on('click', '[data-selector="abrir"]', function () {
 
 /* Development */
 
-$('.en-desarrollo').on('click', function () {
+$('.en-desarrollo').not('#btn_product_edit').on('click', function () {
     $.notify({ title: 'Advertencia', message: 'Funcionalidad en desarollo', icon: "fas fa-cogs" }, {
         type: 'warning',
         placement: {
@@ -221,6 +224,136 @@ $('#btn_open_product_modify').on('click', function () {
         delay: 100,
     });
 })
+
+// Lógica para Abrir Modal de Subida de Imagen
+$('#btn_product_edit').on('click', function () {
+    const productId = $(this).data('id');
+    if (!productId) {
+        swal('Error', 'No hay un producto seleccionado', 'error');
+        return;
+    }
+    $('#siigo_product_id_upload').val(productId);
+    
+    // Reset modal state
+    $('#file_input_image').val('');
+    $('#image_preview_container').addClass('d-none');
+    $('#image_preview').attr('src', '');
+    $('#image_filename').text('');
+    $('#drag_drop_area').removeClass('d-none');
+    
+    $('#modal_upload_image').modal('show');
+});
+
+// Drag and Drop Lógica
+const dropArea = document.getElementById('drag_drop_area');
+const fileInput = document.getElementById('file_input_image');
+let selectedFile = null;
+
+// Click en el area abre el input
+dropArea.addEventListener('click', () => fileInput.click());
+
+fileInput.addEventListener('change', function() {
+    handleFiles(this.files);
+});
+
+// Drag Events
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropArea.addEventListener(eventName, preventDefaults, false);
+});
+
+function preventDefaults (e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+['dragenter', 'dragover'].forEach(eventName => {
+    dropArea.addEventListener(eventName, highlight, false);
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+    dropArea.addEventListener(eventName, unhighlight, false);
+});
+
+function highlight(e) {
+    dropArea.classList.add('bg-light');
+}
+
+function unhighlight(e) {
+    dropArea.classList.remove('bg-light');
+}
+
+dropArea.addEventListener('drop', handleDrop, false);
+
+function handleDrop(e) {
+    let dt = e.dataTransfer;
+    let files = dt.files;
+    handleFiles(files);
+}
+
+function handleFiles(files) {
+    if (files.length > 0) {
+        selectedFile = files[0];
+        
+        // Mostrar preview
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            $('#image_preview').attr('src', e.target.result);
+            $('#image_filename').text(selectedFile.name);
+            $('#drag_drop_area').addClass('d-none');
+            $('#image_preview_container').removeClass('d-none');
+        }
+        reader.readAsDataURL(selectedFile);
+    }
+}
+
+// Subir Imagen via AJAX
+$('#btn_upload_image').on('click', function() {
+    if (!selectedFile) {
+        swal('Atención', 'Selecciona una imagen primero', 'warning');
+        return;
+    }
+
+    const productId = $('#siigo_product_id_upload').val();
+    let formData = new FormData();
+    formData.append('product_image', selectedFile);
+    formData.append('id_product', productId);
+
+    const btn = $(this);
+    btn.prop('disabled', true).text('Subiendo...');
+
+    $.ajax({
+        url: SITE_URL + '/product/upload_image',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(resp) {
+            // Verificar si es string y parsear (a veces CodeIgniter lo manda como string html)
+            if(typeof resp === 'string') {
+                try {
+                    resp = JSON.parse(resp);
+                } catch(e) {}
+            }
+
+            if (resp.status === 'success') {
+                swal('Éxito', 'Imagen subida correctamente', 'success');
+                $('#modal_upload_image').modal('hide');
+                
+                // Recargar las imágenes del producto automáticamente
+                $(`[data-selector="abrir"][data-id="${productId}"]`).trigger('click');
+            } else {
+                swal('Error', resp.message || 'Error al subir la imagen', 'error');
+            }
+        },
+        error: function(xhr, status, error) {
+            swal('Error', 'Hubo un problema de conexión', 'error');
+            console.error(error);
+        },
+        complete: function() {
+            btn.prop('disabled', false).text('Subir Imagen');
+        }
+    });
+});
 
 $('.module_bloq').on('click', function () {
     $.notify({ title: 'Advertencia', message: 'Modulo bloqueado', icon: "fas fa-unlock" }, {
