@@ -61,59 +61,69 @@ class Product extends BaseController
             ]));
         }
 
-        // 2.3 Iniciar cliente HTTP
+        // 2.3 Inicializar variables para paginación
         $client = \Config\Services::curlrequest();
+        $url = 'https://api.siigo.com/v1/products';
+        $mappedData = [];
+        $totalResults = 0;
 
         try {
-            // 2.4 Realizar petición GET a la API de Siigo
-            $response = $client->get('https://api.siigo.com/v1/products', [
-                'headers' => [
-                    'Partner-Id'    => env('SIIGO_PARTNER_ID', 'gsmerp'),
-                    'Authorization' => 'Bearer ' . $siigoToken,
-                ],
-                'http_errors' => false
-            ]);
+            // 2.4 Bucle para obtener todas las páginas
+            while ($url) {
+                $response = $client->get($url, [
+                    'headers' => [
+                        'Partner-Id'    => env('SIIGO_PARTNER_ID', 'gsmerp'),
+                        'Authorization' => 'Bearer ' . $siigoToken,
+                    ],
+                    'http_errors' => false
+                ]);
 
-            // 2.5 Verificar respuesta exitosa
-            if ($response->getStatusCode() === 200) {
-                // 2.6 Decodificar respuesta JSON
-                $siigoData = json_decode($response->getBody(), true);
-                
-                // 2.7 Mapear datos al formato de DataTables
-                $mappedData = [];
-                foreach ($siigoData['results'] as $product) {
-                    $mappedData[] = [
-                        'id'           => $product['id'],
-                        'nombre'       => $product['name'],
-                        'id_categoria' => $product['account_group']['name'] ?? '',
-                        'presentacion' => $product['unit_label'] ?? '',
-                        'id_marca'     => $product['code'] ?? '',
-                        'observacion'  => $product['description'] ?? '',
-                        'img'          => null // Por ahora sin imagen desde Siigo
-                    ];
+                // 2.5 Verificar respuesta exitosa
+                if ($response->getStatusCode() === 200) {
+                    // 2.6 Decodificar respuesta JSON
+                    $siigoData = json_decode($response->getBody(), true);
+                    
+                    // 2.7 Mapear datos al formato de DataTables
+                    foreach ($siigoData['results'] as $product) {
+                        $mappedData[] = [
+                            'id'           => $product['id'],
+                            'nombre'       => $product['name'],
+                            'id_categoria' => $product['account_group']['name'] ?? '',
+                            'presentacion' => $product['unit_label'] ?? '',
+                            'id_marca'     => $product['code'] ?? '',
+                            'observacion'  => $product['description'] ?? '',
+                            'img'          => null // Por ahora sin imagen desde Siigo
+                        ];
+                    }
+
+                    // 2.8 Obtener total de resultados (solo es necesario en la primera iteración, pero está bien así)
+                    $totalResults = $siigoData['pagination']['total_results'] ?? count($mappedData);
+
+                    // 2.9 Obtener URL de la siguiente página
+                    $url = $siigoData['_links']['next']['href'] ?? null;
+                } else {
+                    // 2.10 Registrar error si la petición falla y salir del bucle
+                    log_message('error', 'Error listando productos Siigo en URL ' . $url . ': ' . $response->getBody());
+                    break;
                 }
-
-                // 2.8 Preparar estructura de respuesta para DataTables
-                $cantidad = count($mappedData);
-
-                $data = array(
-                    "draw" => 1,
-                    "recordsTotal" => $siigoData['pagination']['total_results'] ?? $cantidad,
-                    "recordsFiltered" => $siigoData['pagination']['total_results'] ?? $cantidad,
-                    "data" => $mappedData,
-                );
-
-                // 2.9 Enviar respuesta
-                exit(json_encode($data));
             }
 
-            // 2.10 Registrar error si la petición falla
-            log_message('error', 'Error listando productos Siigo: ' . $response->getBody());
+            // 2.11 Preparar estructura de respuesta para DataTables
+            $data = array(
+                "draw" => 1,
+                "recordsTotal" => $totalResults ?: count($mappedData),
+                "recordsFiltered" => $totalResults ?: count($mappedData),
+                "data" => $mappedData,
+            );
+
+            // 2.12 Enviar respuesta final
+            exit(json_encode($data));
+
         } catch (\Exception $e) {
             log_message('error', 'Excepción listando productos Siigo: ' . $e->getMessage());
         }
 
-        // 2.11 Retornar vacío en caso de excepción o error
+        // 2.13 Retornar vacío en caso de excepción o error general
         exit(json_encode([
             "draw" => 1,
             "recordsTotal" => 0,
