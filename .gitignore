@@ -149,3 +149,7 @@ logs/
 
 # Ignorar streams de seguridad de Windows
 *Zone.Identifier
+
+# Excluir archivos
+skill.md
+.antigravityrules
