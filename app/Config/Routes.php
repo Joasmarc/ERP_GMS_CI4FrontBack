@@ -19,6 +19,8 @@ $routes->get('dashboard', 'Main::dashboard');
 $routes->group('client', ['filter' => 'cors'], static function ($routes) {
     $routes->post('save', 'Client::save');
     $routes->get('listing', 'Client::listing');
+    $routes->post('add_comment', 'Client::add_comment');
+    $routes->get('list_comments/(:num)', 'Client::list_comments/$1');
 });
 
 // Products

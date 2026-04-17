@@ -736,12 +736,50 @@
                             <th>Teléfono</th>
                             <th>Correo</th>
                             <th>Dirección</th>
+                            <th class="text-center">Abrir</th>
                           </tr>
                         </thead>
                         <tbody>
                         </tbody>
                       </table>
                     </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="cont_detalle_cliente" class="row d-none">
+              <div class="col-md-12 text-center">
+                <h1>Detalles del Cliente</h1>
+                <h3 id="detalle_cliente_nombre" class="text-primary"></h3>
+              </div>
+              
+              <div class="col-md-6">
+                <div class="card">
+                  <div class="card-header">
+                    <h4 class="card-title">Añadir Evaluación / Comentario</h4>
+                  </div>
+                  <div class="card-body">
+                    <form id="form_add_comment">
+                      <input type="hidden" id="detalle_client_id" name="client_id">
+                      <div class="form-group">
+                         <label>Comentario de Progreso</label>
+                         <textarea class="form-control" id="detalle_comment" name="comment" rows="4" required></textarea>
+                      </div>
+                      <button type="submit" class="btn btn-round btn-primary mt-3">Guardar Progreso</button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="col-md-6">
+                <div class="card">
+                  <div class="card-header">
+                    <h4 class="card-title">Historial de Progreso</h4>
+                  </div>
+                  <div class="card-body">
+                     <ul class="list-group list-group-bordered" id="list_client_comments">
+                     </ul>
                   </div>
                 </div>
               </div>

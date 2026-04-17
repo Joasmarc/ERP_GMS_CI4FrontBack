@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Models\Clients;
+use App\Models\ClientComments;
 
 class Client extends BaseController
 {
@@ -57,5 +58,38 @@ class Client extends BaseController
         ];
         
         return $this->response->setJSON($response);
+    }
+
+    public function add_comment()
+    {
+        if (!$this->request->is('post')) return $this->response->setJSON(['status' => 'error', 'message' => 'Método no permitido.']);
+        
+        $model = new ClientComments();
+        $data = [
+            'client_id' => $this->request->getPost('client_id'),
+            'comment'   => $this->request->getPost('comment')
+        ];
+        
+        if (empty($data['client_id']) || empty($data['comment'])) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Faltan datos obligatorios.']);
+        }
+        
+        $model->insert($data);
+        return $this->response->setJSON(['status' => 'success']);
+    }
+
+    public function list_comments($client_id)
+    {
+        $model = new ClientComments();
+        $data = $model->where('client_id', $client_id)->orderBy('created_at', 'DESC')->findAll();
+        
+        // Formatear fecha para mejorar legibilidad
+        foreach ($data as &$row) {
+            if (!empty($row['created_at'])) {
+                $row['created_at'] = date('d/m/Y H:i', strtotime($row['created_at']));
+            }
+        }
+        
+        return $this->response->setJSON(['status' => 'success', 'data' => $data]);
     }
 }

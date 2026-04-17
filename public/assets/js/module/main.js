@@ -84,7 +84,16 @@ $(function () {
                 { data: 'numero_documento' },
                 { data: 'telefono_cliente' },
                 { data: 'correo_cliente' },
-                { data: 'direccion_cliente' }
+                { data: 'direccion_cliente' },
+                { data: 'id' }
+            ],
+            columnDefs: [
+                {
+                    targets: 7,
+                    render: function (data, type, row, meta) {
+                        return `<button class="btn btn-round btn-primary btn-sm" data-selector="abrir_cliente" data-id="${row.id}"><i class="fas fa-share"></i></button>`;
+                    }
+                }
             ],
             rowId: "id",
             processing: true,
@@ -204,7 +213,7 @@ $('#tbl_list_productos').on('click', '[data-selector="abrir"]', function () {
         },
         error: function (xhr, status, error) {
             console.log(error);
-            Swal.fire('<h5> ❌ OC No pudo ser registrada</h5>')
+            Swal.fire('<h5> ❌ Error al buscar videos</h5>')
         },
         complete: function () {
             // always
@@ -219,7 +228,7 @@ $('#tbl_list_productos').on('click', '[data-selector="abrir"]', function () {
         type: 'GET',
         dataType: 'json',
         success: function (resp) {
-            if (resp.documents[0].name !== null) {
+            if (resp.documents && resp.documents.length && resp.documents[0].name !== null) {
                 let tabsHtml = '';
                 let contentHtml = '';
                 let first = false;
@@ -234,7 +243,7 @@ $('#tbl_list_productos').on('click', '[data-selector="abrir"]', function () {
         },
         error: function (xhr, status, error) {
             console.log(error);
-            Swal.fire('<h5> ❌ OC No pudo ser registrada</h5>')
+            Swal.fire('<h5> ❌ Error al cargar docs</h5>')
         },
         complete: function () {
             // always
@@ -243,6 +252,60 @@ $('#tbl_list_productos').on('click', '[data-selector="abrir"]', function () {
 
 
 });
+
+$('#tbl_list_clientes').on('click', '[data-selector="abrir_cliente"]', function () {
+    const row = $('#tbl_list_clientes').DataTable().row('#' + $(this).attr('data-id')).data();
+    $('#cont_detalle_cliente').removeClass('d-none');
+    $('html, body').scrollTop($('#cont_detalle_cliente').offset().top - 100);
+    
+    $('#detalle_client_id').val(row.id);
+    $('#detalle_cliente_nombre').text(row.nombre_cliente);
+    
+    loadClientComments(row.id);
+});
+
+$('#form_add_comment').on('submit', function(e) {
+    e.preventDefault();
+    const btn = $(this).find('button[type="submit"]');
+    btn.prop('disabled', true);
+    
+    $.ajax({
+       url: SITE_URL + '/client/add_comment',
+       type: 'POST',
+       data: $(this).serialize(),
+       success: function(resp) {
+           if(resp.status==='success') {
+               $('#detalle_comment').val('');
+               loadClientComments($('#detalle_client_id').val());
+           } else {
+               swal('Error', resp.message, 'error');
+           }
+       },
+       complete: function() {
+           btn.prop('disabled', false);
+       }
+    });
+});
+
+function loadClientComments(clientId) {
+    $('#list_client_comments').html('<li class="list-group-item text-center">Cargando...</li>');
+    $.get(SITE_URL + '/client/list_comments/' + clientId, function(resp) {
+        if(resp && resp.status === 'success') {
+            let html = '';
+            if(resp.data.length === 0) {
+                html = '<li class="list-group-item text-center text-muted">Sin evaluaciones registradas</li>';
+            } else {
+                resp.data.forEach(item => {
+                   html += `<li class="list-group-item">
+                     <p class="mb-1">${item.comment}</p>
+                     <small class="text-muted"><i class="fas fa-clock"></i> ${item.created_at}</small>
+                   </li>`;
+                });
+            }
+            $('#list_client_comments').html(html);
+        }
+    });
+}
 
 
 /* Development */
