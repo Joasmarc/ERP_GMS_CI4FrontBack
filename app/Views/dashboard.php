@@ -54,7 +54,7 @@
               <img
                 src="<?= base_url('public/assets/img/kaiadmin/banner_gms.jpg') ?>"
                 alt="navbar brand"
-                class="navbar-brand"
+                class="navbar-brand rounded"
                 height="40"
               />
             </a>
@@ -168,7 +168,7 @@
                 <img
                   src="<?= base_url('public/assets/img/kaiadmin/banner_gms.jpg') ?>"
                   alt="navbar brand"
-                  class="navbar-brand"
+                  class="navbar-brand rounded"
                   height="40"
                 />
               </a>
