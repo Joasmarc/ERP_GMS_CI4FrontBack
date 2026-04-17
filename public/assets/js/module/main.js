@@ -6,6 +6,7 @@ const SCREENS = {
     product_create: ['cont_product_create', 'Productos', 'Crear'],
     product_listing: ['cont_product_list', 'Productos', 'Listar'],
     client_create: ['cont_client_create', 'Clientes', 'Crear'],
+    client_listing: ['cont_client_list', 'Clientes', 'Listar'],
 }
 
 /* STATES */
@@ -72,6 +73,40 @@ $(function () {
                 }
             }
         });
+
+        // Datatable Clientes
+        $("#tbl_list_clientes").DataTable({
+            ajax: SITE_URL + '/client/listing',
+            columns: [
+                { data: 'id' },
+                { data: 'nombre_cliente' },
+                { data: 'tipo_documento' },
+                { data: 'numero_documento' },
+                { data: 'telefono_cliente' },
+                { data: 'correo_cliente' },
+                { data: 'direccion_cliente' }
+            ],
+            rowId: "id",
+            processing: true,
+            serverSide: false,
+            pageLength: 10,
+            language: {
+                processing: 'Procesando...',
+                lengthMenu: 'Mostrar _MENU_ registros',
+                zeroRecords: 'No se encontraron resultados',
+                emptyTable: 'No hay datos disponibles',
+                info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
+                infoEmpty: 'Mostrando 0 a 0 de 0 registros',
+                infoFiltered: '(filtrado de _MAX_ registros totales)',
+                search: 'Buscar:',
+                paginate: {
+                    first: 'Primero',
+                    last: 'Último',
+                    next: 'Siguiente',
+                    previous: 'Anterior'
+                }
+            }
+        });
     });
 
 });
@@ -96,8 +131,12 @@ $('#btn_open_product_list').on('click', function () {
 
 // Abrir clientes crear
 $('#btn_open_client_create').on('click', function () {
-
     showScreen(SCREENS.client_create);
+});
+
+// Abrir clientes listar
+$('#btn_open_client_list').on('click', function () {
+    showScreen(SCREENS.client_listing);
 });
 
 // Abrir productos detallado

@@ -41,4 +41,21 @@ class Client extends BaseController
             ]);
         }
     }
+
+    public function listing()
+    {
+        $model = new Clients();
+        
+        $data = $model->select('id, nombre_cliente, tipo_documento, numero_documento, telefono_cliente, correo_cliente, direccion_cliente')
+                      ->findAll();
+
+        $response = [
+            "draw" => 1,
+            "recordsTotal" => count($data),
+            "recordsFiltered" => count($data),
+            "data" => $data,
+        ];
+        
+        return $this->response->setJSON($response);
+    }
 }

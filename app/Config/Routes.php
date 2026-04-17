@@ -18,6 +18,7 @@ $routes->get('dashboard', 'Main::dashboard');
 // Clients
 $routes->group('client', ['filter' => 'cors'], static function ($routes) {
     $routes->post('save', 'Client::save');
+    $routes->get('listing', 'Client::listing');
 });
 
 // Products

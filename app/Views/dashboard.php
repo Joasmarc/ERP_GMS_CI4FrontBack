@@ -142,10 +142,9 @@
                 <h4 class="text-section">Clientes</h4>
               </li>
               <li class="nav-item" style="background: transparent !important;">
-                <a href="#" class="module_development">
+                <a href="#" id="btn_open_client_list">
                   <i class="fas fa-user-lock"></i>
                   <p>Listar</p>
-                  <!-- <span class="badge badge-secondary">1</span> -->
                 </a>
               </li>
               <li class="nav-item" style="background: transparent !important;">
@@ -714,6 +713,35 @@
                     <button class="btn btn-round btn-secondary" onclick="document.getElementById('form_client_create').reset()">
                       <i class="fas fa-redo"></i> Limpiar
                     </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="cont_client_list" class="row d-none">
+              <div class="col-md-12">
+                <div class="card">
+                  <div class="card-header">
+                    <h4 class="card-title">Listado de Clientes</h4>
+                  </div>
+                  <div class="card-body">
+                    <div class="table-responsive">
+                      <table id="tbl_list_clientes" class="display table table-striped table-hover">
+                        <thead>
+                          <tr>
+                            <th>ID</th>
+                            <th>Nombre / Razón Social</th>
+                            <th>Tipo Doc</th>
+                            <th>Número Doc</th>
+                            <th>Teléfono</th>
+                            <th>Correo</th>
+                            <th>Dirección</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               </div>
