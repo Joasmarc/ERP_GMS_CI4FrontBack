@@ -1,14 +1,2 @@
 Memorizar Politicas de desarollo del proyecto.
-1.  Proogramacion orientada  a  bloques.
-- Bloque: Entorno aislado de logica, Los bloques solo pueden compartir datos a traves de la varible de interfaz global.
-- Variable de interfaz: Variable que comunica a los bloques, Tiene que ser un arreglo asociativo en mayus llamda 'DATA'. 
-- Comentar:
- x.y z
-x numero de bloque.
-y numero de sub bloque.
-z comentario.
-- Orden de numeracion:
-Por orden de linea.
-2. Intentar ser puntual con el codigo
-3. Utilizar funciones solo para proceso o bloques repetitivos.
-4. Los modelos no estan orientados a bloques, su unica logica es retornar resultados de la DB.
+Utilizar el SKILL.MD para metodos de un controlador y bloques js

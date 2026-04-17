@@ -5,6 +5,7 @@ const SCREENS = {
     dashboard: ['cont_dashboard', 'Inicio', 'Dashboard'],
     product_create: ['cont_product_create', 'Productos', 'Crear'],
     product_listing: ['cont_product_list', 'Productos', 'Listar'],
+    client_create: ['cont_client_create', 'Clientes', 'Crear'],
 }
 
 /* STATES */
@@ -91,6 +92,12 @@ $('#btn_open_product_create').on('click', function () {
 $('#btn_open_product_list').on('click', function () {
 
     showScreen(SCREENS.product_listing);
+});
+
+// Abrir clientes crear
+$('#btn_open_client_create').on('click', function () {
+
+    showScreen(SCREENS.client_create);
 });
 
 // Abrir productos detallado

@@ -15,6 +15,11 @@ $routes->get('logout', 'Auth::logout');
 $routes->get('/', 'Home::index');
 $routes->get('dashboard', 'Main::dashboard');
 
+// Clients
+$routes->group('client', ['filter' => 'cors'], static function ($routes) {
+    $routes->post('save', 'Client::save');
+});
+
 // Products
 $routes->group('product', ['filter' => 'cors'], static function ($routes) {
     // $routes->options('(.*)', 'Home::cors');

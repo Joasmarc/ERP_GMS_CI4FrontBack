@@ -59,10 +59,10 @@
               />
             </a>
             <div class="nav-toggle">
-              <button class="btn btn-toggle toggle-sidebar">
+              <button class="btn btn-round btn-toggle toggle-sidebar">
                 <i class="gg-menu-right"></i>
               </button>
-              <button class="btn btn-toggle sidenav-toggler">
+              <button class="btn btn-round btn-toggle sidenav-toggler">
                 <i class="gg-menu-left"></i>
               </button>
             </div>
@@ -81,7 +81,7 @@
                 </span>
                 <h4 class="text-section">Inicio</h4>
               </li>
-              <li class="nav-item">
+              <li class="nav-item" style="background: transparent !important;">
                 <a href="#" id="btn_open_dashboard">
                   <i class="fas fa-home"></i>
                   <p>Dashboard</p>
@@ -94,20 +94,20 @@
                 </span>
                 <h4 class="text-section">Productos</h4>
               </li>
-              <li class="nav-item">
+              <li class="nav-item" style="background: transparent !important;">
                 <a href="#" id="btn_open_product_list">
                   <i class="fas fa-syringe"></i>
                   <p>Listar</p>
                   <!-- <span class="badge badge-secondary">1</span> -->
                 </a>
               </li>
-              <li class="nav-item">
+              <li class="nav-item" style="background: transparent !important;">
                 <a href="#" id="btn_open_product_create">
                   <i class="fas fa-plus"></i>
                   <p>Crear</p>
                 </a>
               </li>
-              <li class="nav-item">
+              <li class="nav-item" style="background: transparent !important;">
                 <a href="#" id="btn_open_product_modify">
                   <i class="fas fa-pencil-ruler"></i>
                   <p>Modificar</p>
@@ -119,48 +119,39 @@
                 </span>
                 <h4 class="text-section">Usuarios</h4>
               </li>
-              <li class="nav-item">
+              <li class="nav-item" style="background: transparent !important;">
                 <a href="#" class="module_bloq">
                   <i class="fas fa-user-friends"></i>
                   <p>Listar</p>
                   <!-- <span class="badge badge-secondary">1</span> -->
                 </a>
               </li>
-              <li class="nav-item">
+              <li class="nav-item" style="background: transparent !important;">
                 <a href="#" class="module_bloq">
                   <i class="fas fa-user-plus"></i>
                   <p>Crear</p>
                 </a>
               </li>
-              <li class="nav-item">
+              <li class="nav-item" style="background: transparent !important;">
                 <a href="#" class="module_bloq">
                   <i class="fas fa-user-edit"></i>
                   <p>Modificar</p>
                 </a>
               </li>
               <li class="nav-section">
-                <span class="sidebar-mini-icon">
-                  <i class="fa fa-ellipsis-h"></i>
-                </span>
-                <h4 class="text-section">Facturas</h4>
+                <h4 class="text-section">Clientes</h4>
               </li>
-              <li class="nav-item">
+              <li class="nav-item" style="background: transparent !important;">
                 <a href="#" class="module_development">
-                  <i class="fas fa-file-invoice-dollar"></i>
+                  <i class="fas fa-user-lock"></i>
                   <p>Listar</p>
                   <!-- <span class="badge badge-secondary">1</span> -->
                 </a>
               </li>
-              <li class="nav-item">
-                <a href="#" class="module_development">
-                  <i class="fas fa-file-medical"></i>
+              <li class="nav-item" style="background: transparent !important;">
+                <a href="#" id="btn_open_client_create">
+                  <i class="fas fa-user-plus"></i>
                   <p>Crear</p>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a href="#" class="module_development">
-                  <i class="fas fa-file-signature"></i>
-                  <p>Modificar</p>
                 </a>
               </li>
             </ul>
@@ -183,10 +174,10 @@
                 />
               </a>
               <div class="nav-toggle">
-                <button class="btn btn-toggle toggle-sidebar">
+                <button class="btn btn-round btn-toggle toggle-sidebar">
                   <i class="gg-menu-right"></i>
                 </button>
-                <button class="btn btn-toggle sidenav-toggler">
+                <button class="btn btn-round btn-toggle sidenav-toggler">
                   <i class="gg-menu-left"></i>
                 </button>
               </div>
@@ -311,7 +302,7 @@
                             <p class="text-muted">jose@gmsuministros.com</p>
                             <a
                               href="#"
-                              class="btn btn-xs btn-secondary btn-sm"
+                              class="btn btn-round btn-xs btn-secondary btn-sm"
                               >Ver Perfil</a
                             >
                           </div>
@@ -486,13 +477,13 @@
 
                   <!-- 1.4 Botones de acción -->
                   <div class="card-action">
-                    <button class="btn btn-success" onclick="guardarImplemento()">
+                    <button class="btn btn-round btn-success" onclick="guardarImplemento()">
                       <i class="fas fa-save"></i> Guardar Implemento
                     </button>
-                    <button class="btn btn-secondary" onclick="limpiarFormulario()">
+                    <button class="btn btn-round btn-secondary" onclick="limpiarFormulario()">
                       <i class="fas fa-redo"></i> Limpiar
                     </button>
-                    <button class="btn btn-danger" onclick="cancelar()">
+                    <button class="btn btn-round btn-danger" onclick="cancelar()">
                       <i class="fas fa-times"></i> Cancelar
                     </button>
                   </div>
@@ -555,28 +546,28 @@
                     </div>
                     <div class="card-body">
                       
-                      <button class="btn btn-success en-desarrollo">
+                      <button class="btn btn-round btn-success en-desarrollo">
                         <span class="btn-label">
                           <i class="fa fa-link"></i>
                         </span>
                         Compartir
                       </button>
   
-                      <button id="btn_product_edit" class="btn btn-secondary en-desarrollo">
+                      <button id="btn_product_edit" class="btn btn-round btn-secondary en-desarrollo">
                         <span class="btn-label">
                           <i class="fa fa-edit"></i>
                         </span>
                         Modificar
                       </button>
   
-                      <button class="btn btn-info en-desarrollo">
+                      <button class="btn btn-round btn-info en-desarrollo">
                         <span class="btn-label">
                           <i class="fas fa-sticky-note"></i>
                         </span>
                         Agregar Nota
                       </button>
   
-                      <button class="btn btn-danger en-desarrollo">
+                      <button class="btn btn-round btn-danger en-desarrollo">
                         <span class="btn-label">
                           <i class="fas fa-ban"></i>
                         </span>
@@ -656,6 +647,78 @@
               </div>
 
             </div>
+
+            <div id="cont_client_create" class="row d-none">
+              <div class="col-md-12">
+                <div class="card">
+                  <div class="card-header">
+                    <div class="card-title">
+                      <i class="fas fa-user-plus"></i> Crear Cliente
+                    </div>
+                  </div>
+                  <div class="card-body">
+                    <form action="#" method="POST" id="form_client_create">
+                      <div class="row">
+                        <div class="col-md-6">
+                          <div class="form-group form-group-default">
+                            <label for="nombreCliente">Nombre / Razón Social</label>
+                            <input type="text" class="form-control" id="nombreCliente" name="nombre_cliente" required>
+                          </div>
+                        </div>
+                        <div class="col-md-6">
+                          <div class="form-group form-group-default">
+                            <label for="tipoDocumento">Tipo de Documento</label>
+                            <select class="form-select" id="tipoDocumento" name="tipo_documento">
+                              <option value="CC">Cédula de Ciudadanía</option>
+                              <option value="NIT">NIT</option>
+                              <option value="CE">Cédula de Extranjería</option>
+                              <option value="PAS">Pasaporte</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="row">
+                        <div class="col-md-6">
+                          <div class="form-group form-group-default">
+                            <label for="numeroDocumento">Número de Documento</label>
+                            <input type="text" class="form-control" id="numeroDocumento" name="numero_documento" required>
+                          </div>
+                        </div>
+                        <div class="col-md-6">
+                          <div class="form-group form-group-default">
+                            <label for="telefonoCliente">Teléfono / Celular</label>
+                            <input type="text" class="form-control" id="telefonoCliente" name="telefono_cliente" required>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="row">
+                        <div class="col-md-6">
+                          <div class="form-group form-group-default">
+                            <label for="correoCliente">Correo Electrónico</label>
+                            <input type="email" class="form-control" id="correoCliente" name="correo_cliente" required>
+                          </div>
+                        </div>
+                        <div class="col-md-6">
+                          <div class="form-group form-group-default">
+                            <label for="direccionCliente">Dirección y Ciudad</label>
+                            <input type="text" class="form-control" id="direccionCliente" name="direccion_cliente" required>
+                          </div>
+                        </div>
+                      </div>
+                    </form>
+                  </div>
+                  <div class="card-action">
+                    <button class="btn btn-round btn-success" onclick="guardarCliente()">
+                      <i class="fas fa-save"></i> Guardar Cliente
+                    </button>
+                    <button class="btn btn-round btn-secondary" onclick="document.getElementById('form_client_create').reset()">
+                      <i class="fas fa-redo"></i> Limpiar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- SCREENS END -->
           </div>
         </div>
@@ -695,8 +758,8 @@
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-            <button type="button" class="btn btn-primary" id="btn_upload_image">Subir Imagen</button>
+            <button type="button" class="btn btn-round btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-round btn-primary" id="btn_upload_image">Subir Imagen</button>
           </div>
         </div>
       </div>
@@ -795,6 +858,50 @@
             limpiarFormulario();
             swal('Cancelado', 'Formulario limpiado', 'info');
           }
+        });
+      }
+
+      function guardarCliente() {
+        const formData = new FormData(document.getElementById('form_client_create'));
+        const nombreCliente = formData.get('nombre_cliente');
+        const numeroDocumento = formData.get('numero_documento');
+        
+        if (!nombreCliente || !numeroDocumento) {
+          swal('Validación', 'Por favor complete todos los campos requeridos', 'warning');
+          return;
+        }
+
+        // Bloquear boton temporalmente
+        const btn = document.querySelector('#cont_client_create .btn-success');
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+
+        $.ajax({
+            url: SITE_URL + '/client/save', // Endpoint en backend
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(resp) {
+                if(typeof resp === 'string') {
+                    try { resp = JSON.parse(resp); } catch(e) {}
+                }
+                
+                if (resp.status === 'success') {
+                    swal('Éxito', 'Cliente guardado correctamente en la tabla', 'success');
+                    document.getElementById('form_client_create').reset();
+                } else {
+                    swal('Error', resp.message || 'Error al guardar el cliente', 'error');
+                }
+            },
+            error: function() {
+                swal('Error', 'Hubo un problema de conexión intentando guardar en base de datos', 'error');
+            },
+            complete: function() {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
         });
       }
     </script>
