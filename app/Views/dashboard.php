@@ -146,6 +146,17 @@
                   <i class="fas fa-user-plus"></i>
                   <p>Crear</p>
                 </a>
+              <li class="nav-section">
+                <span class="sidebar-mini-icon">
+                  <i class="fa fa-ellipsis-h"></i>
+                </span>
+                <h4 class="text-section">Actividades</h4>
+              </li>
+              <li class="nav-item" style="background: transparent !important;">
+                <a href="#" id="btn_open_activities">
+                  <i class="fas fa-tasks"></i>
+                  <p>Tablero</p>
+                </a>
               </li>
             </ul>
           </div>
@@ -784,6 +795,103 @@
                   <div class="card-body">
                      <ul class="list-group list-group-bordered" id="list_client_comments">
                      </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="cont_activities" class="row d-none">
+              <div class="col-md-12">
+                <div class="card">
+                  <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="card-title"><i class="fas fa-tasks"></i> Tablero de Actividades</h4>
+                    <button class="btn btn-primary btn-round btn-sm module_development" id="btn_add_task">
+                      <i class="fas fa-plus"></i> Nueva Tarea
+                    </button>
+                  </div>
+                  <div class="card-body bg-light" style="border-radius: 0 0 10px 10px;">
+                    <div class="row">
+                      <!-- Columna Pendientes -->
+                      <div class="col-md-4">
+                        <div class="card mb-3 border-0 shadow-sm" style="background-color: #f4f6f9;">
+                          <div class="card-header bg-transparent border-0 pb-0">
+                            <h5 class="card-title text-secondary font-weight-bold"><i class="fas fa-clipboard-list text-warning me-2"></i> Pendientes <span class="badge badge-count float-end">2</span></h5>
+                          </div>
+                          <div class="card-body" style="min-height: 400px;">
+                            <!-- Tarea ejemplo -->
+                            <div class="card mb-3 shadow-sm card-task border-left-warning" style="border-left: 4px solid #ffad46; cursor: grab;">
+                              <div class="card-body p-3">
+                                <h6 class="font-weight-bold text-dark">Revisar inventario general</h6>
+                                <p class="text-muted small mb-2" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">Hacer conteo físico de los productos en almacén principal y verificar inconsistencias.</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                  <span class="badge badge-warning">Alta</span>
+                                  <small class="text-muted"><i class="far fa-clock"></i> 10 Oct</small>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <!-- Tarea ejemplo -->
+                            <div class="card mb-3 shadow-sm card-task" style="border-left: 4px solid #48abf7; cursor: grab;">
+                              <div class="card-body p-3">
+                                <h6 class="font-weight-bold text-dark">Llamar a proveedores</h6>
+                                <p class="text-muted small mb-2" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">Confirmar la entrega del pedido #405 para implementos de cirugía.</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                  <span class="badge badge-info">Media</span>
+                                  <small class="text-muted"><i class="far fa-clock"></i> 12 Oct</small>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Columna En Progreso -->
+                      <div class="col-md-4">
+                        <div class="card mb-3 border-0 shadow-sm" style="background-color: #f4f6f9;">
+                          <div class="card-header bg-transparent border-0 pb-0">
+                            <h5 class="card-title text-secondary font-weight-bold"><i class="fas fa-spinner text-primary me-2"></i> En Progreso <span class="badge badge-count float-end">1</span></h5>
+                          </div>
+                          <div class="card-body" style="min-height: 400px;">
+                            <!-- Tarea ejemplo -->
+                            <div class="card mb-3 shadow-sm card-task" style="border-left: 4px solid #f25961; cursor: grab;">
+                              <div class="card-body p-3">
+                                <h6 class="font-weight-bold text-dark">Actualización de precios</h6>
+                                <p class="text-muted small mb-2" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">Actualizar los precios en el sistema principal según la última TRM.</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                  <span class="badge badge-danger">Crítica</span>
+                                  <div class="avatar-sm">
+                                    <img src="<?= base_url('public/assets/img/avatar-male.jpg') ?>" alt="..." class="avatar-img rounded-circle border border-white">
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Columna Completado -->
+                      <div class="col-md-4">
+                        <div class="card mb-3 border-0 shadow-sm" style="background-color: #f4f6f9;">
+                          <div class="card-header bg-transparent border-0 pb-0">
+                            <h5 class="card-title text-secondary font-weight-bold"><i class="fas fa-check-circle text-success me-2"></i> Completado <span class="badge badge-count float-end">1</span></h5>
+                          </div>
+                          <div class="card-body" style="min-height: 400px;">
+                             <!-- Tarea ejemplo -->
+                             <div class="card mb-3 shadow-sm card-task" style="border-left: 4px solid #31ce36; opacity: 0.7; cursor: grab;">
+                              <div class="card-body p-3">
+                                <h6 class="font-weight-bold text-dark text-decoration-line-through">Facturación mensual</h6>
+                                <p class="text-muted small mb-2" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">Generar facturas de cierre de mes de Septiembre.</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                  <span class="badge badge-success">Completado</span>
+                                  <small class="text-success"><i class="fas fa-check-double"></i> Listo</small>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                    </div>
                   </div>
                 </div>
               </div>
