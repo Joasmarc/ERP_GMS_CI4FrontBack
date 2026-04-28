@@ -48,7 +48,8 @@
             min-height: 100vh;
             padding: 20px;
             color: var(--text-main);
-            overflow: hidden;
+            overflow-x: hidden;
+            overflow-y: auto;
             position: relative;
         }
 
