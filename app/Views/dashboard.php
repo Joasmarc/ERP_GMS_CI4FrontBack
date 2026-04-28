@@ -492,53 +492,37 @@
             
             <div id="cont_product_list" class="row d-none">
 
-              <div class="col-md-12">
+              <div class="col-md-12" id="wrapper_catalog">
                 <div class="card">
-                  <div class="card-header">
-                    <h4 class="card-title">Basic</h4>
-                  </div>
-                  <div class="card-body">
-                    <div class="table-responsive">
-                      <table id="tbl_list_productos" class="display table table-striped table-hover">
-                        <thead>
-                          <tr>
-                            <th>ID</th>
-                            <th>Nombre</th>
-                            <th>Categoría</th>
-                            <th>Presentación</th>
-                            <th>Marca</th>
-                            <th>Observación</th>
-                            <th>Img</th>
-                            <th>Abrir</th>
-                          </tr>
-                        </thead>
-                        <tfoot>
-                          <tr>
-                            <th>ID</th>
-                            <th>Nombre</th>
-                            <th>Categoría</th>
-                            <th>Presentación</th>
-                            <th>Marca</th>
-                            <th>Observación</th>
-                            <th>Img</th>
-                            <th>Abrir</th>
-                          </tr>
-                        </tfoot>
-                        <tbody>
-                        </tbody>
-                      </table>
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+                      <h4 class="card-title mb-0">Catálogo de Productos</h4>
+                      <div class="form-group mb-0 pb-0 pt-0">
+                        <div class="input-icon" style="min-width: 250px;">
+                          <span class="input-icon-addon">
+                            <i class="fa fa-search"></i>
+                          </span>
+                          <input type="text" id="search_products" class="form-control" placeholder="Buscar producto, marca, categoría...">
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                    <div class="card-body bg-light" style="border-radius: 0 0 10px 10px;">
+                      <div class="row" id="catalog_list_productos">
+                        <!-- Las tarjetas de productos se renderizarán aquí -->
+                      </div>
+                    </div>
                 </div>
               </div>
 
               <div class="row d-none" id="cont_detalle_producto">
 
-                <div class="col-md-12 text-center">
-                  <h1>Detalles</h1>
+                <div class="col-md-12 d-flex align-items-center mb-4">
+                  <button class="btn btn-secondary btn-round me-3" id="btn_back_to_catalog">
+                    <i class="fas fa-arrow-left"></i> Volver al Catálogo
+                  </button>
+                  <h1 class="m-0 flex-grow-1 text-center" style="margin-left: -150px !important;">Detalles</h1>
                 </div>
   
-                <div class="col-md-12">
+                <div class="col-md-12 d-none">
                   <div class="card">
                     <div class="card-header">
                       <h4 class="card-title">Opciones</h4>
@@ -643,6 +627,32 @@
                     </div>
                   </div>
                 </div>
+
+                <div class="col-md-12 d-none" id="cont_variantes_wrapper">
+                  <div class="card">
+                    <div class="card-header">
+                      <h4 class="card-title">Variantes Disponibles</h4>
+                    </div>
+                    <div class="card-body">
+                      <div class="table-responsive">
+                        <table class="table table-hover">
+                          <thead>
+                            <tr>
+                              <th>ID</th>
+                              <th>Presentación</th>
+                              <th>Categoría</th>
+                              <th>Marca</th>
+                              <th>Acción</th>
+                            </tr>
+                          </thead>
+                          <tbody id="list_variantes_producto">
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
               </div>
 
             </div>

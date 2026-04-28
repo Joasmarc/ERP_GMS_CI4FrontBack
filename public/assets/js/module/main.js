@@ -10,69 +10,14 @@ const SCREENS = {
 }
 
 /* STATES */
+let globalProductsData = [];
+
 /* INIT */
 $(function () {
 
     // Datatables
     $(document).ready(function () {
-        $("#tbl_list_productos").DataTable({
-            ajax: SITE_URL + '/product/listing_siigo',
-            columns: [
-                { data: 'id' },
-                { data: 'nombre' },
-                { data: 'id_categoria' },
-                { data: 'presentacion' },
-                { data: 'id_marca' },
-                { data: 'observacion' },
-                { data: 'img' },
-                { data: 'id' },
-            ],
-            rowId: "id",
-            columnDefs: [
-                {
-                    targets: [0, 1, 2, 3, 4, 5], // Exclude the 6th column
-                    render: function (data, type, row, meta) {
-                        if (data === null || data === undefined) return data;
-                        if (typeof data === 'string' && data.length > 0) {
-                            return data.charAt(0).toUpperCase() + data.slice(1);
-                        }
-                        return data;
-                    }
-                },
-                {
-                    targets: 6,
-                    render: function (data, type, row, meta) {
-                        if (data === null || data === undefined) return '';
-                        return '<img src="' + SITE_URL + data + '" alt="Producto" style="max-width: 50px; max-height: 50px;">';
-                    }
-                },
-                {
-                    targets: 7,
-                    render: function (data, type, row, meta) {
-                        return `<button class="btn btn-primary btn-sm" data-selector="abrir" data-id="${row.id}"><i class="fas fa-share"></i></button>`;
-                    }
-                }
-            ],
-            processing: true,
-            serverSide: false,
-            pageLength: 10,
-            language: {
-                processing: 'Procesando...',
-                lengthMenu: 'Mostrar _MENU_ registros',
-                zeroRecords: 'No se encontraron resultados',
-                emptyTable: 'No hay datos disponibles',
-                info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
-                infoEmpty: 'Mostrando 0 a 0 de 0 registros',
-                infoFiltered: '(filtrado de _MAX_ registros totales)',
-                search: 'Buscar:',
-                paginate: {
-                    first: 'Primero',
-                    last: 'Último',
-                    next: 'Siguiente',
-                    previous: 'Anterior'
-                }
-            }
-        });
+        loadCatalogProducts();
 
         // Datatable Clientes
         $("#tbl_list_clientes").DataTable({
@@ -148,10 +93,42 @@ $('#btn_open_client_list').on('click', function () {
     showScreen(SCREENS.client_listing);
 });
 
-// Abrir productos detallado
-$('#tbl_list_productos').on('click', '[data-selector="abrir"]', function () {
-    const row = $('#tbl_list_productos').DataTable().row('#' + $(this).attr('data-id')).data();
+// Función para abrir detalle de producto
+function openProductDetail(id) {
+    const row = globalProductsData.find(p => p.id == id);
+    if (!row) return;
 
+    // Buscar variantes
+    let rawName = row.nombre ? row.nombre.toLowerCase().trim() : 'sin nombre';
+    let variants = globalProductsData.filter(p => {
+        let n = p.nombre ? p.nombre.toLowerCase().trim() : 'sin nombre';
+        return n === rawName;
+    });
+
+    // Renderizar variantes
+    let variantsHtml = '';
+    if (variants.length > 1) {
+        $('#cont_variantes_wrapper').removeClass('d-none');
+        variants.forEach(v => {
+            let badge = v.id == id ? '<span class="badge badge-success">Actual</span>' : '';
+            variantsHtml += `
+                <tr>
+                    <td>${v.id} ${badge}</td>
+                    <td>${v.presentacion || 'N/A'}</td>
+                    <td>${v.id_categoria || 'N/A'}</td>
+                    <td>${v.id_marca || 'N/A'}</td>
+                    <td>
+                        ${v.id != id ? `<button class="btn btn-sm btn-outline-primary btn-round" onclick="openProductDetail('${v.id}')"><i class="fas fa-eye"></i> Ver Detalle</button>` : ''}
+                    </td>
+                </tr>
+            `;
+        });
+        $('#list_variantes_producto').html(variantsHtml);
+    } else {
+        $('#cont_variantes_wrapper').addClass('d-none');
+    }
+
+    $('#wrapper_catalog').addClass('d-none');
     $('#cont_detalle_producto').removeClass('d-none');
 
     // Ir directamente a un elemento
@@ -161,7 +138,7 @@ $('#tbl_list_productos').on('click', '[data-selector="abrir"]', function () {
     $('#btn_product_edit').data('id', row.id);
 
     // Mostrar informacion general
-    $('#in_nombre_producto').val(row.nombre.toUpperCase());
+    $('#in_nombre_producto').val((row.nombre || '').toUpperCase());
     $('#in_categoria_producto').val(row.id_categoria.toUpperCase());
     $('#in_presentacion_producto').val(row.presentacion.toUpperCase());
     $('#in_marca_producto').val(row.id_marca.toUpperCase());
@@ -251,6 +228,17 @@ $('#tbl_list_productos').on('click', '[data-selector="abrir"]', function () {
     })
 
 
+}
+
+$('#catalog_list_productos').on('click', '[data-selector="abrir"]', function () {
+    const id = $(this).attr('data-id');
+    openProductDetail(id);
+});
+
+$('#btn_back_to_catalog').on('click', function() {
+    $('#cont_detalle_producto').addClass('d-none');
+    $('#wrapper_catalog').removeClass('d-none');
+    $('html, body').scrollTop($('#wrapper_catalog').offset().top - 100);
 });
 
 $('#tbl_list_clientes').on('click', '[data-selector="abrir_cliente"]', function () {
@@ -487,6 +475,112 @@ $('.module_development').on('click', function () {
         delay: 100,
     });
 })
+
+
+function loadCatalogProducts() {
+    $('#catalog_list_productos').html('<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-3">Cargando catálogo...</p></div>');
+    $.ajax({
+        url: SITE_URL + '/product/listing_siigo',
+        type: 'GET',
+        dataType: 'json',
+        success: function(resp) {
+            globalProductsData = resp.data || [];
+            renderCatalogProducts(globalProductsData);
+        },
+        error: function(xhr, status, error) {
+            $('#catalog_list_productos').html('<div class="col-12 text-center py-5 text-danger"><i class="fas fa-exclamation-triangle fa-3x mb-3"></i><p>Error al cargar el catálogo de productos.</p></div>');
+        }
+    });
+}
+
+function renderCatalogProducts(products) {
+    const container = $('#catalog_list_productos');
+    container.empty();
+
+    if (products.length === 0) {
+        container.html('<div class="col-12 text-center py-5"><i class="fas fa-box-open fa-3x mb-3 text-muted"></i><p class="text-muted">No se encontraron productos disponibles.</p></div>');
+        return;
+    }
+
+    // Agrupar por nombre similar
+    const groupedProducts = {};
+    
+    products.forEach(p => {
+        // Normalizar nombre (minúsculas, sin espacios extra)
+        let rawName = p.nombre ? p.nombre.toLowerCase().trim() : 'sin nombre';
+        
+        // Si el grupo no existe, lo creamos y le asignamos este producto como el "principal"
+        if (!groupedProducts[rawName]) {
+            groupedProducts[rawName] = {
+                principal: p,
+                count: 1,
+                ids: [p.id] // Guardar los IDs agrupados
+            };
+        } else {
+            groupedProducts[rawName].count++;
+            groupedProducts[rawName].ids.push(p.id);
+        }
+    });
+
+    let html = '';
+    Object.values(groupedProducts).forEach(group => {
+        let p = group.principal;
+        let count = group.count;
+        
+        let nombre = p.nombre ? p.nombre.charAt(0).toUpperCase() + p.nombre.slice(1) : 'Sin nombre';
+        let categoria = p.id_categoria ? p.id_categoria.charAt(0).toUpperCase() + p.id_categoria.slice(1) : 'Sin categoría';
+        let marca = p.id_marca ? p.id_marca.charAt(0).toUpperCase() + p.id_marca.slice(1) : 'Sin marca';
+        let presentacion = p.presentacion ? p.presentacion.charAt(0).toUpperCase() + p.presentacion.slice(1) : 'Sin presentación';
+        let imgSrc = p.img ? (SITE_URL + p.img) : (SITE_URL + '/public/assets/img/kaiadmin/favicon.ico');
+
+        let badgeHtml = count > 1 ? `<span class="badge badge-primary position-absolute" style="top: 10px; right: 10px; z-index: 2; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">${count} Variantes</span>` : '';
+
+        html += `
+            <div class="col-sm-6 col-md-4 col-lg-3 mb-4 product-card-item" 
+                 data-nombre="${nombre.toLowerCase()}" 
+                 data-categoria="${categoria.toLowerCase()}" 
+                 data-marca="${marca.toLowerCase()}">
+                <div class="card card-post card-round h-100 shadow-sm border-0 position-relative" 
+                     style="transition: all 0.3s ease;"
+                     onmouseover="this.style.transform='translateY(-5px)'; this.classList.remove('shadow-sm'); this.classList.add('shadow');" 
+                     onmouseout="this.style.transform='none'; this.classList.remove('shadow'); this.classList.add('shadow-sm');">
+                    ${badgeHtml}
+                    <div class="card-img-container p-3 d-flex align-items-center justify-content-center" style="height: 200px; background-color: #f8f9fa; border-radius: 10px 10px 0 0;">
+                        <img class="card-img-top" src="${imgSrc}" alt="${nombre}" style="max-height: 100%; max-width: 100%; object-fit: contain;">
+                    </div>
+                    <div class="card-body d-flex flex-column">
+                        <h3 class="card-title text-primary font-weight-bold mb-3" style="font-size: 1.1rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.8rem;">${nombre}</h3>
+                        <div class="mb-auto">
+                            <p class="card-text text-muted mb-1"><i class="fas fa-tags text-secondary me-2"></i> <small>${categoria}</small></p>
+                            <p class="card-text text-muted mb-1"><i class="fas fa-industry text-secondary me-2"></i> <small>${marca}</small></p>
+                            <p class="card-text text-muted mb-3"><i class="fas fa-box text-secondary me-2"></i> <small>${presentacion}</small></p>
+                        </div>
+                        <button class="btn btn-primary btn-border btn-round btn-sm w-100 mt-3" data-selector="abrir" data-id="${p.id}">
+                            <i class="fas fa-share"></i> Ver Detalles
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    container.html(html);
+}
+
+// Búsqueda en catálogo
+$('#search_products').on('input', function() {
+    let searchVal = $(this).val().toLowerCase();
+    $('.product-card-item').each(function() {
+        let nombre = $(this).data('nombre') || '';
+        let categoria = $(this).data('categoria') || '';
+        let marca = $(this).data('marca') || '';
+        
+        if (nombre.includes(searchVal) || categoria.includes(searchVal) || marca.includes(searchVal)) {
+            $(this).show();
+        } else {
+            $(this).hide();
+        }
+    });
+});
 
 
 /* UTILS */
