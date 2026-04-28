@@ -36,3 +36,15 @@ $routes->group('product', ['filter' => 'cors'], static function ($routes) {
     $routes->get('document/(:any)', 'Product::listing_document/$1');
     $routes->post('upload_image', 'Product::upload_image');
 });
+
+// Preview Email Template Route
+$routes->get('preview-email', function() {
+    $data = [
+        'client_name'     => 'David Monzant',
+        'meeting_date'    => '15 de Mayo de 2026',
+        'meeting_time'    => '10:00 AM',
+        'meeting_subject' => 'Presentación de Nuevos Insumos Médicos',
+        'teams_link'      => 'https://teams.microsoft.com/'
+    ];
+    return view('emails/teams_invitation', $data);
+});
