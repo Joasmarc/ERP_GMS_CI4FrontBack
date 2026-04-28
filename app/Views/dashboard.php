@@ -102,12 +102,6 @@
                 </a>
               </li>
               <li class="nav-item" style="background: transparent !important;">
-                <a href="#" id="btn_open_product_create">
-                  <i class="fas fa-plus"></i>
-                  <p>Crear</p>
-                </a>
-              </li>
-              <li class="nav-item" style="background: transparent !important;">
                 <a href="#" id="btn_open_product_modify">
                   <i class="fas fa-pencil-ruler"></i>
                   <p>Modificar</p>
