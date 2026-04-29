@@ -9,6 +9,7 @@ const SCREENS = {
     client_listing: ['cont_client_list', 'Clientes', 'Listar'],
     activities: ['cont_activities', 'Actividades', 'Tablero'],
     activity_center: ['cont_activity_center', 'Actividades', 'Centro de Actividades'],
+    news_wall: ['cont_news_wall', 'Actividades', 'Mural de Noticias'],
 }
 
 /* STATES */
@@ -105,6 +106,124 @@ $('#btn_open_activity_center').on('click', function () {
     showScreen(SCREENS.activity_center);
     loadMockActivities();
 });
+
+// Abrir Mural de Noticias
+$('#btn_open_news_wall').on('click', function () {
+    showScreen(SCREENS.news_wall);
+    loadNewsWall();
+});
+
+// Cargar Mural de Noticias
+function loadNewsWall() {
+    const container = $('#news_wall_grid');
+    container.empty();
+
+    const mockNews = [
+        {
+            title: 'Nuevos avances en suministros médicos para 2026',
+            summary: 'Conoce las últimas tendencias en materiales y equipos médicos que revolucionarán el mercado este año.',
+            category: 'Salud',
+            author: 'Jose Perez',
+            date: 'Hace 2 horas',
+            image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=800&auto=format&fit=crop',
+            color: 'primary',
+            url: 'https://gm-suministros.test/noticia-1'
+        },
+        {
+            title: 'Impacto de la Inteligencia Artificial en la logística',
+            summary: 'Un análisis profundo sobre cómo la IA está optimizando las cadenas de suministro a nivel global.',
+            category: 'Tecnología',
+            author: 'Sthefany Alviarez',
+            date: 'Ayer',
+            image: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800&auto=format&fit=crop',
+            color: 'info',
+            url: 'https://gm-suministros.test/noticia-2'
+        },
+        {
+            title: 'Mejores prácticas para atención al cliente B2B',
+            summary: 'Estrategias clave para mantener relaciones duraderas con clientes corporativos en el sector salud.',
+            category: 'Negocios',
+            author: 'Maikel Monzant',
+            date: 'Hace 3 días',
+            image: 'https://images.unsplash.com/photo-1556761175-5973dc0f32b7?w=800&auto=format&fit=crop',
+            color: 'success',
+            url: 'https://gm-suministros.test/noticia-3'
+        },
+        {
+            title: 'Innovación en empaques biodegradables',
+            summary: 'La sostenibilidad es clave. Descubre cómo los nuevos empaques están reduciendo la huella de carbono.',
+            category: 'Innovación',
+            author: 'Angela Yepes',
+            date: 'Hace 1 semana',
+            image: 'https://images.unsplash.com/photo-1605600659873-d808a13e4d2a?w=800&auto=format&fit=crop',
+            color: 'warning',
+            url: 'https://gm-suministros.test/noticia-4'
+        },
+        {
+            title: 'Gestión efectiva del trabajo remoto',
+            summary: 'Consejos para liderar equipos distribuidos manteniendo altos niveles de motivación y compromiso.',
+            category: 'Cultura de Empresa',
+            author: 'David Monzant',
+            date: 'Hace 2 semanas',
+            image: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800&auto=format&fit=crop',
+            color: 'secondary',
+            url: 'https://gm-suministros.test/noticia-5'
+        },
+        {
+            title: 'Perspectivas económicas 2026',
+            summary: 'Lo que todo gerente debe saber sobre los indicadores macroeconómicos y su impacto en las importaciones.',
+            category: 'Negocios',
+            author: 'Admin General',
+            date: 'Hace 1 mes',
+            image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&auto=format&fit=crop',
+            color: 'danger',
+            url: 'https://gm-suministros.test/noticia-6'
+        }
+    ];
+
+    let html = '';
+    mockNews.forEach((news, index) => {
+        let delay = index * 0.1;
+        html += `
+        <div class="col-sm-6 col-md-6 col-lg-4 mb-4" style="animation: fadeInUp 0.5s ease forwards; animation-delay: ${delay}s; opacity: 0; transform: translateY(20px);">
+            <div class="card card-post card-round h-100 shadow-sm border-0 position-relative overflow-hidden" 
+                 style="transition: all 0.3s ease; cursor: pointer;"
+                 onclick="window.open('${news.url}', '_blank')"
+                 onmouseover="this.style.transform='translateY(-5px)'; this.classList.remove('shadow-sm'); this.classList.add('shadow-lg');" 
+                 onmouseout="this.style.transform='none'; this.classList.remove('shadow-lg'); this.classList.add('shadow-sm');">
+                <div class="card-img-container position-relative">
+                    <img class="card-img-top" src="${news.image}" alt="${news.title}" style="height: 220px; object-fit: cover;">
+                    <div class="position-absolute" style="top: 15px; left: 15px;">
+                        <span class="badge bg-${news.color} text-white shadow-sm" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">${news.category}</span>
+                    </div>
+                </div>
+                <div class="card-body d-flex flex-column">
+                    <h4 class="card-title fw-bold mb-2 text-dark" style="font-size: 1.25rem;">${news.title}</h4>
+                    <p class="card-text text-muted mb-4 flex-grow-1" style="font-size: 0.95rem;">${news.summary}</p>
+                    <div class="d-flex justify-content-between align-items-center mt-auto border-top pt-3">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar-sm me-2">
+                                <span class="avatar-title rounded-circle border border-white bg-${news.color}">${news.author.charAt(0)}</span>
+                            </div>
+                            <span class="text-muted small fw-bold">${news.author}</span>
+                        </div>
+                        <span class="text-muted small"><i class="far fa-clock me-1"></i>${news.date}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        `;
+    });
+
+    container.html(html);
+}
+
+function saveRecommendation() {
+    $('#modal_recommend_article').modal('hide');
+    swal('¡Excelente!', 'Tu recomendación ha sido publicada en el muro.', 'success').then(() => {
+        document.getElementById('form_recommend_article').reset();
+    });
+}
 
 // Load mock activities
 function loadMockActivities() {

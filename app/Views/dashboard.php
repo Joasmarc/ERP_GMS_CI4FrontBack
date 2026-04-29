@@ -164,6 +164,12 @@
                   <p>Centro de Actividades</p>
                 </a>
               </li>
+              <li class="nav-item" style="background: transparent !important;">
+                <a href="#" id="btn_open_news_wall">
+                  <i class="fas fa-newspaper"></i>
+                  <p>Mural de Noticias</p>
+                </a>
+              </li>
             </ul>
           </div>
         </div>
@@ -1009,6 +1015,29 @@
               </div>
             </div>
 
+            <div id="cont_news_wall" class="row d-none">
+              <div class="col-md-12">
+                <div class="card card-round border-0 shadow-sm">
+                  <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #1572e8 0%, #0d47a1 100%); border-radius: 10px 10px 0 0;">
+                    <div class="card-title text-white fw-bold"><i class="fas fa-newspaper me-2"></i>Mural de Noticias y Recomendaciones</div>
+                    <button class="btn btn-light btn-round btn-sm text-primary fw-bold shadow-sm" onclick="$('#modal_recommend_article').modal('show')">
+                      <i class="fas fa-plus"></i> Compartir Artículo
+                    </button>
+                  </div>
+                  <div class="card-body bg-light rounded-bottom p-4">
+                    <div class="text-center mb-5 mt-3">
+                      <h2 class="fw-bold text-dark mb-2">Mantente Informado</h2>
+                      <p class="text-muted">Descubre los últimos artículos, tendencias y recomendaciones compartidas por el equipo de GM Suministros.</p>
+                    </div>
+                    
+                    <div class="row" id="news_wall_grid">
+                      <!-- Rendered by JS -->
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- SCREENS END -->
           </div>
         </div>
@@ -1024,6 +1053,53 @@
       </div>
     </div>
     
+    <!-- Modal para Recomendar Artículo -->
+    <div class="modal fade" id="modal_recommend_article" tabindex="-1" aria-labelledby="modalRecommendLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+          <div class="modal-header border-0" style="background: linear-gradient(135deg, #1572e8 0%, #0d47a1 100%);">
+            <h5 class="modal-title text-white fw-bold" id="modalRecommendLabel"><i class="fas fa-share-alt me-2"></i>Recomendar un Artículo</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body p-4">
+            <form id="form_recommend_article">
+              <div class="row">
+                <div class="col-md-12 mb-3">
+                  <label class="form-label fw-bold">URL del Artículo</label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-light"><i class="fas fa-link text-primary"></i></span>
+                    <input type="url" class="form-control" placeholder="https://ejemplo.com/articulo" required>
+                  </div>
+                </div>
+                <div class="col-md-12 mb-3">
+                  <label class="form-label fw-bold">Título</label>
+                  <input type="text" class="form-control" placeholder="Escribe el título del artículo" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label fw-bold">Categoría</label>
+                  <select class="form-select">
+                    <option>Salud</option>
+                    <option>Tecnología</option>
+                    <option>Negocios</option>
+                    <option>Innovación</option>
+                    <option>Cultura de Empresa</option>
+                  </select>
+                </div>
+                <div class="col-md-12 mb-3">
+                  <label class="form-label fw-bold">¿Por qué lo recomiendas? (Breve resumen)</label>
+                  <textarea class="form-control" rows="3" placeholder="Comenta brevemente por qué tus compañeros deberían leerlo..." required></textarea>
+                </div>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer border-0 bg-light">
+            <button type="button" class="btn btn-secondary btn-round btn-border" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-primary btn-round shadow-sm" onclick="saveRecommendation()">Compartir con el equipo</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Modal para Carga de Imágenes -->
     <div class="modal fade" id="modal_upload_image" tabindex="-1" aria-labelledby="modalUploadImageLabel" aria-hidden="true">
       <div class="modal-dialog">
