@@ -8,6 +8,7 @@ const SCREENS = {
     client_create: ['cont_client_create', 'Clientes', 'Crear'],
     client_listing: ['cont_client_list', 'Clientes', 'Listar'],
     activities: ['cont_activities', 'Actividades', 'Tablero'],
+    activity_center: ['cont_activity_center', 'Actividades', 'Centro de Actividades'],
 }
 
 /* STATES */
@@ -98,6 +99,94 @@ $('#btn_open_client_list').on('click', function () {
 $('#btn_open_activities').on('click', function () {
     showScreen(SCREENS.activities);
 });
+
+// Abrir Centro de Actividades
+$('#btn_open_activity_center').on('click', function () {
+    showScreen(SCREENS.activity_center);
+    loadMockActivities();
+});
+
+// Load mock activities
+function loadMockActivities() {
+    const timeline = $('#admin_activity_timeline');
+    timeline.empty();
+
+    // Datos de prueba simulando actividades de la plataforma
+    const mockActivities = [
+        {
+            user: 'Sthefany Alviarez',
+            role: 'Administradora',
+            action: 'Ha registrado un nuevo cliente',
+            detail: 'Cliente "Hospital General Norte" fue añadido exitosamente.',
+            time: 'Hace 5 minutos',
+            icon: 'fas fa-user-plus',
+            bg: 'bg-primary'
+        },
+        {
+            user: 'Maikel Monzant',
+            role: 'Gerente',
+            action: 'Modificó un producto',
+            detail: 'Actualizó el stock de "Jeringas 10ml" de 50 a 200 unidades.',
+            time: 'Hace 23 minutos',
+            icon: 'fas fa-box-open',
+            bg: 'bg-info'
+        },
+        {
+            user: 'Angela Yepes',
+            role: 'Vendedor',
+            action: 'Añadió un comentario a un cliente',
+            detail: 'Comentario agregado en "Clínica San Jose": Se envió el portafolio actualizado.',
+            time: 'Hace 1 hora',
+            icon: 'fas fa-comment-dots',
+            bg: 'bg-secondary'
+        },
+        {
+            user: 'David Monzant',
+            role: 'Gerente',
+            action: 'Aprobó un nuevo acceso de usuario',
+            detail: 'Usuario "Luis Perez" habilitado en el sistema.',
+            time: 'Hace 3 horas',
+            icon: 'fas fa-check-circle',
+            bg: 'bg-success'
+        },
+        {
+            user: 'Sistema Automático',
+            role: 'Sistema',
+            action: 'Alerta de Stock Bajo',
+            detail: 'El producto "Guantes de Latex M" está por debajo del mínimo permitido (Quedan 5 cajas).',
+            time: 'Hace 4 horas',
+            icon: 'fas fa-exclamation-triangle',
+            bg: 'bg-danger'
+        }
+    ];
+
+    let html = '';
+    mockActivities.forEach((act, index) => {
+        let roleBadgeClass = act.role === 'Admin' ? 'bg-success' : (act.role === 'Sistema' ? 'bg-danger' : 'bg-dark');
+
+        // Agregar un retraso escalonado en la animación (0.1s por item)
+        let animationDelay = index * 0.15;
+
+        html += `
+        <div class="timeline-modern-item" style="animation-delay: ${animationDelay}s;">
+            <div class="timeline-modern-icon ${act.bg}">
+                <i class="${act.icon}"></i>
+            </div>
+            <div class="timeline-modern-content">
+                <div class="timeline-time"><i class="far fa-clock"></i> ${act.time}</div>
+                <div class="d-flex align-items-center mb-2">
+                    <span class="timeline-user">${act.user}</span>
+                    <span class="badge text-white timeline-badge-role ${roleBadgeClass}">${act.role}</span>
+                </div>
+                <h5 class="fw-bold mb-1">${act.action}</h5>
+                <p class="text-muted mb-0">${act.detail}</p>
+            </div>
+        </div>
+        `;
+    });
+
+    timeline.html(html);
+}
 
 // Función para abrir detalle de producto
 function openProductDetail(id) {
@@ -241,7 +330,7 @@ $('#catalog_list_productos').on('click', '[data-selector="abrir"]', function () 
     openProductDetail(id);
 });
 
-$('#btn_back_to_catalog').on('click', function() {
+$('#btn_back_to_catalog').on('click', function () {
     $('#cont_detalle_producto').addClass('d-none');
     $('#wrapper_catalog').removeClass('d-none');
     $('html, body').scrollTop($('#wrapper_catalog').offset().top - 100);
@@ -251,46 +340,46 @@ $('#tbl_list_clientes').on('click', '[data-selector="abrir_cliente"]', function 
     const row = $('#tbl_list_clientes').DataTable().row('#' + $(this).attr('data-id')).data();
     $('#cont_detalle_cliente').removeClass('d-none');
     $('html, body').scrollTop($('#cont_detalle_cliente').offset().top - 100);
-    
+
     $('#detalle_client_id').val(row.id);
     $('#detalle_cliente_nombre').text(row.nombre_cliente);
-    
+
     loadClientComments(row.id);
 });
 
-$('#form_add_comment').on('submit', function(e) {
+$('#form_add_comment').on('submit', function (e) {
     e.preventDefault();
     const btn = $(this).find('button[type="submit"]');
     btn.prop('disabled', true);
-    
+
     $.ajax({
-       url: SITE_URL + '/client/add_comment',
-       type: 'POST',
-       data: $(this).serialize(),
-       success: function(resp) {
-           if(resp.status==='success') {
-               $('#detalle_comment').val('');
-               loadClientComments($('#detalle_client_id').val());
-           } else {
-               swal('Error', resp.message, 'error');
-           }
-       },
-       complete: function() {
-           btn.prop('disabled', false);
-       }
+        url: SITE_URL + '/client/add_comment',
+        type: 'POST',
+        data: $(this).serialize(),
+        success: function (resp) {
+            if (resp.status === 'success') {
+                $('#detalle_comment').val('');
+                loadClientComments($('#detalle_client_id').val());
+            } else {
+                swal('Error', resp.message, 'error');
+            }
+        },
+        complete: function () {
+            btn.prop('disabled', false);
+        }
     });
 });
 
 function loadClientComments(clientId) {
     $('#list_client_comments').html('<li class="list-group-item text-center">Cargando...</li>');
-    $.get(SITE_URL + '/client/list_comments/' + clientId, function(resp) {
-        if(resp && resp.status === 'success') {
+    $.get(SITE_URL + '/client/list_comments/' + clientId, function (resp) {
+        if (resp && resp.status === 'success') {
             let html = '';
-            if(resp.data.length === 0) {
+            if (resp.data.length === 0) {
                 html = '<li class="list-group-item text-center text-muted">Sin evaluaciones registradas</li>';
             } else {
                 resp.data.forEach(item => {
-                   html += `<li class="list-group-item">
+                    html += `<li class="list-group-item">
                      <p class="mb-1">${item.comment}</p>
                      <small class="text-muted"><i class="fas fa-clock"></i> ${item.created_at}</small>
                    </li>`;
@@ -336,14 +425,14 @@ $('#btn_product_edit').on('click', function () {
         return;
     }
     $('#siigo_product_id_upload').val(productId);
-    
+
     // Reset modal state
     $('#file_input_image').val('');
     $('#image_preview_container').addClass('d-none');
     $('#image_preview').attr('src', '');
     $('#image_filename').text('');
     $('#drag_drop_area').removeClass('d-none');
-    
+
     $('#modal_upload_image').modal('show');
 });
 
@@ -355,7 +444,7 @@ let selectedFile = null;
 // Click en el area abre el input
 dropArea.addEventListener('click', () => fileInput.click());
 
-fileInput.addEventListener('change', function() {
+fileInput.addEventListener('change', function () {
     handleFiles(this.files);
 });
 
@@ -364,7 +453,7 @@ fileInput.addEventListener('change', function() {
     dropArea.addEventListener(eventName, preventDefaults, false);
 });
 
-function preventDefaults (e) {
+function preventDefaults(e) {
     e.preventDefault();
     e.stopPropagation();
 }
@@ -396,10 +485,10 @@ function handleDrop(e) {
 function handleFiles(files) {
     if (files.length > 0) {
         selectedFile = files[0];
-        
+
         // Mostrar preview
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = function (e) {
             $('#image_preview').attr('src', e.target.result);
             $('#image_filename').text(selectedFile.name);
             $('#drag_drop_area').addClass('d-none');
@@ -410,7 +499,7 @@ function handleFiles(files) {
 }
 
 // Subir Imagen via AJAX
-$('#btn_upload_image').on('click', function() {
+$('#btn_upload_image').on('click', function () {
     if (!selectedFile) {
         swal('Atención', 'Selecciona una imagen primero', 'warning');
         return;
@@ -430,29 +519,29 @@ $('#btn_upload_image').on('click', function() {
         data: formData,
         processData: false,
         contentType: false,
-        success: function(resp) {
+        success: function (resp) {
             // Verificar si es string y parsear (a veces CodeIgniter lo manda como string html)
-            if(typeof resp === 'string') {
+            if (typeof resp === 'string') {
                 try {
                     resp = JSON.parse(resp);
-                } catch(e) {}
+                } catch (e) { }
             }
 
             if (resp.status === 'success') {
                 swal('Éxito', 'Imagen subida correctamente', 'success');
                 $('#modal_upload_image').modal('hide');
-                
+
                 // Recargar las imágenes del producto automáticamente
                 $(`[data-selector="abrir"][data-id="${productId}"]`).trigger('click');
             } else {
                 swal('Error', resp.message || 'Error al subir la imagen', 'error');
             }
         },
-        error: function(xhr, status, error) {
+        error: function (xhr, status, error) {
             swal('Error', 'Hubo un problema de conexión', 'error');
             console.error(error);
         },
-        complete: function() {
+        complete: function () {
             btn.prop('disabled', false).text('Subir Imagen');
         }
     });
@@ -489,11 +578,11 @@ function loadCatalogProducts() {
         url: SITE_URL + '/product/listing_siigo',
         type: 'GET',
         dataType: 'json',
-        success: function(resp) {
+        success: function (resp) {
             globalProductsData = resp.data || [];
             renderCatalogProducts(globalProductsData);
         },
-        error: function(xhr, status, error) {
+        error: function (xhr, status, error) {
             $('#catalog_list_productos').html('<div class="col-12 text-center py-5 text-danger"><i class="fas fa-exclamation-triangle fa-3x mb-3"></i><p>Error al cargar el catálogo de productos.</p></div>');
         }
     });
@@ -510,11 +599,11 @@ function renderCatalogProducts(products) {
 
     // Agrupar por nombre similar
     const groupedProducts = {};
-    
+
     products.forEach(p => {
         // Normalizar nombre (minúsculas, sin espacios extra)
         let rawName = p.nombre ? p.nombre.toLowerCase().trim() : 'sin nombre';
-        
+
         // Si el grupo no existe, lo creamos y le asignamos este producto como el "principal"
         if (!groupedProducts[rawName]) {
             groupedProducts[rawName] = {
@@ -532,7 +621,7 @@ function renderCatalogProducts(products) {
     Object.values(groupedProducts).forEach(group => {
         let p = group.principal;
         let count = group.count;
-        
+
         let nombre = p.nombre ? p.nombre.charAt(0).toUpperCase() + p.nombre.slice(1) : 'Sin nombre';
         let categoria = p.id_categoria ? p.id_categoria.charAt(0).toUpperCase() + p.id_categoria.slice(1) : 'Sin categoría';
         let marca = p.id_marca ? p.id_marca.charAt(0).toUpperCase() + p.id_marca.slice(1) : 'Sin marca';
@@ -573,13 +662,13 @@ function renderCatalogProducts(products) {
 }
 
 // Búsqueda en catálogo
-$('#search_products').on('input', function() {
+$('#search_products').on('input', function () {
     let searchVal = $(this).val().toLowerCase();
-    $('.product-card-item').each(function() {
+    $('.product-card-item').each(function () {
         let nombre = $(this).data('nombre') || '';
         let categoria = $(this).data('categoria') || '';
         let marca = $(this).data('marca') || '';
-        
+
         if (nombre.includes(searchVal) || categoria.includes(searchVal) || marca.includes(searchVal)) {
             $(this).show();
         } else {

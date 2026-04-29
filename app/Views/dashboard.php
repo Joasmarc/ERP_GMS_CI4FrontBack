@@ -158,6 +158,12 @@
                   <p>Tablero</p>
                 </a>
               </li>
+              <li class="nav-item" style="background: transparent !important;">
+                <a href="#" id="btn_open_activity_center">
+                  <i class="fas fa-chart-line"></i>
+                  <p>Centro de Actividades</p>
+                </a>
+              </li>
             </ul>
           </div>
         </div>
@@ -798,6 +804,112 @@
                   </div>
                 </div>
               </div>
+            </div>
+
+            <!-- Activity Center View -->
+            <style>
+              .timeline-modern {
+                  position: relative;
+                  padding-left: 2rem;
+                  margin: 1.5rem 0;
+              }
+              .timeline-modern::before {
+                  content: '';
+                  position: absolute;
+                  top: 0;
+                  bottom: 0;
+                  left: 0.75rem;
+                  width: 3px;
+                  background: linear-gradient(180deg, #e9ecef 0%, #e9ecef 80%, rgba(233, 236, 239, 0) 100%);
+              }
+              .timeline-modern-item {
+                  position: relative;
+                  margin-bottom: 2rem;
+                  opacity: 0;
+                  transform: translateY(20px);
+                  animation: fadeInUp 0.5s ease forwards;
+              }
+              @keyframes fadeInUp {
+                  to { opacity: 1; transform: translateY(0); }
+              }
+              .timeline-modern-icon {
+                  position: absolute;
+                  left: -2.6rem;
+                  top: 0.2rem;
+                  width: 40px;
+                  height: 40px;
+                  border-radius: 50%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  color: white;
+                  box-shadow: 0 4px 10px rgba(0,0,0,.15);
+                  font-size: 1.2rem;
+                  z-index: 2;
+                  border: 3px solid #fff;
+              }
+              .timeline-modern-content {
+                  background: #fff;
+                  border-radius: 0.75rem;
+                  padding: 1.5rem;
+                  box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+                  border: 1px solid rgba(0,0,0,0.04);
+                  transition: transform 0.3s ease, box-shadow 0.3s ease;
+                  position: relative;
+              }
+              .timeline-modern-content:hover {
+                  transform: translateY(-3px);
+                  box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+              }
+              .timeline-modern-content::before {
+                  content: "";
+                  position: absolute;
+                  top: 15px;
+                  left: -8px;
+                  border-style: solid;
+                  border-width: 8px 8px 8px 0;
+                  border-color: transparent #fff transparent transparent;
+              }
+              .timeline-time {
+                  font-size: 0.85rem;
+                  color: #888;
+                  margin-bottom: 0.8rem;
+                  display: flex;
+                  align-items: center;
+                  gap: 0.4rem;
+              }
+              .timeline-user {
+                  font-weight: 700;
+                  color: #1a2035;
+                  font-size: 1.1rem;
+              }
+              .timeline-badge-role {
+                  font-size: 0.7rem;
+                  padding: 0.2rem 0.5rem;
+                  border-radius: 20px;
+                  margin-left: 0.5rem;
+                  font-weight: 600;
+              }
+            </style>
+            
+            <div id="cont_activity_center" class="row d-none">
+              <div class="col-md-12">
+                <div class="card card-round">
+                  <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="card-title text-primary"><i class="fas fa-satellite-dish me-2"></i>Centro de Actividades (Vista Administrador)</div>
+                    <span class="badge badge-success">En Vivo <span class="spinner-grow spinner-grow-sm text-success ms-1" role="status" aria-hidden="true" style="width: 10px; height: 10px;"></span></span>
+                  </div>
+                  <div class="card-body bg-light rounded-bottom">
+                    <p class="text-muted mb-4">Monitor de eventos de sistema. Datos de prueba cargados automáticamente.</p>
+                    
+                    <div class="timeline-modern" id="admin_activity_timeline">
+                      <!-- Renderizado por JS -->
+                    </div>
+                    
+                  </div>
+                </div>
+              </div>
+            </div>
             </div>
 
             <div id="cont_activities" class="row d-none">
