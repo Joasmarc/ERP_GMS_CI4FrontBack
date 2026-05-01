@@ -855,7 +855,9 @@ function showScreen(screenId) {
     }, 800)
 }
 
-// 1.1 Función para guardar implemento
+
+// developments
+
 function guardarImplemento() {
     // 1.2 Obtener valores del formulario
     const nombreProducto = document.getElementById('nombreProducto').value;
@@ -873,12 +875,12 @@ function guardarImplemento() {
 
     // 1.4 Mostrar mensaje de éxito
     swal('Éxito', 'Implemento médico guardado correctamente', 'success');
-    
+
     // 1.5 Limpiar formulario después de guardar
     limpiarFormulario();
 }
 
-// 2.0 Función para limpiar formulario
+
 function limpiarFormulario() {
     // 2.1 Restablecer todos los campos
     document.getElementById('nombreProducto').value = '';
@@ -887,12 +889,12 @@ function limpiarFormulario() {
     document.getElementById('modelo').value = '';
     document.getElementById('descripcion').value = '';
     document.getElementById('cantidad').value = '';
-    
+
     // 2.2 Enfocar el primer campo
     document.getElementById('nombreProducto').focus();
 }
 
-// 3.0 Función para cancelar
+
 function cancelar() {
     // 3.1 Confirmar antes de cancelar
     swal({
@@ -914,7 +916,7 @@ function guardarCliente() {
     const formData = new FormData(document.getElementById('form_client_create'));
     const nombreCliente = formData.get('nombre_cliente');
     const numeroDocumento = formData.get('numero_documento');
-    
+
     if (!nombreCliente || !numeroDocumento) {
         swal('Validación', 'Por favor complete todos los campos requeridos', 'warning');
         return;
@@ -932,11 +934,11 @@ function guardarCliente() {
         data: formData,
         processData: false,
         contentType: false,
-        success: function(resp) {
-            if(typeof resp === 'string') {
-                try { resp = JSON.parse(resp); } catch(e) {}
+        success: function (resp) {
+            if (typeof resp === 'string') {
+                try { resp = JSON.parse(resp); } catch (e) { }
             }
-            
+
             if (resp.status === 'success') {
                 swal('Éxito', 'Cliente guardado correctamente en la tabla', 'success');
                 document.getElementById('form_client_create').reset();
@@ -944,10 +946,10 @@ function guardarCliente() {
                 swal('Error', resp.message || 'Error al guardar el cliente', 'error');
             }
         },
-        error: function() {
+        error: function () {
             swal('Error', 'Hubo un problema de conexión intentando guardar en base de datos', 'error');
         },
-        complete: function() {
+        complete: function () {
             btn.disabled = false;
             btn.innerHTML = originalText;
         }
