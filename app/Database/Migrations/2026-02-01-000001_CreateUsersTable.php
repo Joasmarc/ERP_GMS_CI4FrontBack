@@ -32,6 +32,17 @@ class CreateUsersTable extends Migration
                 'type' => 'VARCHAR',
                 'constraint' => 4
             ],
+            // 1.5.1 Campo de credenciales
+            'credentials' => [
+                'type' => 'INT',
+                'null' => true
+            ],
+            // 1.5.2 Campo de género
+            'gender' => [
+                'type'       => 'ENUM',
+                'constraint' => ['male', 'female'],
+                'null'       => true
+            ],
             // 1.6 Timestamp de creación
             'created_at' => [
                 'type' => 'DATETIME',

@@ -15,7 +15,9 @@ class Users extends Model
     protected $allowedFields = [
         'name',
         'email',
-        'pin'
+        'pin',
+        'credentials',
+        'gender'
     ];
 
     // 3.0 Configurar tipos de datos
@@ -34,6 +36,8 @@ class Users extends Model
     protected $validationRules = [
         'name' => 'required|string|min_length[3]',
         'email' => 'required|valid_email|is_unique[users.email]',
-        'pin' => 'required|numeric|exact_length[4]'
+        'pin' => 'required|numeric|exact_length[4]',
+        'credentials' => 'permit_empty|integer',
+        'gender' => 'permit_empty|in_list[male,female]'
     ];
 }
