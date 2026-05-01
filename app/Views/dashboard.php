@@ -43,9 +43,13 @@
     <link rel="stylesheet" href="<?= base_url('public/assets/css/module/main.css') ?>" />
   </head>
   <body>
+
+    <!-- ======================================================== -->
+    <!--   MAIN                                               -->
+    <!-- ======================================================== -->
     <div class="wrapper">
 
-      <!-- Sidebar -->
+      <!-- Ini Sidebar -->
       <div class="sidebar" data-background-color="dark">
         <div class="sidebar-logo">
           <!-- Logo Header -->
@@ -176,7 +180,9 @@
       </div>
       <!-- End Sidebar -->
 
+       <!-- Ini Content -->
       <div class="main-panel">
+        <!-- Header -->
         <div class="main-header">
           <div class="main-header-logo">
             <!-- Logo Header -->
@@ -342,6 +348,7 @@
           <!-- End Navbar -->
         </div>
 
+        <!-- Body -->
         <div class="container">
           <div class="page-inner">
             <div class="page-header">
@@ -367,7 +374,7 @@
               </ul>
             </div>
 
-            <!-- SCREENS INI -->
+            <!-- Ini Screens -->
             <div id='cont_loading' class="row d-none">
               <div class="col-md-12 d-flex justify-content-center">
                 <!-- loading -->
@@ -1038,10 +1045,11 @@
               </div>
             </div>
 
-            <!-- SCREENS END -->
+            <!-- End Screens -->
           </div>
         </div>
 
+        <!-- Footers -->
         <footer class="footer">
           <div class="container-fluid d-flex justify-content-between">
             <div>
@@ -1051,7 +1059,12 @@
           </div>
         </footer>
       </div>
+      <!-- End Content -->
     </div>
+
+    <!-- ======================================================== -->
+    <!--   MODALES                                               -->
+    <!-- ======================================================== -->
     
     <!-- Modal para Recomendar Artículo -->
     <div class="modal fade" id="modal_recommend_article" tabindex="-1" aria-labelledby="modalRecommendLabel" aria-hidden="true">
@@ -1130,6 +1143,10 @@
         </div>
       </div>
     </div>
+
+    <!-- ======================================================== -->
+    <!--   SCRIPTS                                               -->
+    <!-- ======================================================== -->
     
     <!--   Core JS Files   -->
     <script src="<?= base_url('public/assets/js/core/jquery-3.7.1.min.js') ?>"></script>
@@ -1170,106 +1187,6 @@
     <!-- Main -->
     <script src="<?= base_url('public/assets/js/module/main.js') ?>"></script>
 
-    <!-- 1.0 Scripts personalizados para implementos médicos -->
-    <script>
-      // 1.1 Función para guardar implemento
-      function guardarImplemento() {
-        // 1.2 Obtener valores del formulario
-        const nombreProducto = document.getElementById('nombreProducto').value;
-        const capacidad = document.getElementById('capacidad').value;
-        const dimension = document.getElementById('dimension').value;
-        const modelo = document.getElementById('modelo').value;
-        const descripcion = document.getElementById('descripcion').value;
-        const cantidad = document.getElementById('cantidad').value;
 
-        // 1.3 Validar campos requeridos
-        if (!nombreProducto || !capacidad || !dimension || !modelo) {
-          swal('Validación', 'Por favor complete todos los campos requeridos', 'warning');
-          return;
-        }
-
-        // 1.4 Mostrar mensaje de éxito
-        swal('Éxito', 'Implemento médico guardado correctamente', 'success');
-        
-        // 1.5 Limpiar formulario después de guardar
-        limpiarFormulario();
-      }
-
-      // 2.0 Función para limpiar formulario
-      function limpiarFormulario() {
-        // 2.1 Restablecer todos los campos
-        document.getElementById('nombreProducto').value = '';
-        document.getElementById('capacidad').value = '';
-        document.getElementById('dimension').value = '';
-        document.getElementById('modelo').value = '';
-        document.getElementById('descripcion').value = '';
-        document.getElementById('cantidad').value = '';
-        
-        // 2.2 Enfocar el primer campo
-        document.getElementById('nombreProducto').focus();
-      }
-
-      // 3.0 Función para cancelar
-      function cancelar() {
-        // 3.1 Confirmar antes de cancelar
-        swal({
-          title: '¿Cancelar?',
-          text: 'Los datos no guardados se perderán',
-          icon: 'warning',
-          buttons: true,
-          dangerMode: true,
-        }).then((willCancel) => {
-          if (willCancel) {
-            // 3.2 Limpiar formulario si confirma
-            limpiarFormulario();
-            swal('Cancelado', 'Formulario limpiado', 'info');
-          }
-        });
-      }
-
-      function guardarCliente() {
-        const formData = new FormData(document.getElementById('form_client_create'));
-        const nombreCliente = formData.get('nombre_cliente');
-        const numeroDocumento = formData.get('numero_documento');
-        
-        if (!nombreCliente || !numeroDocumento) {
-          swal('Validación', 'Por favor complete todos los campos requeridos', 'warning');
-          return;
-        }
-
-        // Bloquear boton temporalmente
-        const btn = document.querySelector('#cont_client_create .btn-success');
-        const originalText = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
-
-        $.ajax({
-            url: SITE_URL + '/client/save', // Endpoint en backend
-            type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function(resp) {
-                if(typeof resp === 'string') {
-                    try { resp = JSON.parse(resp); } catch(e) {}
-                }
-                
-                if (resp.status === 'success') {
-                    swal('Éxito', 'Cliente guardado correctamente en la tabla', 'success');
-                    document.getElementById('form_client_create').reset();
-                } else {
-                    swal('Error', resp.message || 'Error al guardar el cliente', 'error');
-                }
-            },
-            error: function() {
-                swal('Error', 'Hubo un problema de conexión intentando guardar en base de datos', 'error');
-            },
-            complete: function() {
-                btn.disabled = false;
-                btn.innerHTML = originalText;
-            }
-        });
-      }
-    </script>
   </body>
 </html>

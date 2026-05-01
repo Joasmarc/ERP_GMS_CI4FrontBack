@@ -1,4 +1,7 @@
-/* GLOBAL */
+/* ======================================================== */
+/*   GLOBAL                                               */
+/* ======================================================== */
+
 const SITE_URL = window.location.hostname === 'localhost' ? 'http://localhost/adminitradorgm' : '';
 
 const SCREENS = {
@@ -12,10 +15,16 @@ const SCREENS = {
     news_wall: ['cont_news_wall', 'Actividades', 'Mural de Noticias'],
 }
 
-/* STATES */
+/* ======================================================== */
+/*   STATES                                               */
+/* ======================================================== */
+
 let globalProductsData = [];
 
-/* INIT */
+/* ======================================================== */
+/*   INIT                                                 */
+/* ======================================================== */
+
 $(function () {
 
     // Datatables
@@ -68,7 +77,9 @@ $(function () {
 
 });
 
-/* EVENTS */
+/* ======================================================== */
+/*   EVENTS                                                 */
+/* ======================================================== */
 
 // Abrir dashboard
 $('#btn_open_dashboard').on('click', function () {
@@ -796,8 +807,9 @@ $('#search_products').on('input', function () {
     });
 });
 
-
-/* UTILS */
+/* ======================================================== */
+/*   UTILS                                                */
+/* ======================================================== */
 
 function toggleLoader(isLoading) {
     // 1.4 Si isLoading es true, mostrar loader y bloquear
@@ -841,4 +853,103 @@ function showScreen(screenId) {
         toggleLoader(false)
         $('#' + screenId[0]).removeClass('d-none');
     }, 800)
+}
+
+// 1.1 Función para guardar implemento
+function guardarImplemento() {
+    // 1.2 Obtener valores del formulario
+    const nombreProducto = document.getElementById('nombreProducto').value;
+    const capacidad = document.getElementById('capacidad').value;
+    const dimension = document.getElementById('dimension').value;
+    const modelo = document.getElementById('modelo').value;
+    const descripcion = document.getElementById('descripcion').value;
+    const cantidad = document.getElementById('cantidad').value;
+
+    // 1.3 Validar campos requeridos
+    if (!nombreProducto || !capacidad || !dimension || !modelo) {
+        swal('Validación', 'Por favor complete todos los campos requeridos', 'warning');
+        return;
+    }
+
+    // 1.4 Mostrar mensaje de éxito
+    swal('Éxito', 'Implemento médico guardado correctamente', 'success');
+    
+    // 1.5 Limpiar formulario después de guardar
+    limpiarFormulario();
+}
+
+// 2.0 Función para limpiar formulario
+function limpiarFormulario() {
+    // 2.1 Restablecer todos los campos
+    document.getElementById('nombreProducto').value = '';
+    document.getElementById('capacidad').value = '';
+    document.getElementById('dimension').value = '';
+    document.getElementById('modelo').value = '';
+    document.getElementById('descripcion').value = '';
+    document.getElementById('cantidad').value = '';
+    
+    // 2.2 Enfocar el primer campo
+    document.getElementById('nombreProducto').focus();
+}
+
+// 3.0 Función para cancelar
+function cancelar() {
+    // 3.1 Confirmar antes de cancelar
+    swal({
+        title: '¿Cancelar?',
+        text: 'Los datos no guardados se perderán',
+        icon: 'warning',
+        buttons: true,
+        dangerMode: true,
+    }).then((willCancel) => {
+        if (willCancel) {
+            // 3.2 Limpiar formulario si confirma
+            limpiarFormulario();
+            swal('Cancelado', 'Formulario limpiado', 'info');
+        }
+    });
+}
+
+function guardarCliente() {
+    const formData = new FormData(document.getElementById('form_client_create'));
+    const nombreCliente = formData.get('nombre_cliente');
+    const numeroDocumento = formData.get('numero_documento');
+    
+    if (!nombreCliente || !numeroDocumento) {
+        swal('Validación', 'Por favor complete todos los campos requeridos', 'warning');
+        return;
+    }
+
+    // Bloquear boton temporalmente
+    const btn = document.querySelector('#cont_client_create .btn-success');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+
+    $.ajax({
+        url: SITE_URL + '/client/save', // Endpoint en backend
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(resp) {
+            if(typeof resp === 'string') {
+                try { resp = JSON.parse(resp); } catch(e) {}
+            }
+            
+            if (resp.status === 'success') {
+                swal('Éxito', 'Cliente guardado correctamente en la tabla', 'success');
+                document.getElementById('form_client_create').reset();
+            } else {
+                swal('Error', resp.message || 'Error al guardar el cliente', 'error');
+            }
+        },
+        error: function() {
+            swal('Error', 'Hubo un problema de conexión intentando guardar en base de datos', 'error');
+        },
+        complete: function() {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    });
 }
