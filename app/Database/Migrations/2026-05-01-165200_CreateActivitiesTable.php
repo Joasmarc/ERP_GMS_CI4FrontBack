@@ -15,19 +15,19 @@ class CreateActivitiesTable extends Migration
                 'unsigned'       => true,
                 'auto_increment' => true,
             ],
-            'posicion' => [
+            'position' => [
                 'type'       => 'INT',
                 'constraint' => 11,
             ],
-            'descripcion' => [
+            'description' => [
                 'type'       => 'VARCHAR',
                 'constraint' => '255',
             ],
-            'grupo' => [
+            'group' => [
                 'type'       => 'INT',
                 'constraint' => 11,
             ],
-            'estado' => [
+            'state' => [
                 'type'       => 'ENUM',
                 'constraint' => ['ACTIVO', 'INACTIVO'],
                 'default'    => 'ACTIVO',

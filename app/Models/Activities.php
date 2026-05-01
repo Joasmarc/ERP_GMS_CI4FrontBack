@@ -13,19 +13,19 @@ class Activities extends Model
 
     // 2.0 Configurar campos permitidos
     protected $allowedFields = [
-        'posicion',
-        'descripcion',
-        'grupo',
-        'estado'
+        'position',
+        'description',
+        'group',
+        'state'
     ];
 
     // 3.0 Configurar tipos de datos
     protected $castings = [
         'id' => 'int',
-        'posicion' => 'int',
-        'descripcion' => 'string',
-        'grupo' => 'int',
-        'estado' => 'string'
+        'position' => 'int',
+        'description' => 'string',
+        'group' => 'int',
+        'state' => 'string'
     ];
 
     // 4.0 Habilitar timestamps
@@ -33,9 +33,9 @@ class Activities extends Model
 
     // 5.0 Validación de datos
     protected $validationRules = [
-        'posicion' => 'required|is_natural',
-        'descripcion' => 'required|string|max_length[255]',
-        'grupo' => 'required|is_natural',
-        'estado' => 'required|in_list[ACTIVO,INACTIVO]'
+        'position' => 'required|is_natural',
+        'description' => 'required|string|max_length[255]',
+        'group' => 'required|is_natural',
+        'state' => 'required|in_list[ACTIVO,INACTIVO]'
     ];
 }
