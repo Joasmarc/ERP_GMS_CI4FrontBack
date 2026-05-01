@@ -6,101 +6,104 @@ use App\Models\Users;
 
 class Auth extends BaseController
 {
-    // 1.0 Inicializar propiedades del controlador
+    // Propiedades del controlador
     protected $userModel;
 
+    // Constructor
     public function __construct()
     {
-        // 1.1 Cargar modelo de usuario
         $this->userModel = new Users();
     }
 
-    // 2.0 Mostrar formulario de login
+    // Mostrar formulario de login
     public function login()
     {
-        // 2.1 Verificar si usuario ya está autenticado
+        // 1.0 Inicializar interfaz y verificar sesión - Iniciar variable de interfaz
+        $LOGIN = [];
+        // 1.1 Verificar si usuario ya está autenticado
         if (session()->has('user_id')) {
             return redirect()->to('/dashboard');
         }
 
-        // 2.2 Pasar datos a la vista
-        $data = [
+        // 2.0 Preparar datos para la vista
+        $viewData = [
             'title' => 'Login - Sistema de Administración'
         ];
 
-        // 2.3 Renderizar vista de login
-        return view('auth/login', $data);
+        // 3.0 Renderizar vista de login
+        return view('auth/login', $viewData);
     }
 
-    // 3.0 Procesar datos de login
+    // Procesar datos de login
     public function authenticate()
     {
-        // 3.1 Validar método POST
+        // 1.0 Inicializar interfaz y validar petición - Iniciar variable de interfaz
+        $AUTH = [];
+        // 1.1 Validar método POST
         if (!$this->request->is('post')) {
             return redirect()->to('login')->with('error', 'Método no permitido');
         }
 
-        // 3.2 Obtener datos del formulario
-        $email = trim($this->request->getPost('email'));
-        $pin = trim($this->request->getPost('pin'));
-
-        // 3.3 Validar campos requeridos
+        // 2.0 Obtener y validar datos del formulario - Obtener credenciales
+        $AUTH['EMAIL'] = trim($this->request->getPost('email'));
+        $AUTH['PIN'] = trim($this->request->getPost('pin'));
+        // 2.1 Configurar reglas de validación
         $validation = \Config\Services::validation();
         $validation->setRules([
             'email' => 'required|valid_email',
             'pin' => 'required|exact_length[4]'
         ]);
-
-        if (!$validation->run(['email' => $email, 'pin' => $pin])) {
-            $errors = $validation->getErrors();
-            log_message('error', 'Validación fallida: ' . json_encode($errors));
-            return redirect()->back()->withInput()->with('errors', $errors);
+        // 2.2 Ejecutar validación
+        if (!$validation->run(['email' => $AUTH['EMAIL'], 'pin' => $AUTH['PIN']])) {
+            $errores = $validation->getErrors();
+            log_message('error', 'Validación fallida: ' . json_encode($errores));
+            return redirect()->back()->withInput()->with('errors', $errores);
         }
 
-        // 3.4 Buscar usuario por email
-        $user = $this->userModel->where('email', $email)->first();
-
-        // 3.5 Verificar si usuario existe
-        if (!$user) {
+        // 3.0 Autenticar usuario - Buscar usuario por email
+        $AUTH['USER'] = $this->userModel->where('email', $AUTH['EMAIL'])->first();
+        // 3.1 Verificar si usuario existe
+        if (!$AUTH['USER']) {
             return redirect()->back()->with('error', 'Correo no encontrado');
         }
-
-        // 3.6 Verificar PIN
-        if ($user['pin'] !== $pin) {
+        // 3.2 Verificar PIN
+        if ($AUTH['USER']['pin'] !== $AUTH['PIN']) {
             return redirect()->back()->with('error', 'PIN incorrecto');
         }
 
-        // 3.7 Crear sesión de usuario
-        $sessionData = [
-            'user_id' => $user['id'],
-            'email' => $user['email'],
-            'name' => $user['name'],
-            'gender' => $user['gender'],
+        // 4.0 Configurar sesión de usuario - Crear estructura base de sesión
+        $sesion = [
+            'user_id' => $AUTH['USER']['id'],
+            'email' => $AUTH['USER']['email'],
+            'name' => $AUTH['USER']['name'],
+            'gender' => $AUTH['USER']['gender'],
+            'credentials' => $AUTH['USER']['credentials'],
             'isLoggedIn' => true
         ];
-
-        // 3.8 Obtener Token de Siigo
-        $siigoToken = $this->getSiigoToken();
-
-        // 3.9 Guardar sesión
-        if ($siigoToken) {
-            $sessionData['siigo_token'] = $siigoToken['access_token'];
-            $sessionData['siigo_token_expires'] = time() + $siigoToken['expires_in'];
+        // 4.1 Integrar Token de Siigo si está disponible
+        $token = $this->getSiigoToken();
+        if ($token) {
+            $sesion['siigo_token'] = $token['access_token'];
+            $sesion['siigo_token_expires'] = time() + $token['expires_in'];
         }
+        // 4.2 Guardar sesión
+        session()->set($sesion);
 
-        session()->set($sessionData);
-
-        // 4.0 Redirigir al dashboard
-        return redirect()->to('dashboard')->with('success', 'Bienvenido: ' . $user['name']);
+        // 5.0 Redirigir al dashboard
+        return redirect()->to('dashboard')->with('success', 'Bienvenido: ' . $AUTH['USER']['name']);
     }
 
-    // 5.0 Obtener token de la API de Siigo
+    // Obtener token de la API de Siigo
     private function getSiigoToken()
     {
-        $client = \Config\Services::curlrequest();
+        // 1.0 Inicializar interfaz y cliente HTTP - Iniciar variable de interfaz
+        $API = [];
+        // 1.1 Iniciar cliente HTTP
+        $httpClient = \Config\Services::curlrequest();
 
+        // 2.0 Realizar petición a la API y manejar respuesta - Ejecutar petición
         try {
-            $response = $client->post(env('SIIGO_AUTH_URL'), [
+            $response = $httpClient->post(env('SIIGO_AUTH_URL'), [
                 'headers' => [
                     'Partner-Id'   => env('SIIGO_PARTNER_ID'),
                     'Content-Type' => 'application/json',
@@ -109,28 +112,31 @@ class Auth extends BaseController
                     'username'   => env('SIIGO_USERNAME'),
                     'access_key' => env('SIIGO_ACCESS_KEY'),
                 ],
-                'http_errors' => false // Para manejar errores manualmente
+                'http_errors' => false
             ]);
-
+            // 2.1 Verificar respuesta exitosa
             if ($response->getStatusCode() === 200) {
                 return json_decode($response->getBody(), true);
             }
-
+            // 2.2 Manejar error de autenticación
             log_message('error', 'Error al autenticar en Siigo: ' . $response->getBody());
             return null;
         } catch (\Exception $e) {
+            // 2.3 Manejar excepción de conexión
             log_message('error', 'Excepción al conectar con Siigo: ' . $e->getMessage());
             return null;
         }
     }
 
-    // 6.0 Cerrar sesión
+    // Cerrar sesión
     public function logout()
     {
-        // 4.1 Destruir la sesión
+        // 1.0 Inicializar interfaz y destruir sesión - Iniciar variable de interfaz
+        $LOGOUT = [];
+        // 1.1 Destruir la sesión
         session()->destroy();
 
-        // 4.2 Redirigir al login
+        // 2.0 Redirigir al login
         return redirect()->to('/login')->with('success', 'Sesión cerrada correctamente');
     }
 }
