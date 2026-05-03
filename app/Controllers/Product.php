@@ -18,14 +18,14 @@ class Product extends BaseController
             ->join('pictures_products d', 'd.id_product = products.id', 'left')
             ->join('pictures e', 'e.id = d.id_picture', 'left')
             ->select("
-            products.id,
-            products.nombre,
-            products.presentacion,
-            products.observacion,
-            b.nombre as id_categoria,
-            c.nombre as id_marca,
-            MAX(e.path) as img"
-        )
+                products.id,
+                products.nombre,
+                products.presentacion,
+                products.observacion,
+                b.nombre as id_categoria,
+                c.nombre as id_marca,
+                MAX(e.path) as img
+            ")
             ->groupBy('products.id')
             ->get()->getResultArray();
 
@@ -82,7 +82,7 @@ class Product extends BaseController
                 if ($response->getStatusCode() === 200) {
                     // 2.6 Decodificar respuesta JSON
                     $siigoData = json_decode($response->getBody(), true);
-                    
+
                     // 2.7 Mapear datos al formato de DataTables
                     foreach ($siigoData['results'] as $product) {
                         $mappedData[] = [
@@ -118,7 +118,6 @@ class Product extends BaseController
 
             // 2.12 Enviar respuesta final
             exit(json_encode($data));
-
         } catch (\Exception $e) {
             log_message('error', 'Excepción listando productos Siigo: ' . $e->getMessage());
         }
@@ -146,9 +145,10 @@ class Product extends BaseController
         $data = $model->join('pictures_products a', 'a.id_product = products.id', 'left')
             ->join('pictures b', 'b.id = a.id_picture', 'left')
             ->where('products.id', $id_product)
-            ->select("
+            ->select(
+                "
             b.path as img"
-        )
+            )
             ->get()->getResultArray();
 
         // 3.4 Retornar JSON
@@ -169,10 +169,11 @@ class Product extends BaseController
         $data = $model->join('videos_products a', 'a.id_product = products.id', 'left')
             ->join('videos b', 'b.id = a.id_video', 'left')
             ->where('products.id', $id_product)
-            ->select("
+            ->select(
+                "
                 b.path as video
             "
-        )
+            )
             ->get()->getResultArray();
 
         // 4.4 Retornar JSON
@@ -191,12 +192,12 @@ class Product extends BaseController
 
         // 5.3 Obtener documentos asociados
         $data = $model->join('documents_products a', 'a.id_product = products.id', 'left')
-        ->join('documents b', 'b.id = a.id_document', 'left')
-        ->where('products.id', $id_product)
-        ->select("
+            ->join('documents b', 'b.id = a.id_document', 'left')
+            ->where('products.id', $id_product)
+            ->select("
             b.path, b.name
         ")
-        ->get()->getResultArray();
+            ->get()->getResultArray();
 
         // 5.4 Retornar JSON
         exit(json_encode(['documents' => $data]));
@@ -238,7 +239,7 @@ class Product extends BaseController
         // 6.7 Guardar en base de datos 
         // Nota: Se requiere que la base de datos se actualice primero con la migración para aceptar VARCHAR en id_product
         $db = \Config\Database::connect();
-        
+
         try {
             $db->transStart();
 
@@ -267,11 +268,10 @@ class Product extends BaseController
 
             // 6.8 Retornar éxito
             exit(json_encode([
-                'status' => 'success', 
+                'status' => 'success',
                 'message' => 'Imagen subida correctamente',
                 'path' => $pathData['path']
             ]));
-
         } catch (\Exception $e) {
             $db->transRollback();
             log_message('error', 'Error en base de datos subiendo imagen: ' . $e->getMessage());
