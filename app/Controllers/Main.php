@@ -21,10 +21,10 @@ class Main extends BaseController
             'user_id' => session('user_id'),
             'email'   => session('email'),
             'name'    => session('name'),
+            'gender' => session('gender'),
+            'credentials' => session('credentials'),
             'title'   => 'Dashboard - Sistema de Administración'
         ];
-        // 2.1 Formatear credenciales usando helper
-        $userData['credentials'] = pad_right_zeros((string) session('credentials'));
 
         // 3.0 Renderizar vista del dashboard
         return view('dashboard', $userData);

@@ -13,6 +13,7 @@ class Auth extends BaseController
     public function __construct()
     {
         $this->userModel = new Users();
+        helper('utils');
     }
 
     // Mostrar formulario de login
@@ -77,7 +78,8 @@ class Auth extends BaseController
             'email' => $AUTH['USER']['email'],
             'name' => $AUTH['USER']['name'],
             'gender' => $AUTH['USER']['gender'],
-            'credentials' => $AUTH['USER']['credentials'],
+            'credentials_raw' => $AUTH['USER']['credentials'],
+            'credentials' => null,
             'isLoggedIn' => true
         ];
         // 4.1 Integrar Token de Siigo si está disponible
@@ -86,7 +88,9 @@ class Auth extends BaseController
             $sesion['siigo_token'] = $token['access_token'];
             $sesion['siigo_token_expires'] = time() + $token['expires_in'];
         }
-        // 4.2 Guardar sesión
+        // 4.2 Formatear credenciales usando helper
+        $sesion['credentials'] = pad_right_zeros((string) $sesion['credentials_raw']);
+        // 4.3 Guardar sesión
         session()->set($sesion);
 
         // 5.0 Redirigir al dashboard
