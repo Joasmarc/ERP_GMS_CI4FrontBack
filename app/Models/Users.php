@@ -37,7 +37,7 @@ class Users extends Model
         'name' => 'required|string|min_length[3]',
         'email' => 'required|valid_email|is_unique[users.email]',
         'pin' => 'required|numeric|exact_length[4]',
-        'credentials' => 'permit_empty|integer',
+        'credentials' => 'permit_empty|string|max_length[55]',
         'gender' => 'permit_empty|in_list[male,female]'
     ];
 }

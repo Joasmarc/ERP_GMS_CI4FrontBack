@@ -34,7 +34,8 @@ class CreateUsersTable extends Migration
             ],
             // 1.5.1 Campo de credenciales
             'credentials' => [
-                'type' => 'INT',
+                'type' => 'VARCHAR',
+                'constraint' => 55,
                 'null' => true
             ],
             // 1.5.2 Campo de género
