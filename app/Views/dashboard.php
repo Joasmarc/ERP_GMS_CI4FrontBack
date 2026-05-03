@@ -93,88 +93,70 @@
                 <!-- <span class="badge badge-secondary">1</span> -->
               </a>
             </li>
-            <li class="nav-section">
-              <span class="sidebar-mini-icon">
-                <i class="fa fa-ellipsis-h"></i>
-              </span>
-              <h4 class="text-section">Productos</h4>
-            </li>
-            <li class="nav-item" style="background: transparent !important;">
-              <a href="#" id="btn_open_product_list">
-                <i class="fas fa-syringe"></i>
-                <p>Listar</p>
-                <!-- <span class="badge badge-secondary">1</span> -->
-              </a>
-            </li>
-            <li class="nav-item" style="background: transparent !important;">
-              <a href="#" id="btn_open_product_modify">
-                <i class="fas fa-pencil-ruler"></i>
-                <p>Modificar</p>
-              </a>
-            </li>
-            <li class="nav-section">
-              <span class="sidebar-mini-icon">
-                <i class="fa fa-ellipsis-h"></i>
-              </span>
-              <h4 class="text-section">Usuarios</h4>
-            </li>
-            <li class="nav-item" style="background: transparent !important;">
-              <a href="#" class="module_bloq">
-                <i class="fas fa-user-friends"></i>
-                <p>Listar</p>
-                <!-- <span class="badge badge-secondary">1</span> -->
-              </a>
-            </li>
-            <li class="nav-item" style="background: transparent !important;">
-              <a href="#" class="module_bloq">
-                <i class="fas fa-user-plus"></i>
-                <p>Crear</p>
-              </a>
-            </li>
-            <li class="nav-item" style="background: transparent !important;">
-              <a href="#" class="module_bloq">
-                <i class="fas fa-user-edit"></i>
-                <p>Modificar</p>
-              </a>
-            </li>
-            <li class="nav-section">
-              <h4 class="text-section">Clientes</h4>
-            </li>
-            <li class="nav-item" style="background: transparent !important;">
-              <a href="#" id="btn_open_client_list">
-                <i class="fas fa-user-lock"></i>
-                <p>Listar</p>
-              </a>
-            </li>
-            <li class="nav-item" style="background: transparent !important;">
-              <a href="#" id="btn_open_client_create">
-                <i class="fas fa-user-plus"></i>
-                <p>Crear</p>
-              </a>
-            <li class="nav-section">
-              <span class="sidebar-mini-icon">
-                <i class="fa fa-ellipsis-h"></i>
-              </span>
-              <h4 class="text-section">Actividades</h4>
-            </li>
-            <li class="nav-item" style="background: transparent !important;">
-              <a href="#" id="btn_open_activities">
-                <i class="fas fa-tasks"></i>
-                <p>Tablero</p>
-              </a>
-            </li>
-            <li class="nav-item" style="background: transparent !important;">
-              <a href="#" id="btn_open_activity_center">
-                <i class="fas fa-chart-line"></i>
-                <p>Centro de Actividades</p>
-              </a>
-            </li>
-            <li class="nav-item" style="background: transparent !important;">
-              <a href="#" id="btn_open_news_wall">
-                <i class="fas fa-newspaper"></i>
-                <p>Mural de Noticias</p>
-              </a>
-            </li>
+            <?php if ($credentials[3] === '1'): ?>
+              <li class="nav-section">
+                <span class="sidebar-mini-icon">
+                  <i class="fa fa-ellipsis-h"></i>
+                </span>
+                <h4 class="text-section">Suministros</h4>
+              </li>
+            <?php endif; ?>
+            <?php if ($credentials[4] === '1'): ?>
+              <li class="nav-item" style="background: transparent !important;">
+                <a href="#" id="btn_open_product_list">
+                  <i class="fas fa-syringe"></i>
+                  <p>Productos</p>
+                  <!-- <span class="badge badge-secondary">1</span> -->
+                </a>
+              </li>
+            <?php endif; ?>
+            <?php if ($credentials[0] === '1'): ?>
+              <li class="nav-section">
+                <span class="sidebar-mini-icon">
+                  <i class="fa fa-ellipsis-h"></i>
+                </span>
+                <h4 class="text-section">Seguridad</h4>
+              </li>
+              <?php if (isset($credentials[1]) && $credentials[1] === '1'): ?>
+                <li class="nav-item" style="background: transparent !important;">
+                  <a href="#" class="module_bloq">
+                    <i class="fas fa-user-friends"></i>
+                    <p>Usuarios</p>
+                    <!-- <span class="badge badge-secondary">1</span> -->
+                  </a>
+                </li>
+              <?php endif; ?>
+              <?php if (isset($credentials[2]) && $credentials[2] === '1'): ?>
+                <li class="nav-item" style="background: transparent !important;">
+                  <a href="#" class="module_bloq">
+                    <i class="fas fa-user-friends"></i>
+                    <p>Accesos</p>
+                    <!-- <span class="badge badge-secondary">1</span> -->
+                  </a>
+                </li>
+              <?php endif; ?>
+            <?php endif; ?>
+            <?php if ($credentials[5] === '1'): ?>
+              <li class="nav-section">
+                <h4 class="text-section">Ventas</h4>
+              </li>
+            <?php endif; ?>
+            <?php if ($credentials[6] === '1'): ?>
+              <li class="nav-item" style="background: transparent !important;">
+                <a href="#" id="btn_open_client_list">
+                  <i class="fas fa-user-lock"></i>
+                  <p>Clientes</p>
+                </a>
+              </li>
+            <?php endif; ?>
+            <?php if ($credentials[7] === '1'): ?>
+              <li class="nav-item" style="background: transparent !important;">
+                <a href="#" id="btn_open_client_create">
+                  <i class="fas fa-user-plus"></i>
+                  <p>Crear</p>
+                </a>
+              </li>
+            <?php endif; ?>
           </ul>
         </div>
       </div>
