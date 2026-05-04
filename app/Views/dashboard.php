@@ -577,7 +577,7 @@
                       <input id="in_presentacion_producto" disabled type="text" class="form-control form-control-lg">
                     </div>
                     <div class="form-group">
-                      <label for="in_marca_producto">Marca</label>
+                      <label for="in_marca_producto">Modelo</label>
                       <input id="in_marca_producto" disabled type="text" class="form-control form-control-lg">
                     </div>
                     <div class="form-group">
@@ -638,7 +638,7 @@
                             <th>ID</th>
                             <th>Presentación</th>
                             <th>Categoría</th>
-                            <th>Marca</th>
+                            <th>Modelo</th>
                             <th>Acción</th>
                           </tr>
                         </thead>
