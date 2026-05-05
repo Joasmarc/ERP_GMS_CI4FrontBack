@@ -637,7 +637,6 @@
                       <table class="table table-hover">
                         <thead>
                           <tr>
-                            <th>ID</th>
                             <th>Presentación</th>
                             <th>Categoría</th>
                             <th>Modelo</th>

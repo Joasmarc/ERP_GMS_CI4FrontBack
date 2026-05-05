@@ -338,8 +338,7 @@ function openProductDetail(id) {
             let badge = v.id == id ? '<span class="badge badge-success">Actual</span>' : '';
             variantsHtml += `
                 <tr>
-                    <td>${v.id} ${badge}</td>
-                    <td>${v.presentacion || 'N/A'}</td>
+                    <td>${v.presentacion || 'N/A'} ${badge}</td>
                     <td>${v.id_categoria || 'N/A'}</td>
                     <td>${v.id_marca || 'N/A'}</td>
                     <td>
