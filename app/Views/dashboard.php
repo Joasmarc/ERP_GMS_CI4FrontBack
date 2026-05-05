@@ -630,7 +630,7 @@
               <div class="col-md-12 d-none" id="cont_variantes_wrapper">
                 <div class="card">
                   <div class="card-header">
-                    <h4 class="card-title">Variantes Disponibles</h4>
+                    <h4 class="card-title">Referencias Disponibles</h4>
                   </div>
                   <div class="card-body">
                     <div class="table-responsive">

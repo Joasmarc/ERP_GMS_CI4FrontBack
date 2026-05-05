@@ -854,7 +854,7 @@ function renderCatalogProducts(products) {
         let presentacion = p.presentacion ? p.presentacion.charAt(0).toUpperCase() + p.presentacion.slice(1) : 'Sin presentación';
         let imgSrc = p.img ? (SITE_URL + '/' + p.img.replace(/^\/+/, '')) : (SITE_URL + '/public/assets/img/kaiadmin/favicon.ico');
 
-        let badgeHtml = count > 1 ? `<span class="badge badge-primary position-absolute" style="top: 10px; right: 10px; z-index: 2; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">${count} Variantes</span>` : '';
+        let badgeHtml = count > 1 ? `<span class="badge badge-primary position-absolute" style="top: 10px; right: 10px; z-index: 2; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">${count} Referencias</span>` : '';
 
         html += `
             <div class="col-sm-6 col-md-4 col-lg-3 mb-4 product-card-item" 
