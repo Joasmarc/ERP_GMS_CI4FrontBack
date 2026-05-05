@@ -1224,7 +1224,7 @@
   <script src="<?= base_url('public/assets/js/kaiadmin.min.js') ?>"></script>
 
   <!-- Main -->
-  <script src="<?= base_url('public/assets/js/module/main.js') ?>"></script>
+  <script src="<?= base_url('public/assets/js/module/main.js') ?>?v=<?= filemtime(ROOTPATH . 'public/assets/js/module/main.js') ?>"></script>
 
 
 </body>
