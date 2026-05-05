@@ -558,6 +558,7 @@
                 </div>
               </div>
 
+
               <div class="col-md-4">
                 <div class="card">
                   <div class="card-header">
@@ -590,35 +591,37 @@
               </div>
 
               <div class="col-md-7">
-                <div class="card">
-                  <div class="card-header">
-                    <h4 class="card-title">Imagenes</h4>
-                  </div>
-                  <div class="card-body">
-                    <div id="cont_imagenes_producto"></div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="col-md-7">
-                <div class="card">
-                  <div class="card-header">
-                    <h4 class="card-title">Videos</h4>
-                  </div>
-                  <div class="card-body">
-                    <div id="cont_videos_producto"></div>
+                <div class="col-md-12">
+                  <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                      <h4 class="card-title">Documentos</h4>
+                      <button id="btn_upload_pdf" class="btn btn-round btn-primary btn-sm"><i class="fas fa-upload"></i> Subir PDF</button>
+                    </div>
+                    <div class="card-body">
+                      <div id="cont_documentos_producto" class="row align-items-start">
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div class="col-md-5">
-                <div class="card">
-                  <div class="card-header d-flex justify-content-between align-items-center">
-                    <h4 class="card-title">Documentos</h4>
-                    <button id="btn_upload_pdf" class="btn btn-round btn-primary btn-sm"><i class="fas fa-upload"></i> Subir PDF</button>
+                <div class="col-md-12">
+                  <div class="card">
+                    <div class="card-header">
+                      <h4 class="card-title">Imagenes</h4>
+                    </div>
+                    <div class="card-body">
+                      <div id="cont_imagenes_producto"></div>
+                    </div>
                   </div>
-                  <div class="card-body">
-                    <div id="cont_documentos_producto" class="row align-items-start">
+                </div>
+
+                <div class="col-md-12">
+                  <div class="card">
+                    <div class="card-header">
+                      <h4 class="card-title">Videos</h4>
+                    </div>
+                    <div class="card-body">
+                      <div id="cont_videos_producto"></div>
                     </div>
                   </div>
                 </div>
