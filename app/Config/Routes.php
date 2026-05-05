@@ -35,6 +35,7 @@ $routes->group('product', ['filter' => 'cors'], static function ($routes) {
     $routes->get('document/(:num)', 'Product::listing_document/$1');
     $routes->get('document/(:any)', 'Product::listing_document/$1');
     $routes->post('upload_image', 'Product::upload_image');
+    $routes->post('upload_family_document', 'Product::upload_family_document');
 });
 
 // Preview Email Template Route

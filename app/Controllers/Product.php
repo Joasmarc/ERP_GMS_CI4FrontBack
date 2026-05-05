@@ -138,6 +138,22 @@ class Product extends BaseController
         // 3.6 Insertar familias nuevas en bloque
         if (!empty($new_families)) {
             $families_model->insertBatch(array_values($new_families));
+            // Actualizar arreglo de familias existentes con las nuevas IDs
+            $families_data = $families_model->findAll();
+            $existing_families = [];
+            foreach ($families_data as $family) {
+                $existing_families[$family['keyword']] = $family;
+            }
+        }
+        
+        // 3.7 Asignar family_id a los datos finales
+        foreach ($SIIGO['final_data'] as &$final_item) {
+            $keyword = trim($final_item['nombre']);
+            if (isset($existing_families[$keyword])) {
+                $final_item['family_id'] = $existing_families[$keyword]['id'];
+            } else {
+                $final_item['family_id'] = null;
+            }
         }
 
         // 4.0 Finalizar solicitud y enviar respuesta - Construir arreglo
@@ -193,18 +209,76 @@ class Product extends BaseController
     {
         // 1.0 Inicializar interfaz y modelo - Declarar interfaz y obtener ID
         $DOCUMENT = [];
-        $id_product = $this->request->getUri()->getSegment(3);
-        $model = new Products();
-        // 1.1 Obtener documentos asociados
-        $DOCUMENT['data'] = $model->join('documents_products a', 'a.id_product = products.id', 'left')
-            ->join('documents b', 'b.id = a.id_document', 'left')
-            ->where('products.id', $id_product)
+        $id = $this->request->getUri()->getSegment(3);
+        
+        // 1.1 Intentar obtener por ID de familia primero
+        $familyDocsModel = new \App\Models\FamilyDocuments();
+        $DOCUMENT['data'] = $familyDocsModel->join('documents b', 'b.id = family_documents.document_id', 'inner')
+            ->where('family_documents.family_id', $id)
             ->select("b.path, b.name")
             ->get()->getResultArray();
+            
+        // 1.2 Si no hay resultados y el ID parece ser de un producto legacy, buscar por producto
+        if (empty($DOCUMENT['data']) && is_numeric($id)) {
+            $model = new Products();
+            $DOCUMENT['data'] = $model->join('documents_products a', 'a.id_product = products.id', 'left')
+                ->join('documents b', 'b.id = a.id_document', 'inner')
+                ->where('products.id', $id)
+                ->select("b.path, b.name")
+                ->get()->getResultArray();
+        }
 
         // 2.0 Enviar respuesta JSON - Formatear y retornar datos
         $response = ['documents' => $DOCUMENT['data']];
         // 2.1 Finalizar con JSON
         exit(json_encode($response));
+    }
+
+    public function upload_family_document()
+    {
+        // 1.0 Validar entrada
+        $familyId = $this->request->getPost('family_id');
+        $file = $this->request->getFile('document');
+        $documentName = $this->request->getPost('document_name') ?: ($file ? $file->getClientName() : '');
+
+        if (!$familyId || !$file || !$file->isValid() || $file->getExtension() !== 'pdf') {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Archivo PDF inválido o falta family_id.']);
+        }
+
+        // 2.0 Subir archivo
+        $newName = $file->getRandomName();
+        $uploadPath = 'uploads/documents/';
+        
+        if (!is_dir(ROOTPATH . $uploadPath)) {
+            mkdir(ROOTPATH . $uploadPath, 0777, true);
+        }
+
+        $file->move(ROOTPATH . $uploadPath, $newName);
+        $publicPath = '/' . $uploadPath . $newName;
+
+        // 3.0 Registrar documento
+        $documentModel = new \App\Models\Documents();
+        $documentId = $documentModel->insert([
+            'name' => $documentName,
+            'path' => $publicPath
+        ]);
+
+        // 4.0 Vincular con familia
+        $familyDocsModel = new \App\Models\FamilyDocuments();
+        $familyDocsModel->insert([
+            'family_id' => $familyId,
+            'document_id' => $documentId
+        ]);
+
+        // 5.0 Retornar éxito
+        return $this->response->setJSON([
+            'status' => 'success',
+            'message' => 'Documento PDF vinculado exitosamente.',
+            'data' => [
+                'id' => $documentId,
+                'name' => $documentName,
+                'path' => $publicPath
+            ]
+        ]);
     }
 }

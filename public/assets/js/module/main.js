@@ -423,24 +423,31 @@ function openProductDetail(id) {
     })
 
     // Mostrar documentos 
-    $('#pills-tab').empty();
-    $('#pills-tabContent').empty();
+    $('#cont_documentos_producto').empty();
+    
+    // Guardar ID en el botón de subir PDF
+    $('#btn_upload_pdf').data('family-id', row.family_id || row.id);
+    
     $.ajax({
-        url: SITE_URL + '/product/document/' + row.id,
+        url: SITE_URL + '/product/document/' + (row.family_id || row.id),
         type: 'GET',
         dataType: 'json',
         success: function (resp) {
             if (resp.documents && resp.documents.length && resp.documents[0].name !== null) {
-                let tabsHtml = '';
-                let contentHtml = '';
-                let first = false;
+                let docsHtml = '';
                 resp.documents.forEach((document, index) => {
-                    first = index === 0 ? 'active' : '';
-                    tabsHtml += `<li class="nav-item submenu" role="presentation"><a class="nav-link ${first}" id="pills-${index}-tab" data-bs-toggle="pill" href="#pills-${index}" role="tab" aria-controls="pills-${index}" aria-selected="true">${document.name}</a></li>`;
-                    contentHtml += `<div class="tab-pane fade show ${first}" id="pills-${index}" role="tabpanel" aria-labelledby="pills-${index}-tab"><iframe src="${SITE_URL}${document.path}" style="width: 100%; height: 500px;"></iframe></div>`;
+                    docsHtml += `
+                        <div class="col-4 text-center mb-3">
+                            <a href="javascript:void(0)" class="text-danger text-decoration-none" onclick="viewPdf('${SITE_URL}${document.path}', '${document.name}')">
+                                <i class="fas fa-file-pdf fa-3x"></i>
+                                <p class="mt-2 mb-0 text-dark fw-bold" style="font-size:0.85rem; line-height: 1.2;">${document.name}</p>
+                            </a>
+                        </div>
+                    `;
                 });
-                $('#pills-tab').html(tabsHtml);
-                $('#pills-tabContent').html(contentHtml);
+                $('#cont_documentos_producto').html(docsHtml);
+            } else {
+                $('#cont_documentos_producto').html('<div class="col-12 text-center text-muted"><p>No hay documentos asociados</p></div>');
             }
         },
         error: function (xhr, status, error) {
@@ -673,6 +680,95 @@ $('#btn_upload_image').on('click', function () {
         },
         complete: function () {
             btn.prop('disabled', false).text('Subir Imagen');
+        }
+    });
+});
+
+// Función para abrir visor de PDF
+function viewPdf(url, title) {
+    $('#modalViewPdfLabel').text(title);
+    $('#pdf_viewer_iframe').attr('src', url);
+    $('#modal_view_pdf').modal('show');
+}
+
+// Limpiar iframe al cerrar el modal para detener la carga
+$('#modal_view_pdf').on('hidden.bs.modal', function () {
+    $('#pdf_viewer_iframe').attr('src', '');
+});
+
+// Lógica para Abrir Modal de Subida de Documento PDF
+$('#btn_upload_pdf').on('click', function () {
+    const familyId = $(this).data('family-id');
+    if (!familyId) {
+        swal('Error', 'No hay una familia seleccionada', 'error');
+        return;
+    }
+    $('#siigo_family_id_upload').val(familyId);
+
+    // Reset modal state
+    $('#pdf_document_name').val('');
+    $('#file_input_pdf').val('');
+
+    $('#modal_upload_pdf').modal('show');
+});
+
+// Subir Documento PDF via AJAX
+$('#btn_save_upload_pdf').on('click', function () {
+    const familyId = $('#siigo_family_id_upload').val();
+    const documentName = $('#pdf_document_name').val();
+    const fileInput = document.getElementById('file_input_pdf');
+    const selectedPdf = fileInput.files[0];
+
+    if (!selectedPdf) {
+        swal('Atención', 'Selecciona un archivo PDF primero', 'warning');
+        return;
+    }
+
+    if (selectedPdf.type !== 'application/pdf') {
+        swal('Atención', 'Solo se permiten archivos PDF', 'warning');
+        return;
+    }
+
+    let formData = new FormData();
+    formData.append('document', selectedPdf);
+    formData.append('family_id', familyId);
+    formData.append('document_name', documentName);
+
+    const btn = $(this);
+    btn.prop('disabled', true).text('Subiendo...');
+
+    $.ajax({
+        url: SITE_URL + '/product/upload_family_document',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function (resp) {
+            if (typeof resp === 'string') {
+                try {
+                    resp = JSON.parse(resp);
+                } catch (e) { }
+            }
+
+            if (resp.status === 'success') {
+                swal('Éxito', 'Documento PDF subido correctamente', 'success');
+                $('#modal_upload_pdf').modal('hide');
+
+                // Recargar los detalles del producto automáticamente
+                const productId = $('#btn_product_edit').data('id');
+                if (productId) {
+                    $(`[data-selector="abrir"][data-id="${productId}"]`).trigger('click');
+                }
+            } else {
+                swal('Error', resp.message || 'Error al subir el documento', 'error');
+            }
+        },
+        error: function (xhr, status, error) {
+            swal('Error', 'Hubo un problema de conexión', 'error');
+            console.error(error);
+        },
+        complete: function () {
+            btn.prop('disabled', false).text('Subir Documento');
         }
     });
 });

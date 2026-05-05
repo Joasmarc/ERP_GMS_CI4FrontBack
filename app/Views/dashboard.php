@@ -613,13 +613,12 @@
 
               <div class="col-md-5">
                 <div class="card">
-                  <div class="card-header">
+                  <div class="card-header d-flex justify-content-between align-items-center">
                     <h4 class="card-title">Documentos</h4>
+                    <button id="btn_upload_pdf" class="btn btn-round btn-primary btn-sm"><i class="fas fa-upload"></i> Subir PDF</button>
                   </div>
                   <div class="card-body">
-                    <ul class="nav nav-pills nav-secondary" id="pills-tab" role="tablist">
-                    </ul>
-                    <div class="tab-content mt-2 mb-3" id="pills-tabContent">
+                    <div id="cont_documentos_producto" class="row align-items-start">
                     </div>
                   </div>
                 </div>
@@ -1133,6 +1132,49 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-round btn-secondary" data-bs-dismiss="modal">Cancelar</button>
           <button type="button" class="btn btn-round btn-primary" id="btn_upload_image">Subir Imagen</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para Carga de Documentos PDF -->
+  <div class="modal fade" id="modal_upload_pdf" tabindex="-1" aria-labelledby="modalUploadPdfLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalUploadPdfLabel">Cargar Documento PDF para la Familia</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="siigo_family_id_upload">
+          <input type="hidden" id="siigo_product_id_for_reload">
+          <div class="form-group mb-3">
+            <label for="pdf_document_name">Nombre del Documento</label>
+            <input type="text" class="form-control" id="pdf_document_name" placeholder="Ej. Ficha Técnica">
+          </div>
+          <div class="form-group">
+            <label for="file_input_pdf">Seleccionar archivo PDF</label>
+            <input type="file" class="form-control" id="file_input_pdf" accept="application/pdf">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-round btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-round btn-primary" id="btn_save_upload_pdf">Subir Documento</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para Visor de PDF -->
+  <div class="modal fade" id="modal_view_pdf" tabindex="-1" aria-labelledby="modalViewPdfLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalViewPdfLabel">Visor de Documento</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-0" style="background-color: #525659;">
+          <iframe id="pdf_viewer_iframe" src="" style="width: 100%; height: 80vh; border: none; display: block;"></iframe>
         </div>
       </div>
     </div>
