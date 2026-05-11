@@ -558,7 +558,6 @@
                 </div>
               </div>
 
-
               <div class="col-md-4">
                 <div class="card">
                   <div class="card-header">
@@ -595,7 +594,9 @@
                   <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                       <h4 class="card-title">Documentos</h4>
-                      <button id="btn_upload_pdf" class="btn btn-round btn-primary btn-sm"><i class="fas fa-upload"></i> Subir PDF</button>
+                      <?php if (isset($credentials[8]) && $credentials[8] === '1'): ?>
+                        <button id="btn_upload_pdf" class="btn btn-round btn-primary btn-sm"><i class="fas fa-upload"></i> Subir PDF</button>
+                      <?php endif; ?>
                     </div>
                     <div class="card-body">
                       <div id="cont_documentos_producto" class="row align-items-start">
@@ -1223,6 +1224,9 @@
   <script src="<?= base_url('public/assets/js/kaiadmin.min.js') ?>"></script>
 
   <!-- Main -->
+  <script>
+    window.userCredentials = <?= json_encode($credentials ?? []) ?>;
+  </script>
   <script src="<?= base_url('public/assets/js/module/main.js') ?>?v=<?= filemtime(ROOTPATH . 'public/assets/js/module/main.js') ?>"></script>
 
 
