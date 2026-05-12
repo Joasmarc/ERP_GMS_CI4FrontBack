@@ -1,0 +1,104 @@
+<?php
+
+namespace App\Controllers;
+
+use App\Models\DispatchAdvices;
+use App\Models\DispatchAdviceItems;
+
+class Dispatch extends BaseController
+{
+    public function save()
+    {
+        // 1.0 Verificar sesión
+        if (!session()->has('user_id')) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'No autorizado']);
+        }
+
+        // 2.0 Recibir datos POST
+        $ciudad = $this->request->getPost('ciudad');
+        $cliente = $this->request->getPost('cliente');
+        $nit = $this->request->getPost('nit');
+        $adress = $this->request->getPost('adress');
+        $transferCode = $this->request->getPost('transfer_code');
+        $dispatcher = $this->request->getPost('dispatcher');
+        $observacion = $this->request->getPost('observacion');
+
+        $descripciones = $this->request->getPost('item_descripcion');
+        $cantidades = $this->request->getPost('item_cantidad');
+        $referencias = $this->request->getPost('item_referencia');
+        $lotes = $this->request->getPost('item_lote');
+
+        if (!$ciudad || !$cliente || !$nit || !$adress || !$transferCode || !$dispatcher) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Faltan campos obligatorios de la cabecera']);
+        }
+
+        if (empty($descripciones) || empty($cantidades) || empty($referencias) || empty($lotes)) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Debe haber al menos una línea con todos sus campos obligatorios (referencia, descripción, lote, cantidad)']);
+        }
+
+        // 3.0 Obtener último consecutivo de la ciudad
+        $dispatchModel = new DispatchAdvices();
+        
+        $lastDispatch = $dispatchModel->where('city', $ciudad)
+                                      ->orderBy('sequence', 'DESC')
+                                      ->first();
+        
+        $nextSequence = ($lastDispatch && isset($lastDispatch['sequence'])) ? ((int)$lastDispatch['sequence'] + 1) : 1;
+
+        // 4.0 Configurar fecha hora colombiana
+        $timezone = new \DateTimeZone('America/Bogota');
+        $date = new \DateTime('now', $timezone);
+        $createdAt = $date->format('Y-m-d H:i:s');
+
+        // 5.0 Preparar datos cabecera
+        $headerData = [
+            'client'        => $cliente,
+            'nit'           => $nit,
+            'adress'        => $adress,
+            'sequence'      => $nextSequence,
+            'city'          => $ciudad,
+            'transfer_code' => $transferCode,
+            'observation'   => $observacion,
+            'dispatcher'    => $dispatcher,
+            'did_user'      => session('user_id'),
+            'created_at'    => $createdAt,
+            'updated_at'    => $createdAt
+        ];
+
+        // 6.0 Guardar cabecera y obtener ID
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        $dispatchModel->insert($headerData);
+        $dispatchId = $dispatchModel->getInsertID();
+
+        // 7.0 Preparar y guardar items
+        $itemsModel = new DispatchAdviceItems();
+        
+        $itemsCount = count($descripciones);
+        for ($i = 0; $i < $itemsCount; $i++) {
+            $itemData = [
+                'id_base'         => $dispatchId,
+                'reference'       => $referencias[$i],
+                'description'     => $descripciones[$i],
+                'batch'           => $lotes[$i],
+                'quiantity'       => (int)$cantidades[$i],
+                'created_at'      => $createdAt,
+                'updated_at'      => $createdAt
+            ];
+            $itemsModel->insert($itemData);
+        }
+
+        $db->transComplete();
+
+        if ($db->transStatus() === false) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Error al guardar en base de datos']);
+        }
+
+        return $this->response->setJSON([
+            'status' => 'success', 
+            'message' => 'Remisión guardada correctamente con consecutivo ' . $nextSequence,
+            'sequence' => $nextSequence
+        ]);
+    }
+}

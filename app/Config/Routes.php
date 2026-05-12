@@ -23,6 +23,11 @@ $routes->group('client', ['filter' => 'cors'], static function ($routes) {
     $routes->get('list_comments/(:num)', 'Client::list_comments/$1');
 });
 
+// Dispatch (Remisiones)
+$routes->group('dispatch', ['filter' => 'cors'], static function ($routes) {
+    $routes->post('save', 'Dispatch::save');
+});
+
 // Products
 $routes->group('product', ['filter' => 'cors'], static function ($routes) {
     // $routes->options('(.*)', 'Home::cors');

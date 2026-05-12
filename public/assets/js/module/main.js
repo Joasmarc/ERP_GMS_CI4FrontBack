@@ -1056,3 +1056,107 @@ function guardarCliente() {
         }
     });
 }
+
+/* ======================================================== */
+/*   REMISIONES                                           */
+/* ======================================================== */
+
+function agregarLineaRemision() {
+    const tbody = document.getElementById('remision_items_body');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td>
+            <input type="text" class="form-control" name="item_referencia[]" required placeholder="Ej: REF-01">
+        </td>
+        <td>
+            <input type="text" class="form-control" name="item_descripcion[]" required placeholder="Descripción del item">
+        </td>
+        <td>
+            <input type="text" class="form-control" name="item_lote[]" required placeholder="Ej: L-01">
+        </td>
+        <td>
+            <input type="number" class="form-control" name="item_cantidad[]" required min="1" value="1">
+        </td>
+        <td class="text-center">
+            <button type="button" class="btn btn-danger btn-sm btn-round btn-remove-item" onclick="removerLineaRemision(this)"><i class="fas fa-trash"></i></button>
+        </td>
+    `;
+    tbody.appendChild(tr);
+}
+
+function removerLineaRemision(btn) {
+    const tr = btn.closest('tr');
+    if (document.querySelectorAll('#remision_items_body tr').length > 1) {
+        tr.remove();
+    } else {
+        swal('Atención', 'Debe haber al menos una línea en la remisión.', 'warning');
+    }
+}
+
+function guardarRemision() {
+    const ciudad = document.getElementById('remision_ciudad').value;
+    const transferCode = document.getElementById('remision_transfer_code').value;
+    const dispatcher = document.getElementById('remision_dispatcher').value;
+    const cliente = document.getElementById('remision_cliente').value;
+    const nit = document.getElementById('remision_nit').value;
+    const adress = document.getElementById('remision_adress').value;
+
+    if (!ciudad || !transferCode || !dispatcher || !cliente || !nit || !adress) {
+        swal('Validación', 'Por favor complete todos los campos requeridos de la cabecera', 'warning');
+        return;
+    }
+
+    const descripciones = document.getElementsByName('item_descripcion[]');
+    let isValid = true;
+    for (let i = 0; i < descripciones.length; i++) {
+        if (!descripciones[i].value.trim()) {
+            isValid = false;
+            break;
+        }
+    }
+
+    if (!isValid) {
+        swal('Validación', 'Por favor complete las descripciones de todos los items', 'warning');
+        return;
+    }
+
+    const form = document.getElementById('form_remision_create');
+    const formData = new FormData(form);
+
+    // Deshabilitar botón para evitar doble envío
+    const btn = document.querySelector('#remisiones_create_view .btn-success');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+
+    $.ajax({
+        url: SITE_URL + '/dispatch/save',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function (resp) {
+            if (typeof resp === 'string') {
+                try { resp = JSON.parse(resp); } catch (e) { }
+            }
+
+            if (resp.status === 'success') {
+                swal('Éxito', resp.message, 'success').then(() => {
+                    form.reset();
+                    $('#remisiones_create_view').addClass('d-none');
+                    $('#remisiones_list_view').removeClass('d-none');
+                });
+            } else {
+                swal('Error', resp.message || 'Error al guardar la remisión', 'error');
+            }
+        },
+        error: function () {
+            swal('Error', 'Hubo un problema de conexión con el servidor', 'error');
+        },
+        complete: function () {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    });
+}
+

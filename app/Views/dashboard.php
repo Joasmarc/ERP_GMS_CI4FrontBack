@@ -812,13 +812,15 @@
 
           <!-- Remisiones Screen -->
           <div id="cont_remisiones" class="row d-none">
-            <div class="col-md-12">
+
+            <!-- Vista de Lista de Remisiones -->
+            <div class="col-md-12" id="remisiones_list_view">
               <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                   <h4 class="card-title mb-0">Remisiones</h4>
                   <div class="card-tools">
                     <?php if (isset($credentials[11]) && $credentials[11] === '1'): ?>
-                      <button class="btn btn-round btn-primary">
+                      <button class="btn btn-round btn-primary" onclick="$('#remisiones_list_view').addClass('d-none'); $('#remisiones_create_view').removeClass('d-none');">
                         <span class="btn-label">
                           <i class="fa fa-plus"></i>
                         </span>
@@ -832,6 +834,129 @@
                 </div>
               </div>
             </div>
+
+            <!-- Vista de Crear Remisión -->
+            <div class="col-md-12 d-none" id="remisiones_create_view">
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-file-invoice"></i> Crear Remisión</span>
+                    <button class="btn btn-sm btn-secondary btn-round" onclick="$('#remisiones_create_view').addClass('d-none'); $('#remisiones_list_view').removeClass('d-none');">
+                      <i class="fas fa-arrow-left"></i> Volver
+                    </button>
+                  </div>
+                </div>
+                <div class="card-body">
+                  <form id="form_remision_create">
+                    <div class="row">
+                      <div class="col-md-4">
+                        <div class="form-group form-group-default">
+                          <label for="remision_ciudad">Ciudad</label>
+                          <select class="form-select" id="remision_ciudad" name="ciudad" required>
+                            <option value="">Seleccione una ciudad</option>
+                            <?php if (isset($cities) && is_array($cities)): ?>
+                              <?php foreach ($cities as $city): ?>
+                                <option value="<?= esc($city['id']) ?>"><?= esc($city['name']) ?></option>
+                              <?php endforeach; ?>
+                            <?php endif; ?>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-group form-group-default">
+                          <label for="remision_transfer_code">Código de Transferencia</label>
+                          <input type="text" class="form-control" id="remision_transfer_code" name="transfer_code" placeholder="Ej: TRF-123" required>
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-group form-group-default">
+                          <label for="remision_dispatcher">Despachador</label>
+                          <input type="text" class="form-control" id="remision_dispatcher" name="dispatcher" placeholder="Nombre de quien despacha" required>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="row">
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label for="remision_cliente">Cliente</label>
+                          <input type="text" class="form-control" id="remision_cliente" name="cliente" placeholder="Nombre del cliente" required>
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label for="remision_nit">NIT / ID</label>
+                          <input type="text" class="form-control" id="remision_nit" name="nit" placeholder="NIT del cliente" required>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="form-group form-group-default">
+                          <label for="remision_adress">Dirección de Envío</label>
+                          <input type="text" class="form-control" id="remision_adress" name="adress" placeholder="Dirección completa" required>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="row">
+                      <div class="col-md-12">
+                        <div class="form-group form-group-default">
+                          <label for="remision_observacion">Observaciones</label>
+                          <input type="text" class="form-control" id="remision_observacion" name="observacion" placeholder="Observaciones adicionales">
+                        </div>
+                      </div>
+                    </div>
+
+                    <hr>
+                    <h4 class="mt-4 mb-3">Líneas de Remisión</h4>
+                    <div class="table-responsive">
+                      <table class="table table-bordered table-hover" id="tbl_remision_items">
+                        <thead class="bg-light">
+                          <tr>
+                            <th>Referencia</th>
+                            <th>Descripción / Producto</th>
+                            <th width="150">Lote</th>
+                            <th width="120">Cantidad</th>
+                            <th width="80" class="text-center">Acción</th>
+                          </tr>
+                        </thead>
+                        <tbody id="remision_items_body">
+                          <tr>
+                            <td>
+                              <input type="text" class="form-control" name="item_referencia[]" required placeholder="Ej: REF-01">
+                            </td>
+                            <td>
+                              <input type="text" class="form-control" name="item_descripcion[]" required placeholder="Descripción del item">
+                            </td>
+                            <td>
+                              <input type="text" class="form-control" name="item_lote[]" required placeholder="Ej: L-01">
+                            </td>
+                            <td>
+                              <input type="number" class="form-control" name="item_cantidad[]" required min="1" value="1">
+                            </td>
+                            <td class="text-center">
+                              <button type="button" class="btn btn-danger btn-sm btn-round btn-remove-item" onclick="removerLineaRemision(this)"><i class="fas fa-trash"></i></button>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                      <button type="button" class="btn btn-info btn-sm btn-round mt-2" onclick="agregarLineaRemision()">
+                        <i class="fas fa-plus"></i> Agregar Línea
+                      </button>
+                    </div>
+
+                  </form>
+                </div>
+                <div class="card-action text-end">
+                  <button class="btn btn-round btn-secondary" onclick="document.getElementById('form_remision_create').reset()">
+                    <i class="fas fa-redo"></i> Limpiar
+                  </button>
+                  <button class="btn btn-round btn-success" onclick="guardarRemision()">
+                    <i class="fas fa-save"></i> Generar Remisión
+                  </button>
+                </div>
+              </div>
+            </div>
+
           </div>
 
           <!-- Activity Center View -->
