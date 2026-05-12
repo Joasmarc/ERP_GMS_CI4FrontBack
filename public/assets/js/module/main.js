@@ -74,6 +74,62 @@ $(function () {
                 }
             }
         });
+
+        // Datatable Remisiones
+        $("#tbl_list_remisiones").DataTable({
+            ajax: SITE_URL + '/dispatch/listing',
+            columns: [
+                { data: 'id' },
+                { 
+                    data: null,
+                    render: function (data, type, row) {
+                        const pre = (row.city_code ? row.city_code : (row.city_name ? row.city_name.substring(0,3) : 'GM')).toUpperCase();
+                        const seq = String(row.sequence).padStart(3, '0');
+                        return `${pre}-${seq}`;
+                    }
+                },
+                { data: 'client' },
+                { data: 'nit' },
+                { data: 'city_name' },
+                { 
+                    data: 'created_at',
+                    render: function(data) {
+                        return data ? data.split(' ')[0] : '';
+                    }
+                },
+                { data: 'id' }
+            ],
+            columnDefs: [
+                {
+                    targets: 6,
+                    className: 'text-center',
+                    render: function (data, type, row, meta) {
+                        return `<button class="btn btn-round btn-info btn-sm" onclick="verRemisionPdf(${row.id})"><i class="fas fa-file-pdf"></i> Ver</button>`;
+                    }
+                }
+            ],
+            rowId: "id",
+            processing: true,
+            serverSide: false,
+            pageLength: 10,
+            language: {
+                processing: 'Procesando...',
+                lengthMenu: 'Mostrar _MENU_ registros',
+                zeroRecords: 'No se encontraron resultados',
+                emptyTable: 'No hay datos disponibles',
+                info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
+                infoEmpty: 'Mostrando 0 a 0 de 0 registros',
+                infoFiltered: '(filtrado de _MAX_ registros totales)',
+                search: 'Buscar:',
+                paginate: {
+                    first: 'Primero',
+                    last: 'Último',
+                    next: 'Siguiente',
+                    previous: 'Anterior'
+                }
+            }
+        });
+
     });
 
 });
@@ -1145,6 +1201,9 @@ function guardarRemision() {
                     form.reset();
                     $('#remisiones_create_view').addClass('d-none');
                     $('#remisiones_list_view').removeClass('d-none');
+                    if ($.fn.DataTable.isDataTable('#tbl_list_remisiones')) {
+                        $('#tbl_list_remisiones').DataTable().ajax.reload(null, false);
+                    }
                 });
             } else {
                 swal('Error', resp.message || 'Error al guardar la remisión', 'error');
@@ -1160,3 +1219,8 @@ function guardarRemision() {
     });
 }
 
+function verRemisionPdf(id) {
+    const iframe = document.getElementById('remision_pdf_iframe');
+    iframe.src = SITE_URL + '/dispatch/view_pdf/' + id;
+    $('#modal_view_remision').modal('show');
+}

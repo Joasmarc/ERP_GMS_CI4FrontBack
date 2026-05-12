@@ -101,4 +101,45 @@ class Dispatch extends BaseController
             'sequence' => $nextSequence
         ]);
     }
+
+    public function listing()
+    {
+        $dispatchModel = new DispatchAdvices();
+        $db = \Config\Database::connect();
+        
+        // Hacemos JOIN con cities para obtener el nombre de la ciudad
+        $builder = $db->table('dispatch_advice da');
+        $builder->select('da.id, da.client, da.nit, da.adress, da.sequence, da.transfer_code, da.created_at, c.name as city_name, c.code as city_code');
+        $builder->join('cities c', 'c.id = da.city', 'left');
+        
+        $records = $builder->get()->getResultArray();
+
+        return $this->response->setJSON([
+            'data' => $records
+        ]);
+    }
+
+    public function view_pdf($id)
+    {
+        $db = \Config\Database::connect();
+        
+        $builder = $db->table('dispatch_advice da');
+        $builder->select('da.*, c.name as city_name, c.code as city_code');
+        $builder->join('cities c', 'c.id = da.city', 'left');
+        $builder->where('da.id', $id);
+        
+        $dispatch = $builder->get()->getRowArray();
+
+        if (!$dispatch) {
+            return "Remisión no encontrada.";
+        }
+
+        $itemsModel = new DispatchAdviceItems();
+        $items = $itemsModel->where('id_base', $id)->findAll();
+
+        return view('remision_pdf', [
+            'dispatch' => $dispatch,
+            'items' => $items
+        ]);
+    }
 }

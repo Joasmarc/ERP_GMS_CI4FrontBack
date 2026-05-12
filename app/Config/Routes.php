@@ -26,6 +26,8 @@ $routes->group('client', ['filter' => 'cors'], static function ($routes) {
 // Dispatch (Remisiones)
 $routes->group('dispatch', ['filter' => 'cors'], static function ($routes) {
     $routes->post('save', 'Dispatch::save');
+    $routes->get('listing', 'Dispatch::listing');
+    $routes->get('view_pdf/(:num)', 'Dispatch::view_pdf/$1');
 });
 
 // Products
