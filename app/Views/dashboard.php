@@ -157,6 +157,19 @@
                 </a>
               </li>
             <?php endif; ?>
+            <?php if ($credentials[9] === '1'): ?>
+              <li class="nav-section">
+                <h4 class="text-section">Logistica</h4>
+              </li>
+            <?php endif; ?>
+            <?php if ($credentials[10] === '1'): ?>
+              <li class="nav-item" style="background: transparent !important;">
+                <a href="#" id="btn_open_remisiones">
+                  <i class="icon-doc"></i>
+                  <p>Remisiones</p>
+                </a>
+              </li>
+            <?php endif; ?>
           </ul>
         </div>
       </div>
@@ -792,6 +805,30 @@
                 <div class="card-body">
                   <ul class="list-group list-group-bordered" id="list_client_comments">
                   </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Remisiones Screen -->
+          <div id="cont_remisiones" class="row d-none">
+            <div class="col-md-12">
+              <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                  <h4 class="card-title mb-0">Remisiones</h4>
+                  <div class="card-tools">
+                    <?php if (isset($credentials[11]) && $credentials[11] === '1'): ?>
+                      <button class="btn btn-round btn-primary">
+                        <span class="btn-label">
+                          <i class="fa fa-plus"></i>
+                        </span>
+                        Crear
+                      </button>
+                    <?php endif; ?>
+                  </div>
+                </div>
+                <div class="card-body">
+                  <!-- Contenido de remisiones -->
                 </div>
               </div>
             </div>

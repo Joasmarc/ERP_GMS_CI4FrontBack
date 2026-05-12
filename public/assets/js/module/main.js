@@ -13,6 +13,7 @@ const SCREENS = {
     activities: ['cont_activities', 'Actividades', 'Tablero'],
     activity_center: ['cont_activity_center', 'Actividades', 'Centro de Actividades'],
     news_wall: ['cont_news_wall', 'Actividades', 'Mural de Noticias'],
+    remisiones: ['cont_remisiones', 'Logística', 'Remisiones'],
 }
 
 /* ======================================================== */
@@ -105,6 +106,11 @@ $('#btn_open_client_create').on('click', function () {
 // Abrir clientes listar
 $('#btn_open_client_list').on('click', function () {
     showScreen(SCREENS.client_listing);
+});
+
+// Abrir remisiones
+$('#btn_open_remisiones').on('click', function () {
+    showScreen(SCREENS.remisiones);
 });
 
 // Abrir actividades (tablero)
