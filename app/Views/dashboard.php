@@ -865,7 +865,7 @@
                 <div class="card-body">
                   <form id="form_remision_create">
                     <div class="row">
-                      <div class="col-md-4">
+                      <div class="col-md-6">
                         <div class="form-group form-group-default">
                           <label for="remision_ciudad">Ciudad</label>
                           <select class="form-select" id="remision_ciudad" name="ciudad" required>
@@ -878,16 +878,10 @@
                           </select>
                         </div>
                       </div>
-                      <div class="col-md-4">
-                        <div class="form-group form-group-default">
-                          <label for="remision_transfer_code">Código de Transferencia</label>
-                          <input type="text" class="form-control" id="remision_transfer_code" name="transfer_code" placeholder="Ej: TRF-123" required>
-                        </div>
-                      </div>
-                      <div class="col-md-4">
+                      <div class="col-md-6">
                         <div class="form-group form-group-default">
                           <label for="remision_dispatcher">Despachador</label>
-                          <input type="text" class="form-control" id="remision_dispatcher" name="dispatcher" placeholder="Nombre de quien despacha" required>
+                          <input type="text" class="form-control" id="remision_dispatcher" name="dispatcher" placeholder="Nombre de quien despacha">
                         </div>
                       </div>
                     </div>
@@ -896,19 +890,19 @@
                       <div class="col-md-3">
                         <div class="form-group form-group-default">
                           <label for="remision_cliente">Cliente</label>
-                          <input type="text" class="form-control" id="remision_cliente" name="cliente" placeholder="Nombre del cliente" required>
+                          <input type="text" class="form-control" id="remision_cliente" name="cliente" placeholder="Nombre del cliente">
                         </div>
                       </div>
                       <div class="col-md-3">
                         <div class="form-group form-group-default">
                           <label for="remision_nit">NIT / ID</label>
-                          <input type="text" class="form-control" id="remision_nit" name="nit" placeholder="NIT del cliente" required>
+                          <input type="text" class="form-control" id="remision_nit" name="nit" placeholder="NIT del cliente">
                         </div>
                       </div>
                       <div class="col-md-6">
                         <div class="form-group form-group-default">
                           <label for="remision_adress">Dirección de Envío</label>
-                          <input type="text" class="form-control" id="remision_adress" name="adress" placeholder="Dirección completa" required>
+                          <input type="text" class="form-control" id="remision_adress" name="adress" placeholder="Dirección completa">
                         </div>
                       </div>
                     </div>
@@ -938,16 +932,16 @@
                         <tbody id="remision_items_body">
                           <tr>
                             <td>
-                              <input type="text" class="form-control" name="item_referencia[]" required placeholder="Ej: REF-01">
+                              <input type="text" class="form-control" name="item_referencia[]" placeholder="Ej: REF-01">
                             </td>
                             <td>
-                              <input type="text" class="form-control" name="item_descripcion[]" required placeholder="Descripción del item">
+                              <input type="text" class="form-control" name="item_descripcion[]" placeholder="Descripción del item">
                             </td>
                             <td>
-                              <input type="text" class="form-control" name="item_lote[]" required placeholder="Ej: L-01">
+                              <input type="text" class="form-control" name="item_lote[]" placeholder="Ej: L-01">
                             </td>
                             <td>
-                              <input type="number" class="form-control" name="item_cantidad[]" required min="1" value="1">
+                              <input type="number" class="form-control" name="item_cantidad[]" min="1" value="1">
                             </td>
                             <td class="text-center">
                               <button type="button" class="btn btn-danger btn-sm btn-round btn-remove-item" onclick="removerLineaRemision(this)"><i class="fas fa-trash"></i></button>

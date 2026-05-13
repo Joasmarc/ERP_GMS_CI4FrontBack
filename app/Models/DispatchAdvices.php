@@ -55,14 +55,14 @@ class DispatchAdvices extends Model
 
     // 5.0 Validación de datos
     protected $validationRules = [
-        'client'        => 'required|string|max_length[75]',
-        'nit'           => 'required|string|max_length[25]',
-        'adress'        => 'required|string|max_length[105]',
+        'client'        => 'permit_empty|string|max_length[75]',
+        'nit'           => 'permit_empty|string|max_length[25]',
+        'adress'        => 'permit_empty|string|max_length[105]',
         'sequence'      => 'required|integer',
-        'city'          => 'permit_empty|integer',
-        'transfer_code' => 'required|string|max_length[55]',
+        'city'          => 'required|integer',
+        'transfer_code' => 'permit_empty|string|max_length[55]',
         'observation'   => 'permit_empty|string|max_length[250]',
-        'dispatcher'    => 'required|string|max_length[55]',
+        'dispatcher'    => 'permit_empty|string|max_length[55]',
         'did_user'      => 'permit_empty|integer'
     ];
 }

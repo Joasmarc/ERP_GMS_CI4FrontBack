@@ -47,10 +47,10 @@ class DispatchAdviceItems extends Model
     // 5.0 Validación de datos
     protected $validationRules = [
         'id_base'         => 'permit_empty|integer',
-        'reference'       => 'required|string|max_length[75]',
-        'description'     => 'required|string|max_length[75]',
-        'batch'           => 'required|string|max_length[10]',
+        'reference'       => 'permit_empty|string|max_length[75]',
+        'description'     => 'permit_empty|string|max_length[75]',
+        'batch'           => 'permit_empty|string|max_length[10]',
         'expiration_date' => 'permit_empty|valid_date',
-        'quiantity'       => 'required|integer'
+        'quiantity'       => 'permit_empty|integer'
     ];
 }

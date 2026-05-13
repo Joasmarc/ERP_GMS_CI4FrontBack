@@ -28,21 +28,17 @@ class Dispatch extends BaseController
         $referencias = $this->request->getPost('item_referencia');
         $lotes = $this->request->getPost('item_lote');
 
-        if (!$ciudad || !$cliente || !$nit || !$adress || !$transferCode || !$dispatcher) {
-            return $this->response->setJSON(['status' => 'error', 'message' => 'Faltan campos obligatorios de la cabecera']);
-        }
-
-        if (empty($descripciones) || empty($cantidades) || empty($referencias) || empty($lotes)) {
-            return $this->response->setJSON(['status' => 'error', 'message' => 'Debe haber al menos una línea con todos sus campos obligatorios (referencia, descripción, lote, cantidad)']);
+        if (!$ciudad) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Falta el campo ciudad que es obligatorio para el consecutivo']);
         }
 
         // 3.0 Obtener último consecutivo de la ciudad
         $dispatchModel = new DispatchAdvices();
-        
+
         $lastDispatch = $dispatchModel->where('city', $ciudad)
-                                      ->orderBy('sequence', 'DESC')
-                                      ->first();
-        
+            ->orderBy('sequence', 'DESC')
+            ->first();
+
         $nextSequence = ($lastDispatch && isset($lastDispatch['sequence'])) ? ((int)$lastDispatch['sequence'] + 1) : 1;
 
         // 4.0 Configurar fecha hora colombiana
@@ -74,7 +70,7 @@ class Dispatch extends BaseController
 
         // 7.0 Preparar y guardar items
         $itemsModel = new DispatchAdviceItems();
-        
+
         $itemsCount = count($descripciones);
         for ($i = 0; $i < $itemsCount; $i++) {
             $itemData = [
@@ -96,7 +92,7 @@ class Dispatch extends BaseController
         }
 
         return $this->response->setJSON([
-            'status' => 'success', 
+            'status' => 'success',
             'message' => 'Remisión guardada correctamente con consecutivo ' . $nextSequence,
             'sequence' => $nextSequence
         ]);
@@ -106,12 +102,12 @@ class Dispatch extends BaseController
     {
         $dispatchModel = new DispatchAdvices();
         $db = \Config\Database::connect();
-        
+
         // Hacemos JOIN con cities para obtener el nombre de la ciudad
         $builder = $db->table('dispatch_advice da');
         $builder->select('da.id, da.client, da.nit, da.adress, da.sequence, da.transfer_code, da.created_at, c.name as city_name, c.code as city_code');
         $builder->join('cities c', 'c.id = da.city', 'left');
-        
+
         $records = $builder->get()->getResultArray();
 
         return $this->response->setJSON([
@@ -122,12 +118,12 @@ class Dispatch extends BaseController
     public function view_pdf($id)
     {
         $db = \Config\Database::connect();
-        
+
         $builder = $db->table('dispatch_advice da');
         $builder->select('da.*, c.name as city_name, c.code as city_code');
         $builder->join('cities c', 'c.id = da.city', 'left');
         $builder->where('da.id', $id);
-        
+
         $dispatch = $builder->get()->getRowArray();
 
         if (!$dispatch) {

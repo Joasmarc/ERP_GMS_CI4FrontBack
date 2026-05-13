@@ -1122,16 +1122,16 @@ function agregarLineaRemision() {
     const tr = document.createElement('tr');
     tr.innerHTML = `
         <td>
-            <input type="text" class="form-control" name="item_referencia[]" required placeholder="Ej: REF-01">
+            <input type="text" class="form-control" name="item_referencia[]" placeholder="Ej: REF-01">
         </td>
         <td>
-            <input type="text" class="form-control" name="item_descripcion[]" required placeholder="Descripción del item">
+            <input type="text" class="form-control" name="item_descripcion[]" placeholder="Descripción del item">
         </td>
         <td>
-            <input type="text" class="form-control" name="item_lote[]" required placeholder="Ej: L-01">
+            <input type="text" class="form-control" name="item_lote[]" placeholder="Ej: L-01">
         </td>
         <td>
-            <input type="number" class="form-control" name="item_cantidad[]" required min="1" value="1">
+            <input type="number" class="form-control" name="item_cantidad[]" min="1" value="1">
         </td>
         <td class="text-center">
             <button type="button" class="btn btn-danger btn-sm btn-round btn-remove-item" onclick="removerLineaRemision(this)"><i class="fas fa-trash"></i></button>
@@ -1151,28 +1151,9 @@ function removerLineaRemision(btn) {
 
 function guardarRemision() {
     const ciudad = document.getElementById('remision_ciudad').value;
-    const transferCode = document.getElementById('remision_transfer_code').value;
-    const dispatcher = document.getElementById('remision_dispatcher').value;
-    const cliente = document.getElementById('remision_cliente').value;
-    const nit = document.getElementById('remision_nit').value;
-    const adress = document.getElementById('remision_adress').value;
 
-    if (!ciudad || !transferCode || !dispatcher || !cliente || !nit || !adress) {
-        swal('Validación', 'Por favor complete todos los campos requeridos de la cabecera', 'warning');
-        return;
-    }
-
-    const descripciones = document.getElementsByName('item_descripcion[]');
-    let isValid = true;
-    for (let i = 0; i < descripciones.length; i++) {
-        if (!descripciones[i].value.trim()) {
-            isValid = false;
-            break;
-        }
-    }
-
-    if (!isValid) {
-        swal('Validación', 'Por favor complete las descripciones de todos los items', 'warning');
+    if (!ciudad) {
+        swal('Validación', 'Por favor seleccione una ciudad para generar el consecutivo', 'warning');
         return;
     }
 

@@ -121,11 +121,7 @@
                 <div
                     class="col-span-3 bg-accent-blue text-primary font-bold p-1 border-r border-primary flex items-center">
                     FECHA DE ELABORACIÓN:</div>
-                <div class="col-span-3 p-1 border-r border-primary flex items-center"><?= esc(date('Y-m-d', strtotime($dispatch['created_at']))) ?></div> <!-- Espacio Fecha -->
-                <div
-                    class="col-span-3 bg-accent-blue text-primary font-bold p-1 border-r border-primary flex items-center">
-                    CÓDIGO DE TRASLADO / ORDEN:</div>
-                <div class="col-span-3 p-1 flex items-center"><?= esc($dispatch['transfer_code']) ?></div> <!-- Espacio Orden -->
+                <div class="col-span-9 p-1 flex items-center"><?= esc(date('Y-m-d', strtotime($dispatch['created_at']))) ?></div> <!-- Espacio Fecha -->
             </div>
         </section>
 
