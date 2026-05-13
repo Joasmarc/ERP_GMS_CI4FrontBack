@@ -1131,6 +1131,9 @@ function agregarLineaRemision() {
             <input type="text" class="form-control" name="item_lote[]" placeholder="Ej: L-01">
         </td>
         <td>
+            <input type="date" class="form-control" name="item_vencimiento[]">
+        </td>
+        <td>
             <input type="number" class="form-control" name="item_cantidad[]" min="1" value="1">
         </td>
         <td class="text-center">

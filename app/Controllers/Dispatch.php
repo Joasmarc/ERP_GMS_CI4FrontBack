@@ -27,6 +27,7 @@ class Dispatch extends BaseController
         $cantidades = $this->request->getPost('item_cantidad');
         $referencias = $this->request->getPost('item_referencia');
         $lotes = $this->request->getPost('item_lote');
+        $vencimientos = $this->request->getPost('item_vencimiento');
 
         if (!$ciudad) {
             return $this->response->setJSON(['status' => 'error', 'message' => 'Falta el campo ciudad que es obligatorio para el consecutivo']);
@@ -78,6 +79,7 @@ class Dispatch extends BaseController
                 'reference'       => $referencias[$i],
                 'description'     => $descripciones[$i],
                 'batch'           => $lotes[$i],
+                'expiration_date' => !empty($vencimientos[$i]) ? $vencimientos[$i] : null,
                 'quiantity'       => (int)$cantidades[$i],
                 'created_at'      => $createdAt,
                 'updated_at'      => $createdAt

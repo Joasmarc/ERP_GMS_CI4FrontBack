@@ -925,6 +925,7 @@
                             <th>Referencia</th>
                             <th>Descripción / Producto</th>
                             <th width="150">Lote</th>
+                            <th width="140">F. Venc.</th>
                             <th width="120">Cantidad</th>
                             <th width="80" class="text-center">Acción</th>
                           </tr>
@@ -939,6 +940,9 @@
                             </td>
                             <td>
                               <input type="text" class="form-control" name="item_lote[]" placeholder="Ej: L-01">
+                            </td>
+                            <td>
+                              <input type="date" class="form-control" name="item_vencimiento[]">
                             </td>
                             <td>
                               <input type="number" class="form-control" name="item_cantidad[]" min="1" value="1">
