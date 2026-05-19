@@ -6,7 +6,7 @@ use App\Models\Cities;
 
 class Main extends BaseController
 {
-    // Mostrar el dashboard protegido
+    // Dasboard_G02 - Mostrar el dashboard protegido
     public function dashboard()
     {
         // 1.0 Inicializar interfaz, helpers y verificar sesión - Iniciar variable de interfaz

@@ -6,6 +6,7 @@ use App\Models\Products;
 
 class Product extends BaseController
 {
+    // Tabla_G03
     public function listing()
     {
         // 1.0 Inicializar interfaz y modelo - Declarar interfaz e instanciar modelo de productos
@@ -41,6 +42,7 @@ class Product extends BaseController
         exit(json_encode($response));
     }
 
+    // Tabla_G03
     public function listing_siigo()
     {
         // 1.0 Inicializar interfaz y verificar sesión - Obtener token de Siigo
@@ -145,7 +147,7 @@ class Product extends BaseController
                 $existing_families[$family['keyword']] = $family;
             }
         }
-        
+
         // 3.7 Asignar family_id a los datos finales
         foreach ($SIIGO['final_data'] as &$final_item) {
             $keyword = trim($final_item['nombre']);
@@ -167,57 +169,20 @@ class Product extends BaseController
         exit(json_encode($response_data));
     }
 
-    public function listing_img()
-    {
-        // 1.0 Inicializar interfaz y obtener datos - Declarar interfaz y obtener ID
-        $IMAGE = [];
-        $id_product = $this->request->getUri()->getSegment(3);
-        $model = new Products();
-        // 1.1 Obtener imágenes asociadas
-        $IMAGE['data'] = $model->join('pictures_products a', 'a.id_product = products.id', 'left')
-            ->join('pictures b', 'b.id = a.id_picture', 'left')
-            ->where('products.id', $id_product)
-            ->select("b.path as img")
-            ->get()->getResultArray();
-
-        // 2.0 Enviar respuesta JSON - Formatear y retornar datos
-        $response = ['imagePaths' => array_column($IMAGE['data'], 'img')];
-        // 2.1 Finalizar con JSON
-        exit(json_encode($response));
-    }
-
-    public function listing_video()
-    {
-        // 1.0 Inicializar interfaz y modelo - Declarar interfaz y obtener ID
-        $VIDEO = [];
-        $id_product = $this->request->getUri()->getSegment(3);
-        $model = new Products();
-        // 1.1 Obtener videos asociados
-        $VIDEO['data'] = $model->join('videos_products a', 'a.id_product = products.id', 'left')
-            ->join('videos b', 'b.id = a.id_video', 'left')
-            ->where('products.id', $id_product)
-            ->select("b.path as video")
-            ->get()->getResultArray();
-
-        // 2.0 Enviar respuesta JSON - Formatear y retornar datos
-        $response = ['videoPaths' => array_column($VIDEO['data'], 'video')];
-        // 2.1 Finalizar con JSON
-        exit(json_encode($response));
-    }
-
+    // Documentos_G03
     public function listing_document()
     {
         // 1.0 Inicializar interfaz y modelo - Declarar interfaz y obtener ID
         $DOCUMENT = [];
         $id = $this->request->getUri()->getSegment(3);
-        
+
         // 1.1 Intentar obtener por ID de familia primero
         $familyDocsModel = new \App\Models\FamilyDocuments();
         $DOCUMENT['data'] = $familyDocsModel->join('documents b', 'b.id = family_documents.document_id', 'inner')
             ->where('family_documents.family_id', $id)
             ->select("b.path, b.name")
             ->get()->getResultArray();
-            
+
         // 1.2 Si no hay resultados y el ID parece ser de un producto legacy, buscar por producto
         if (empty($DOCUMENT['data']) && is_numeric($id)) {
             $model = new Products();
@@ -234,6 +199,7 @@ class Product extends BaseController
         exit(json_encode($response));
     }
 
+    // Documentos_G03
     public function upload_family_document()
     {
         // 1.0 Validar entrada
@@ -248,7 +214,7 @@ class Product extends BaseController
         // 2.0 Subir archivo
         $newName = $file->getRandomName();
         $uploadPath = 'uploads/documents/';
-        
+
         if (!is_dir(ROOTPATH . $uploadPath)) {
             mkdir(ROOTPATH . $uploadPath, 0777, true);
         }

@@ -7,6 +7,7 @@ use App\Models\DispatchAdviceItems;
 
 class Dispatch extends BaseController
 {
+    // Formulario_G05
     public function save()
     {
         // 1.0 Verificar sesión
@@ -100,6 +101,7 @@ class Dispatch extends BaseController
         ]);
     }
 
+    // Tabla_G05
     public function listing()
     {
         $dispatchModel = new DispatchAdvices();
@@ -117,6 +119,7 @@ class Dispatch extends BaseController
         ]);
     }
 
+    // Tabla_G05
     public function view_pdf($id)
     {
         $db = \Config\Database::connect();

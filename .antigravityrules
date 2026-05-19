@@ -1,2 +1,14 @@
-Memorizar Politicas de desarollo del proyecto.
-Utilizar el SKILL.MD para metodos de un controlador y bloques js
+# Políticas de Desarrollo del Proyecto
+
+1. **Creación de Funciones (DRY / YAGNI):**
+   - NO desarrollar ni extraer lógica a nuevas funciones si dicha lógica no se repite. Si es una lógica de un solo uso, debe mantenerse en el flujo principal.
+
+2. **Separación de Responsabilidades (Cero Inline):**
+   - PROHIBIDO el uso de atributos de eventos en HTML como `onclick`, `onchange`, etc. Toda la lógica de eventos y comportamiento debe estar en archivos `.js` mediante EventListeners.
+   - PROHIBIDO el uso de estilos inline (`style="..."`). Todo el CSS debe residir en sus respectivos archivos de estilos.
+
+3. **Comentado Estricto en HTML:**
+   - Toda etiqueta HTML importante o agrupación de etiquetas debe ir acompañada de un comentario que describa básicamente su propósito o función dentro de la interfaz.
+
+4. **Orden y Estructura:**
+   - Colocar los elementos manteniendo un orden jerárquico y lógico claro. Las variables siempre se declaran al principio de los bloques, el código debe seguir un flujo secuencial, y en HTML/CSS los elementos deben estar estructurados lógicamente de arriba hacia abajo (encabezado, cuerpo, pie).

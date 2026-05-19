@@ -5,22 +5,16 @@
 const SITE_URL = window.location.hostname === 'localhost' ? 'http://localhost/adminitradorgm' : '';
 
 const SCREENS = {
-    dashboard: ['cont_dashboard', 'Inicio', 'Dashboard'],
-    product_create: ['cont_product_create', 'Productos', 'Crear'],
-    product_listing: ['cont_product_list', 'Productos', 'Listar'],
-    client_create: ['cont_client_create', 'Clientes', 'Crear'],
-    client_listing: ['cont_client_list', 'Clientes', 'Listar'],
-    activities: ['cont_activities', 'Actividades', 'Tablero'],
-    activity_center: ['cont_activity_center', 'Actividades', 'Centro de Actividades'],
-    news_wall: ['cont_news_wall', 'Actividades', 'Mural de Noticias'],
-    remisiones: ['cont_remisiones', 'Logística', 'Remisiones'],
+    dashboard: ['cont_dashboard', 'Dashboard'],
+    product_listing: ['cont_product', 'Productos'],
+    remisiones: ['cont_remisiones', 'Remisiones'],
 }
 
 /* ======================================================== */
 /*   STATES                                               */
 /* ======================================================== */
 
-let globalProductsData = [];
+let GLOBAL_PRODUCTS_DATA = [];
 
 /* ======================================================== */
 /*   INIT                                                 */
@@ -28,108 +22,138 @@ let globalProductsData = [];
 
 $(function () {
 
-    // Datatables
     $(document).ready(function () {
-        loadCatalogProducts();
+        // 0.0 Variables Macro
+        const MACRO_INIT = {
+            contenedor_catalogo: $('#catalog_list_productos'),
+            productos_agrupados: {},
+            html_catalogo: ''
+        };
 
-        // Datatable Clientes
-        $("#tbl_list_clientes").DataTable({
-            ajax: SITE_URL + '/client/listing',
-            columns: [
-                { data: 'id' },
-                { data: 'nombre_cliente' },
-                { data: 'tipo_documento' },
-                { data: 'numero_documento' },
-                { data: 'telefono_cliente' },
-                { data: 'correo_cliente' },
-                { data: 'direccion_cliente' },
-                { data: 'id' }
-            ],
-            columnDefs: [
-                {
-                    targets: 7,
-                    render: function (data, type, row, meta) {
-                        return `<button class="btn btn-round btn-primary btn-sm" data-selector="abrir_cliente" data-id="${row.id}"><i class="fas fa-share"></i></button>`;
+        // 1.0 Cargar catálogo de productos - Mostrar loader
+        MACRO_INIT.contenedor_catalogo.html('<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-3">Cargando catálogo...</p></div>');
+        // 1.1 Ejecutar petición AJAX
+        $.ajax({
+            url: SITE_URL + '/product/listing_siigo',
+            type: 'GET',
+            dataType: 'json',
+            success: function (resp) {
+                GLOBAL_PRODUCTS_DATA = resp.data || [];
+                // 2.0 Procesar productos obtenidos - Verificar si hay productos
+                MACRO_INIT.contenedor_catalogo.empty();
+                if (GLOBAL_PRODUCTS_DATA.length === 0) {
+                    MACRO_INIT.contenedor_catalogo.html('<div class="col-12 text-center py-5"><i class="fas fa-box-open fa-3x mb-3 text-muted"></i><p class="text-muted">No se encontraron productos disponibles.</p></div>');
+                    return;
+                }
+                // 2.1 Agrupar por nombre similar
+                GLOBAL_PRODUCTS_DATA.forEach(p => {
+                    let nombre_bruto = p.nombre ? p.nombre.toLowerCase().trim() : 'sin nombre';
+                    if (!MACRO_INIT.productos_agrupados[nombre_bruto]) {
+                        MACRO_INIT.productos_agrupados[nombre_bruto] = { principal: p, count: 1, ids: [p.id] };
+                    } else {
+                        MACRO_INIT.productos_agrupados[nombre_bruto].count++;
+                        MACRO_INIT.productos_agrupados[nombre_bruto].ids.push(p.id);
                     }
-                }
-            ],
-            rowId: "id",
-            processing: true,
-            serverSide: false,
-            pageLength: 10,
-            language: {
-                processing: 'Procesando...',
-                lengthMenu: 'Mostrar _MENU_ registros',
-                zeroRecords: 'No se encontraron resultados',
-                emptyTable: 'No hay datos disponibles',
-                info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
-                infoEmpty: 'Mostrando 0 a 0 de 0 registros',
-                infoFiltered: '(filtrado de _MAX_ registros totales)',
-                search: 'Buscar:',
-                paginate: {
-                    first: 'Primero',
-                    last: 'Último',
-                    next: 'Siguiente',
-                    previous: 'Anterior'
-                }
+                });
+                // 2.2 Generar HTML del catálogo
+                Object.values(MACRO_INIT.productos_agrupados).forEach(grupo => {
+                    let p = grupo.principal;
+                    let count = grupo.count;
+                    let nombre = p.nombre ? p.nombre.charAt(0).toUpperCase() + p.nombre.slice(1) : 'Sin nombre';
+                    let categoria = p.id_categoria ? p.id_categoria.charAt(0).toUpperCase() + p.id_categoria.slice(1) : 'Sin categoría';
+                    let marca = p.id_marca ? p.id_marca.charAt(0).toUpperCase() + p.id_marca.slice(1) : 'Sin marca';
+                    let presentacion = p.presentacion ? p.presentacion.charAt(0).toUpperCase() + p.presentacion.slice(1) : 'Sin presentación';
+                    let imgSrc = p.img ? (SITE_URL + '/' + p.img.replace(/^\/+/, '')) : (SITE_URL + '/public/assets/img/kaiadmin/favicon.ico');
+                    let badgeHtml = count > 1 ? `<span class="badge badge-primary position-absolute" style="top: 10px; right: 10px; z-index: 2; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">${count} Referencias</span>` : '';
+                    MACRO_INIT.html_catalogo += `
+                        <div class="col-sm-6 col-md-4 col-lg-3 mb-4 product-card-item" 
+                             data-nombre="${nombre.toLowerCase()}" 
+                             data-categoria="${categoria.toLowerCase()}" 
+                             data-marca="${marca.toLowerCase()}">
+                            <div class="card card-post card-round h-100 shadow-sm border-0 position-relative" 
+                                 style="transition: all 0.3s ease;"
+                                 onmouseover="this.style.transform='translateY(-5px)'; this.classList.remove('shadow-sm'); this.classList.add('shadow');" 
+                                 onmouseout="this.style.transform='none'; this.classList.remove('shadow'); this.classList.add('shadow-sm');">
+                                ${badgeHtml}
+                                <div class="card-img-container p-3 d-flex align-items-center justify-content-center" style="height: 200px; background-color: #f8f9fa; border-radius: 10px 10px 0 0;">
+                                    <img class="card-img-top" src="${imgSrc}" alt="${nombre}" style="max-height: 100%; max-width: 100%; object-fit: contain;">
+                                </div>
+                                <div class="card-body d-flex flex-column">
+                                    <h3 class="card-title text-primary font-weight-bold mb-3" style="font-size: 1.1rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.8rem;">${nombre}</h3>
+                                    <div class="mb-auto">
+                                        <p class="card-text text-muted mb-1"><i class="fas fa-tags text-secondary me-2"></i> <small>${categoria}</small></p>
+                                        <p class="card-text text-muted mb-1"><i class="fas fa-industry text-secondary me-2"></i> <small>${marca}</small></p>
+                                        <p class="card-text text-muted mb-3"><i class="fas fa-box text-secondary me-2"></i> <small>${presentacion}</small></p>
+                                    </div>
+                                    <button class="btn btn-primary btn-border btn-round btn-sm w-100 mt-3" data-selector="abrir" data-id="${p.id}">
+                                        <i class="fas fa-share"></i> Ver Detalles
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                // 2.3 Renderizar HTML en contenedor
+                MACRO_INIT.contenedor_catalogo.html(MACRO_INIT.html_catalogo);
+            },
+            error: function (xhr, status, error) {
+                MACRO_INIT.contenedor_catalogo.html('<div class="col-12 text-center py-5 text-danger"><i class="fas fa-exclamation-triangle fa-3x mb-3"></i><p>Error al cargar el catálogo de productos.</p></div>');
             }
         });
+    });
 
-        // Datatable Remisiones
-        $("#tbl_list_remisiones").DataTable({
-            ajax: SITE_URL + '/dispatch/listing',
-            columns: [
-                { data: 'id' },
-                { 
-                    data: null,
-                    render: function (data, type, row) {
-                        const pre = (row.city_code ? row.city_code : (row.city_name ? row.city_name.substring(0,3) : 'GM')).toUpperCase();
-                        const seq = String(row.sequence).padStart(3, '0');
-                        return `${pre}-${seq}`;
-                    }
-                },
-                { data: 'client' },
-                { data: 'nit' },
-                { data: 'city_name' },
-                { 
-                    data: 'created_at',
-                    render: function(data) {
-                        return data ? data.split(' ')[0] : '';
-                    }
-                },
-                { data: 'id' }
-            ],
-            columnDefs: [
-                {
-                    targets: 6,
-                    className: 'text-center',
-                    render: function (data, type, row, meta) {
-                        return `<button class="btn btn-round btn-info btn-sm" onclick="verRemisionPdf(${row.id})"><i class="fas fa-file-pdf"></i> Ver</button>`;
-                    }
+    $("#tbl_list_remisiones").DataTable({
+        ajax: SITE_URL + '/dispatch/listing',
+        columns: [
+            { data: 'id' },
+            { 
+                data: null,
+                render: function (data, type, row) {
+                    const pre = (row.city_code ? row.city_code : (row.city_name ? row.city_name.substring(0,3) : 'GM')).toUpperCase();
+                    const seq = String(row.sequence).padStart(3, '0');
+                    return `${pre}-${seq}`;
                 }
-            ],
-            rowId: "id",
-            processing: true,
-            serverSide: false,
-            pageLength: 10,
-            language: {
-                processing: 'Procesando...',
-                lengthMenu: 'Mostrar _MENU_ registros',
-                zeroRecords: 'No se encontraron resultados',
-                emptyTable: 'No hay datos disponibles',
-                info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
-                infoEmpty: 'Mostrando 0 a 0 de 0 registros',
-                infoFiltered: '(filtrado de _MAX_ registros totales)',
-                search: 'Buscar:',
-                paginate: {
-                    first: 'Primero',
-                    last: 'Último',
-                    next: 'Siguiente',
-                    previous: 'Anterior'
+            },
+            { data: 'client' },
+            { data: 'nit' },
+            { data: 'city_name' },
+            { 
+                data: 'created_at',
+                render: function(data) {
+                    return data ? data.split(' ')[0] : '';
+                }
+            },
+            { data: 'id' }
+        ],
+        columnDefs: [
+            {
+                targets: 6,
+                className: 'text-center',
+                render: function (data, type, row, meta) {
+                    return `<button class="btn btn-round btn-info btn-sm" data-selector="ver_remision_pdf" data-id="${row.id}"><i class="fas fa-file-pdf"></i> Ver</button>`;
                 }
             }
-        });
-
+        ],
+        rowId: "id",
+        processing: true,
+        serverSide: false,
+        pageLength: 10,
+        language: {
+            processing: 'Procesando...',
+            lengthMenu: 'Mostrar _MENU_ registros',
+            zeroRecords: 'No se encontraron resultados',
+            emptyTable: 'No hay datos disponibles',
+            info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
+            infoEmpty: 'Mostrando 0 a 0 de 0 registros',
+            infoFiltered: '(filtrado de _MAX_ registros totales)',
+            search: 'Buscar:',
+            paginate: {
+                first: 'Primero',
+                last: 'Último',
+                next: 'Siguiente',
+                previous: 'Anterior'
+            }
+        }
     });
 
 });
@@ -138,310 +162,101 @@ $(function () {
 /*   EVENTS                                                 */
 /* ======================================================== */
 
-// Abrir dashboard
+// Main - Abrir dashboard
 $('#btn_open_dashboard').on('click', function () {
     showScreen(SCREENS.dashboard);
 });
 
-// Abrir productos crear
-$('#btn_open_product_create').on('click', function () {
-    showScreen(SCREENS.product_create);
-});
-
-// Abrir productos listar
+// Main - Abrir productos listar
 $('#btn_open_product_list').on('click', function () {
-
     showScreen(SCREENS.product_listing);
 });
 
-// Abrir clientes crear
-$('#btn_open_client_create').on('click', function () {
-    showScreen(SCREENS.client_create);
-});
-
-// Abrir clientes listar
-$('#btn_open_client_list').on('click', function () {
-    showScreen(SCREENS.client_listing);
-});
-
-// Abrir remisiones
+// Main - Abrir remisiones
 $('#btn_open_remisiones').on('click', function () {
     showScreen(SCREENS.remisiones);
 });
 
-// Abrir actividades (tablero)
-$('#btn_open_activities').on('click', function () {
-    showScreen(SCREENS.activities);
-});
+// Tabla_G03 - Búsqueda en catálogo
+$('#search_products').on('input', function () {
+    let searchVal = $(this).val().toLowerCase();
+    $('.product-card-item').each(function () {
+        let nombre = $(this).data('nombre') || '';
+        let categoria = $(this).data('categoria') || '';
+        let marca = $(this).data('marca') || '';
 
-// Abrir Centro de Actividades
-$('#btn_open_activity_center').on('click', function () {
-    showScreen(SCREENS.activity_center);
-    loadMockActivities();
-});
-
-// Abrir Mural de Noticias
-$('#btn_open_news_wall').on('click', function () {
-    showScreen(SCREENS.news_wall);
-    loadNewsWall();
-});
-
-// Cargar Mural de Noticias
-function loadNewsWall() {
-    const container = $('#news_wall_grid');
-    container.empty();
-
-    const mockNews = [
-        {
-            title: 'Nuevos avances en suministros médicos para 2026',
-            summary: 'Conoce las últimas tendencias en materiales y equipos médicos que revolucionarán el mercado este año.',
-            category: 'Salud',
-            author: 'Jose Perez',
-            date: 'Hace 2 horas',
-            image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=800&auto=format&fit=crop',
-            color: 'primary',
-            url: 'https://gm-suministros.test/noticia-1'
-        },
-        {
-            title: 'Impacto de la Inteligencia Artificial en la logística',
-            summary: 'Un análisis profundo sobre cómo la IA está optimizando las cadenas de suministro a nivel global.',
-            category: 'Tecnología',
-            author: 'Sthefany Alviarez',
-            date: 'Ayer',
-            image: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800&auto=format&fit=crop',
-            color: 'info',
-            url: 'https://gm-suministros.test/noticia-2'
-        },
-        {
-            title: 'Mejores prácticas para atención al cliente B2B',
-            summary: 'Estrategias clave para mantener relaciones duraderas con clientes corporativos en el sector salud.',
-            category: 'Negocios',
-            author: 'Maikel Monzant',
-            date: 'Hace 3 días',
-            image: 'https://images.unsplash.com/photo-1556761175-5973dc0f32b7?w=800&auto=format&fit=crop',
-            color: 'success',
-            url: 'https://gm-suministros.test/noticia-3'
-        },
-        {
-            title: 'Innovación en empaques biodegradables',
-            summary: 'La sostenibilidad es clave. Descubre cómo los nuevos empaques están reduciendo la huella de carbono.',
-            category: 'Innovación',
-            author: 'Angela Yepes',
-            date: 'Hace 1 semana',
-            image: 'https://images.unsplash.com/photo-1605600659873-d808a13e4d2a?w=800&auto=format&fit=crop',
-            color: 'warning',
-            url: 'https://gm-suministros.test/noticia-4'
-        },
-        {
-            title: 'Gestión efectiva del trabajo remoto',
-            summary: 'Consejos para liderar equipos distribuidos manteniendo altos niveles de motivación y compromiso.',
-            category: 'Cultura de Empresa',
-            author: 'David Monzant',
-            date: 'Hace 2 semanas',
-            image: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800&auto=format&fit=crop',
-            color: 'secondary',
-            url: 'https://gm-suministros.test/noticia-5'
-        },
-        {
-            title: 'Perspectivas económicas 2026',
-            summary: 'Lo que todo gerente debe saber sobre los indicadores macroeconómicos y su impacto en las importaciones.',
-            category: 'Negocios',
-            author: 'Admin General',
-            date: 'Hace 1 mes',
-            image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&auto=format&fit=crop',
-            color: 'danger',
-            url: 'https://gm-suministros.test/noticia-6'
+        if (nombre.includes(searchVal) || categoria.includes(searchVal) || marca.includes(searchVal)) {
+            $(this).show();
+        } else {
+            $(this).hide();
         }
-    ];
-
-    let html = '';
-    mockNews.forEach((news, index) => {
-        let delay = index * 0.1;
-        html += `
-        <div class="col-sm-6 col-md-6 col-lg-4 mb-4" style="animation: fadeInUp 0.5s ease forwards; animation-delay: ${delay}s; opacity: 0; transform: translateY(20px);">
-            <div class="card card-post card-round h-100 shadow-sm border-0 position-relative overflow-hidden" 
-                 style="transition: all 0.3s ease; cursor: pointer;"
-                 onclick="window.open('${news.url}', '_blank')"
-                 onmouseover="this.style.transform='translateY(-5px)'; this.classList.remove('shadow-sm'); this.classList.add('shadow-lg');" 
-                 onmouseout="this.style.transform='none'; this.classList.remove('shadow-lg'); this.classList.add('shadow-sm');">
-                <div class="card-img-container position-relative">
-                    <img class="card-img-top" src="${news.image}" alt="${news.title}" style="height: 220px; object-fit: cover;">
-                    <div class="position-absolute" style="top: 15px; left: 15px;">
-                        <span class="badge bg-${news.color} text-white shadow-sm" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">${news.category}</span>
-                    </div>
-                </div>
-                <div class="card-body d-flex flex-column">
-                    <h4 class="card-title fw-bold mb-2 text-dark" style="font-size: 1.25rem;">${news.title}</h4>
-                    <p class="card-text text-muted mb-4 flex-grow-1" style="font-size: 0.95rem;">${news.summary}</p>
-                    <div class="d-flex justify-content-between align-items-center mt-auto border-top pt-3">
-                        <div class="d-flex align-items-center">
-                            <div class="avatar-sm me-2">
-                                <span class="avatar-title rounded-circle border border-white bg-${news.color}">${news.author.charAt(0)}</span>
-                            </div>
-                            <span class="text-muted small fw-bold">${news.author}</span>
-                        </div>
-                        <span class="text-muted small"><i class="far fa-clock me-1"></i>${news.date}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        `;
     });
+});
 
-    container.html(html);
-}
+// Tabla_G03 - Seleccionar Producto
+$(document).on('click', '[data-selector="abrir"]', function () {
+    // 0.0 Variables Macro
+    const MACRO = {
+        id_producto: $(this).attr('data-id'),
+        fila_producto: null,
+        variantes_html: ''
+    };
 
-function saveRecommendation() {
-    $('#modal_recommend_article').modal('hide');
-    swal('¡Excelente!', 'Tu recomendación ha sido publicada en el muro.', 'success').then(() => {
-        document.getElementById('form_recommend_article').reset();
-    });
-}
-
-// Load mock activities
-function loadMockActivities() {
-    const timeline = $('#admin_activity_timeline');
-    timeline.empty();
-
-    // Datos de prueba simulando actividades de la plataforma
-    const mockActivities = [
-        {
-            user: 'Sthefany Alviarez',
-            role: 'Administradora',
-            action: 'Ha registrado un nuevo cliente',
-            detail: 'Cliente "Hospital General Norte" fue añadido exitosamente.',
-            time: 'Hace 5 minutos',
-            icon: 'fas fa-user-plus',
-            bg: 'bg-primary'
-        },
-        {
-            user: 'Maikel Monzant',
-            role: 'Gerente',
-            action: 'Modificó un producto',
-            detail: 'Actualizó el stock de "Jeringas 10ml" de 50 a 200 unidades.',
-            time: 'Hace 23 minutos',
-            icon: 'fas fa-box-open',
-            bg: 'bg-info'
-        },
-        {
-            user: 'Angela Yepes',
-            role: 'Vendedor',
-            action: 'Añadió un comentario a un cliente',
-            detail: 'Comentario agregado en "Clínica San Jose": Se envió el portafolio actualizado.',
-            time: 'Hace 1 hora',
-            icon: 'fas fa-comment-dots',
-            bg: 'bg-secondary'
-        },
-        {
-            user: 'David Monzant',
-            role: 'Gerente',
-            action: 'Aprobó un nuevo acceso de usuario',
-            detail: 'Usuario "Luis Perez" habilitado en el sistema.',
-            time: 'Hace 3 horas',
-            icon: 'fas fa-check-circle',
-            bg: 'bg-success'
-        },
-        {
-            user: 'Sistema Automático',
-            role: 'Sistema',
-            action: 'Alerta de Stock Bajo',
-            detail: 'El producto "Guantes de Latex M" está por debajo del mínimo permitido (Quedan 5 cajas).',
-            time: 'Hace 4 horas',
-            icon: 'fas fa-exclamation-triangle',
-            bg: 'bg-danger'
-        }
-    ];
-
-    let html = '';
-    mockActivities.forEach((act, index) => {
-        let roleBadgeClass = act.role === 'Admin' ? 'bg-success' : (act.role === 'Sistema' ? 'bg-danger' : 'bg-dark');
-
-        // Agregar un retraso escalonado en la animación (0.1s por item)
-        let animationDelay = index * 0.15;
-
-        html += `
-        <div class="timeline-modern-item" style="animation-delay: ${animationDelay}s;">
-            <div class="timeline-modern-icon ${act.bg}">
-                <i class="${act.icon}"></i>
-            </div>
-            <div class="timeline-modern-content">
-                <div class="timeline-time"><i class="far fa-clock"></i> ${act.time}</div>
-                <div class="d-flex align-items-center mb-2">
-                    <span class="timeline-user">${act.user}</span>
-                    <span class="badge text-white timeline-badge-role ${roleBadgeClass}">${act.role}</span>
-                </div>
-                <h5 class="fw-bold mb-1">${act.action}</h5>
-                <p class="text-muted mb-0">${act.detail}</p>
-            </div>
-        </div>
-        `;
-    });
-
-    timeline.html(html);
-}
-
-// Función para abrir detalle de producto
-function openProductDetail(id) {
-    const row = globalProductsData.find(p => p.id == id);
-    if (!row) return;
-
-    // Buscar variantes
-    let rawName = row.nombre ? row.nombre.toLowerCase().trim() : 'sin nombre';
-    let variants = globalProductsData.filter(p => {
+    // 1.0 Buscar producto y variantes - Buscar producto
+    MACRO.fila_producto = GLOBAL_PRODUCTS_DATA.find(p => p.id == MACRO.id_producto);
+    if (!MACRO.fila_producto) return;
+    // 1.1 Buscar variantes
+    let nombre_base = MACRO.fila_producto.nombre ? MACRO.fila_producto.nombre.toLowerCase().trim() : 'sin nombre';
+    let lista_variantes = GLOBAL_PRODUCTS_DATA.filter(p => {
         let n = p.nombre ? p.nombre.toLowerCase().trim() : 'sin nombre';
-        return n === rawName;
+        return n === nombre_base;
     });
 
-    // Renderizar variantes
-    let variantsHtml = '';
-    if (variants.length > 1) {
+    // 2.0 Renderizar variantes del producto
+    if (lista_variantes.length > 1) {
         $('#cont_variantes_wrapper').removeClass('d-none');
-        variants.forEach(v => {
-            let badge = v.id == id ? '<span class="badge badge-success">Actual</span>' : '';
-            variantsHtml += `
+        lista_variantes.forEach(v => {
+            let badge = v.id == MACRO.id_producto ? '<span class="badge badge-success">Actual</span>' : '';
+            MACRO.variantes_html += `
                 <tr>
                     <td>${v.presentacion || 'N/A'} ${badge}</td>
                     <td>${v.id_categoria || 'N/A'}</td>
                     <td>${v.id_marca || 'N/A'}</td>
                     <td>
-                        ${v.id != id ? `<button class="btn btn-sm btn-outline-primary btn-round" onclick="openProductDetail('${v.id}')"><i class="fas fa-eye"></i> Ver Detalle</button>` : ''}
+                        ${v.id != MACRO.id_producto ? `<button class="btn btn-sm btn-outline-primary btn-round" data-selector="abrir" data-id="${v.id}"><i class="fas fa-eye"></i> Ver Detalle</button>` : ''}
                     </td>
                 </tr>
             `;
         });
-        $('#list_variantes_producto').html(variantsHtml);
+        $('#list_variantes_producto').html(MACRO.variantes_html);
     } else {
         $('#cont_variantes_wrapper').addClass('d-none');
     }
 
-    $('#wrapper_catalog').addClass('d-none');
-    $('#cont_detalle_producto').removeClass('d-none');
+    // 3.0 Mostrar interfaz de detalle - Cambiar a pantalla de detalle
+    switchSubScreen('screen_catalog_products', 'screen_product_detail');
+    // 3.1 Guardar el ID actual en el botón de modificar para poder subir la foto
+    $('#btn_product_edit').data('id', MACRO.fila_producto.id);
 
-    // Ir directamente a un elemento
-    $('html, body').scrollTop($('#cont_detalle_producto').offset().top - 100);
+    // 4.0 Mostrar información general
+    $('#in_nombre_producto').val((MACRO.fila_producto.nombre || '').toUpperCase());
+    $('#in_categoria_producto').val(MACRO.fila_producto.id_categoria.toUpperCase());
+    $('#in_presentacion_producto').val(MACRO.fila_producto.presentacion.toUpperCase());
+    $('#in_marca_producto').val(MACRO.fila_producto.id_marca.toUpperCase());
+    $('#in_observacion_producto').val(MACRO.fila_producto.observacion?.toUpperCase());
 
-    // Guardar el ID actual en el botón de modificar para poder subir la foto
-    $('#btn_product_edit').data('id', row.id);
-
-    // Mostrar informacion general
-    $('#in_nombre_producto').val((row.nombre || '').toUpperCase());
-    $('#in_categoria_producto').val(row.id_categoria.toUpperCase());
-    $('#in_presentacion_producto').val(row.presentacion.toUpperCase());
-    $('#in_marca_producto').val(row.id_marca.toUpperCase());
-    $('#in_observacion_producto').val(row.observacion?.toUpperCase());
-
-    // Mostrar imagen 
+    // 5.0 Mostrar imagen del producto
     $('#cont_imagenes_producto').empty();
     $.ajax({
-        url: SITE_URL + '/product/img/' + row.id,
+        url: SITE_URL + '/product/img/' + MACRO.fila_producto.id,
         type: 'GET',
         dataType: 'json',
         success: function (resp) {
-            let imagesHTML = '';
+            let imagenes_html = '';
             resp.imagePaths.forEach(path => {
-                imagesHTML += `<img src="${SITE_URL}${path}" alt="Producto" style="max-width: 500px; max-height: 500px; margin: 5px;">`;
+                imagenes_html += `<img src="${SITE_URL}${path}" alt="Producto" style="max-width: 500px; max-height: 500px; margin: 5px;">`;
             });
-            $('#cont_imagenes_producto').html(imagesHTML);
+            $('#cont_imagenes_producto').html(imagenes_html);
         },
         error: function (xhr, status, error) {
             console.log(error);
@@ -450,18 +265,18 @@ function openProductDetail(id) {
         complete: function () {
             // always
         }
-    })
+    });
 
-    // Mostrar video 
+    // 6.0 Mostrar video del producto
     $('#cont_videos_producto').empty();
     $.ajax({
-        url: SITE_URL + '/product/video/' + row.id,
+        url: SITE_URL + '/product/video/' + MACRO.fila_producto.id,
         type: 'GET',
         dataType: 'json',
         success: function (resp) {
-            let videosHTML = '';
+            let videos_html = '';
             resp.videoPaths.forEach(path => {
-                videosHTML += `<video 
+                videos_html += `<video 
                     src="${SITE_URL}${path}" 
                     controls 
                     preload="metadata" 
@@ -471,8 +286,7 @@ function openProductDetail(id) {
                     Tu navegador no soporta el elemento de video.
                 </video>`;
             });
-
-            $('#cont_videos_producto').html(videosHTML);
+            $('#cont_videos_producto').html(videos_html);
         },
         error: function (xhr, status, error) {
             console.log(error);
@@ -481,23 +295,22 @@ function openProductDetail(id) {
         complete: function () {
             // always
         }
-    })
+    });
 
-    // Mostrar documentos 
+    // 7.0 Mostrar documentos del producto
     $('#cont_documentos_producto').empty();
-    
-    // Guardar ID en el botón de subir PDF
-    $('#btn_upload_pdf').data('family-id', row.family_id || row.id);
-    
+    // 7.1 Guardar ID en el botón de subir PDF
+    $('#btn_upload_pdf').data('family-id', MACRO.fila_producto.family_id || MACRO.fila_producto.id);
+    // 7.2 Obtener documentos
     $.ajax({
-        url: SITE_URL + '/product/document/' + (row.family_id || row.id),
+        url: SITE_URL + '/product/document/' + (MACRO.fila_producto.family_id || MACRO.fila_producto.id),
         type: 'GET',
         dataType: 'json',
         success: function (resp) {
             if (resp.documents && resp.documents.length && resp.documents[0].name !== null) {
-                let docsHtml = '';
+                let documentos_html = '';
                 resp.documents.forEach((document, index) => {
-                    docsHtml += `
+                    documentos_html += `
                         <div class="col-4 text-center mb-3">
                             <a href="javascript:void(0)" class="text-danger text-decoration-none" onclick="viewPdf('${SITE_URL}${document.path}', '${document.name}')">
                                 <i class="fas fa-file-pdf fa-3x"></i>
@@ -506,7 +319,7 @@ function openProductDetail(id) {
                         </div>
                     `;
                 });
-                $('#cont_documentos_producto').html(docsHtml);
+                $('#cont_documentos_producto').html(documentos_html);
             } else {
                 $('#cont_documentos_producto').html('<div class="col-12 text-center text-muted"><p>No hay documentos asociados</p></div>');
             }
@@ -518,246 +331,16 @@ function openProductDetail(id) {
         complete: function () {
             // always
         }
-    })
-
-
-}
-
-$('#catalog_list_productos').on('click', '[data-selector="abrir"]', function () {
-    const id = $(this).attr('data-id');
-    openProductDetail(id);
+    });
 });
 
+// Tabla_G03 - Boton Volver
 $('#btn_back_to_catalog').on('click', function () {
-    $('#cont_detalle_producto').addClass('d-none');
-    $('#wrapper_catalog').removeClass('d-none');
-    $('html, body').scrollTop($('#wrapper_catalog').offset().top - 100);
+    // 1.0 Volver al catálogo - Cambiar a pantalla principal
+    switchSubScreen('screen_product_detail', 'screen_catalog_products');
 });
 
-$('#tbl_list_clientes').on('click', '[data-selector="abrir_cliente"]', function () {
-    const row = $('#tbl_list_clientes').DataTable().row('#' + $(this).attr('data-id')).data();
-    $('#cont_detalle_cliente').removeClass('d-none');
-    $('html, body').scrollTop($('#cont_detalle_cliente').offset().top - 100);
-
-    $('#detalle_client_id').val(row.id);
-    $('#detalle_cliente_nombre').text(row.nombre_cliente);
-
-    loadClientComments(row.id);
-});
-
-$('#form_add_comment').on('submit', function (e) {
-    e.preventDefault();
-    const btn = $(this).find('button[type="submit"]');
-    btn.prop('disabled', true);
-
-    $.ajax({
-        url: SITE_URL + '/client/add_comment',
-        type: 'POST',
-        data: $(this).serialize(),
-        success: function (resp) {
-            if (resp.status === 'success') {
-                $('#detalle_comment').val('');
-                loadClientComments($('#detalle_client_id').val());
-            } else {
-                swal('Error', resp.message, 'error');
-            }
-        },
-        complete: function () {
-            btn.prop('disabled', false);
-        }
-    });
-});
-
-function loadClientComments(clientId) {
-    $('#list_client_comments').html('<li class="list-group-item text-center">Cargando...</li>');
-    $.get(SITE_URL + '/client/list_comments/' + clientId, function (resp) {
-        if (resp && resp.status === 'success') {
-            let html = '';
-            if (resp.data.length === 0) {
-                html = '<li class="list-group-item text-center text-muted">Sin evaluaciones registradas</li>';
-            } else {
-                resp.data.forEach(item => {
-                    html += `<li class="list-group-item">
-                     <p class="mb-1">${item.comment}</p>
-                     <small class="text-muted"><i class="fas fa-clock"></i> ${item.created_at}</small>
-                   </li>`;
-                });
-            }
-            $('#list_client_comments').html(html);
-        }
-    });
-}
-
-
-/* Development */
-
-$('.en-desarrollo').not('#btn_product_edit').on('click', function () {
-    $.notify({ title: 'Advertencia', message: 'Funcionalidad en desarollo', icon: "fas fa-cogs" }, {
-        type: 'warning',
-        placement: {
-            from: 'top',
-            align: 'right',
-        },
-        time: 1000,
-        delay: 100,
-    });
-})
-
-$('#btn_open_product_modify').on('click', function () {
-    $.notify({ title: 'Advertencia', message: 'Modulo en desarollo', icon: "fas fa-cogs" }, {
-        type: 'warning',
-        placement: {
-            from: 'top',
-            align: 'right',
-        },
-        time: 1000,
-        delay: 100,
-    });
-})
-
-// Lógica para Abrir Modal de Subida de Imagen
-$('#btn_product_edit').on('click', function () {
-    const productId = $(this).data('id');
-    if (!productId) {
-        swal('Error', 'No hay un producto seleccionado', 'error');
-        return;
-    }
-    $('#siigo_product_id_upload').val(productId);
-
-    // Reset modal state
-    $('#file_input_image').val('');
-    $('#image_preview_container').addClass('d-none');
-    $('#image_preview').attr('src', '');
-    $('#image_filename').text('');
-    $('#drag_drop_area').removeClass('d-none');
-
-    $('#modal_upload_image').modal('show');
-});
-
-// Drag and Drop Lógica
-const dropArea = document.getElementById('drag_drop_area');
-const fileInput = document.getElementById('file_input_image');
-let selectedFile = null;
-
-// Click en el area abre el input
-dropArea.addEventListener('click', () => fileInput.click());
-
-fileInput.addEventListener('change', function () {
-    handleFiles(this.files);
-});
-
-// Drag Events
-['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-    dropArea.addEventListener(eventName, preventDefaults, false);
-});
-
-function preventDefaults(e) {
-    e.preventDefault();
-    e.stopPropagation();
-}
-
-['dragenter', 'dragover'].forEach(eventName => {
-    dropArea.addEventListener(eventName, highlight, false);
-});
-
-['dragleave', 'drop'].forEach(eventName => {
-    dropArea.addEventListener(eventName, unhighlight, false);
-});
-
-function highlight(e) {
-    dropArea.classList.add('bg-light');
-}
-
-function unhighlight(e) {
-    dropArea.classList.remove('bg-light');
-}
-
-dropArea.addEventListener('drop', handleDrop, false);
-
-function handleDrop(e) {
-    let dt = e.dataTransfer;
-    let files = dt.files;
-    handleFiles(files);
-}
-
-function handleFiles(files) {
-    if (files.length > 0) {
-        selectedFile = files[0];
-
-        // Mostrar preview
-        const reader = new FileReader();
-        reader.onload = function (e) {
-            $('#image_preview').attr('src', e.target.result);
-            $('#image_filename').text(selectedFile.name);
-            $('#drag_drop_area').addClass('d-none');
-            $('#image_preview_container').removeClass('d-none');
-        }
-        reader.readAsDataURL(selectedFile);
-    }
-}
-
-// Subir Imagen via AJAX
-$('#btn_upload_image').on('click', function () {
-    if (!selectedFile) {
-        swal('Atención', 'Selecciona una imagen primero', 'warning');
-        return;
-    }
-
-    const productId = $('#siigo_product_id_upload').val();
-    let formData = new FormData();
-    formData.append('product_image', selectedFile);
-    formData.append('id_product', productId);
-
-    const btn = $(this);
-    btn.prop('disabled', true).text('Subiendo...');
-
-    $.ajax({
-        url: SITE_URL + '/product/upload_image',
-        type: 'POST',
-        data: formData,
-        processData: false,
-        contentType: false,
-        success: function (resp) {
-            // Verificar si es string y parsear (a veces CodeIgniter lo manda como string html)
-            if (typeof resp === 'string') {
-                try {
-                    resp = JSON.parse(resp);
-                } catch (e) { }
-            }
-
-            if (resp.status === 'success') {
-                swal('Éxito', 'Imagen subida correctamente', 'success');
-                $('#modal_upload_image').modal('hide');
-
-                // Recargar las imágenes del producto automáticamente
-                $(`[data-selector="abrir"][data-id="${productId}"]`).trigger('click');
-            } else {
-                swal('Error', resp.message || 'Error al subir la imagen', 'error');
-            }
-        },
-        error: function (xhr, status, error) {
-            swal('Error', 'Hubo un problema de conexión', 'error');
-            console.error(error);
-        },
-        complete: function () {
-            btn.prop('disabled', false).text('Subir Imagen');
-        }
-    });
-});
-
-// Función para abrir visor de PDF
-function viewPdf(url, title) {
-    $('#modalViewPdfLabel').text(title);
-    $('#pdf_viewer_iframe').attr('src', url);
-    $('#modal_view_pdf').modal('show');
-}
-
-// Limpiar iframe al cerrar el modal para detener la carga
-$('#modal_view_pdf').on('hidden.bs.modal', function () {
-    $('#pdf_viewer_iframe').attr('src', '');
-});
-
-// Lógica para Abrir Modal de Subida de Documento PDF
+// Documentos_G03 - Abrir Modal de Subida de Documento PDF
 $('#btn_upload_pdf').on('click', function () {
     const familyId = $(this).data('family-id');
     if (!familyId) {
@@ -773,7 +356,12 @@ $('#btn_upload_pdf').on('click', function () {
     $('#modal_upload_pdf').modal('show');
 });
 
-// Subir Documento PDF via AJAX
+// Documentos_G03 - Limpiar iframe al cerrar el modal para detener la carga
+$('#modal_view_pdf').on('hidden.bs.modal', function () {
+    $('#pdf_viewer_iframe').attr('src', '');
+});
+
+// Documento_G03 - Subir Documento PDF
 $('#btn_save_upload_pdf').on('click', function () {
     const familyId = $('#siigo_family_id_upload').val();
     const documentName = $('#pdf_document_name').val();
@@ -834,132 +422,114 @@ $('#btn_save_upload_pdf').on('click', function () {
     });
 });
 
-$('.module_bloq').on('click', function () {
-    $.notify({ title: 'Advertencia', message: 'Modulo bloqueado', icon: "fas fa-unlock" }, {
-        type: 'danger',
-        placement: {
-            from: 'top',
-            align: 'right',
-        },
-        time: 1000,
-        delay: 100,
-    });
-})
+// Tabla_G05 - Ver PDF de Remisión
+$(document).on('click', '[data-selector="ver_remision_pdf"]', function () {
+    // 1.0 Mostrar modal de visor PDF - Asignar URL al iframe y abrir modal
+    const iframe = document.getElementById('remision_pdf_iframe');
+    iframe.src = SITE_URL + '/dispatch/view_pdf/' + $(this).data('id');
+    $('#modal_view_remision').modal('show');
+});
 
-$('.module_development').on('click', function () {
-    $.notify({ title: 'Advertencia', message: 'Modulo en desarollo', icon: "fas fa-cogs" }, {
-        type: 'warning',
-        placement: {
-            from: 'top',
-            align: 'right',
-        },
-        time: 1000,
-        delay: 100,
-    });
-})
+// Formulario_G05 - Agregar Línea de Remisión
+$('#btn_agregar_linea_remision').on('click', function () {
+    /* ----------------- MACRO-BLOQUE ----------------- */
 
+    // 0.0 Variables Macro
+    const MACRO_ADD_LINE = {
+        tbody: document.getElementById('remision_items_body'),
+        tr: document.createElement('tr')
+    };
 
-function loadCatalogProducts() {
-    $('#catalog_list_productos').html('<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-3">Cargando catálogo...</p></div>');
-    $.ajax({
-        url: SITE_URL + '/product/listing_siigo',
-        type: 'GET',
-        dataType: 'json',
-        success: function (resp) {
-            globalProductsData = resp.data || [];
-            renderCatalogProducts(globalProductsData);
-        },
-        error: function (xhr, status, error) {
-            $('#catalog_list_productos').html('<div class="col-12 text-center py-5 text-danger"><i class="fas fa-exclamation-triangle fa-3x mb-3"></i><p>Error al cargar el catálogo de productos.</p></div>');
-        }
-    });
-}
+    // 1.0 Crear estructura de la línea - Construir HTML
+    MACRO_ADD_LINE.tr.innerHTML = `
+        <td>
+            <input type="text" class="form-control" name="item_referencia[]" placeholder="Ej: REF-01">
+        </td>
+        <td>
+            <input type="text" class="form-control" name="item_descripcion[]" placeholder="Descripción del item">
+        </td>
+        <td>
+            <input type="text" class="form-control" name="item_lote[]" placeholder="Ej: L-01">
+        </td>
+        <td>
+            <input type="date" class="form-control" name="item_vencimiento[]">
+        </td>
+        <td>
+            <input type="number" class="form-control" name="item_cantidad[]" min="1" value="1">
+        </td>
+        <td class="text-center">
+            <button type="button" class="btn btn-danger btn-sm btn-round btn-remove-item" data-selector="remover_linea_remision"><i class="fas fa-trash"></i></button>
+        </td>
+    `;
+    // 1.1 Adjuntar línea al cuerpo de la tabla
+    MACRO_ADD_LINE.tbody.appendChild(MACRO_ADD_LINE.tr);
+});
 
-function renderCatalogProducts(products) {
-    const container = $('#catalog_list_productos');
-    container.empty();
+// Formulario_G05 - Remover Línea de Remisión
+$(document).on('click', '[data-selector="remover_linea_remision"]', function () {
+    /* ----------------- MACRO-BLOQUE ----------------- */
 
-    if (products.length === 0) {
-        container.html('<div class="col-12 text-center py-5"><i class="fas fa-box-open fa-3x mb-3 text-muted"></i><p class="text-muted">No se encontraron productos disponibles.</p></div>');
+    // 1.0 Remover línea de remisión - Identificar fila y verificar total
+    const tr = $(this).closest('tr');
+    if (document.querySelectorAll('#remision_items_body tr').length > 1) {
+        tr.remove();
+    } else {
+        swal('Atención', 'Debe haber al menos una línea en la remisión.', 'warning');
+    }
+});
+
+// Formulario_G05 - Guardar Remisión
+$('#btn_guardar_remision').on('click', function () {
+    /* ----------------- MACRO-BLOQUE ----------------- */
+
+    // 0.0 Variables Macro
+    const MACRO_SAVE = {
+        ciudad: document.getElementById('remision_ciudad').value,
+        form: document.getElementById('form_remision_create'),
+        btn: document.querySelector('#remisiones_create_view .btn-success'),
+        originalText: ''
+    };
+
+    // 1.0 Validar datos iniciales - Validar ciudad
+    if (!MACRO_SAVE.ciudad) {
+        swal('Validación', 'Por favor seleccione una ciudad para generar el consecutivo', 'warning');
         return;
     }
 
-    // Agrupar por nombre similar
-    const groupedProducts = {};
-
-    products.forEach(p => {
-        // Normalizar nombre (minúsculas, sin espacios extra)
-        let rawName = p.nombre ? p.nombre.toLowerCase().trim() : 'sin nombre';
-
-        // Si el grupo no existe, lo creamos y le asignamos este producto como el "principal"
-        if (!groupedProducts[rawName]) {
-            groupedProducts[rawName] = {
-                principal: p,
-                count: 1,
-                ids: [p.id] // Guardar los IDs agrupados
-            };
-        } else {
-            groupedProducts[rawName].count++;
-            groupedProducts[rawName].ids.push(p.id);
-        }
-    });
-
-    let html = '';
-    Object.values(groupedProducts).forEach(group => {
-        let p = group.principal;
-        let count = group.count;
-
-        let nombre = p.nombre ? p.nombre.charAt(0).toUpperCase() + p.nombre.slice(1) : 'Sin nombre';
-        let categoria = p.id_categoria ? p.id_categoria.charAt(0).toUpperCase() + p.id_categoria.slice(1) : 'Sin categoría';
-        let marca = p.id_marca ? p.id_marca.charAt(0).toUpperCase() + p.id_marca.slice(1) : 'Sin marca';
-        let presentacion = p.presentacion ? p.presentacion.charAt(0).toUpperCase() + p.presentacion.slice(1) : 'Sin presentación';
-        let imgSrc = p.img ? (SITE_URL + '/' + p.img.replace(/^\/+/, '')) : (SITE_URL + '/public/assets/img/kaiadmin/favicon.ico');
-
-        let badgeHtml = count > 1 ? `<span class="badge badge-primary position-absolute" style="top: 10px; right: 10px; z-index: 2; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">${count} Referencias</span>` : '';
-
-        html += `
-            <div class="col-sm-6 col-md-4 col-lg-3 mb-4 product-card-item" 
-                 data-nombre="${nombre.toLowerCase()}" 
-                 data-categoria="${categoria.toLowerCase()}" 
-                 data-marca="${marca.toLowerCase()}">
-                <div class="card card-post card-round h-100 shadow-sm border-0 position-relative" 
-                     style="transition: all 0.3s ease;"
-                     onmouseover="this.style.transform='translateY(-5px)'; this.classList.remove('shadow-sm'); this.classList.add('shadow');" 
-                     onmouseout="this.style.transform='none'; this.classList.remove('shadow'); this.classList.add('shadow-sm');">
-                    ${badgeHtml}
-                    <div class="card-img-container p-3 d-flex align-items-center justify-content-center" style="height: 200px; background-color: #f8f9fa; border-radius: 10px 10px 0 0;">
-                        <img class="card-img-top" src="${imgSrc}" alt="${nombre}" style="max-height: 100%; max-width: 100%; object-fit: contain;">
-                    </div>
-                    <div class="card-body d-flex flex-column">
-                        <h3 class="card-title text-primary font-weight-bold mb-3" style="font-size: 1.1rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.8rem;">${nombre}</h3>
-                        <div class="mb-auto">
-                            <p class="card-text text-muted mb-1"><i class="fas fa-tags text-secondary me-2"></i> <small>${categoria}</small></p>
-                            <p class="card-text text-muted mb-1"><i class="fas fa-industry text-secondary me-2"></i> <small>${marca}</small></p>
-                            <p class="card-text text-muted mb-3"><i class="fas fa-box text-secondary me-2"></i> <small>${presentacion}</small></p>
-                        </div>
-                        <button class="btn btn-primary btn-border btn-round btn-sm w-100 mt-3" data-selector="abrir" data-id="${p.id}">
-                            <i class="fas fa-share"></i> Ver Detalles
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-    });
-    container.html(html);
-}
-
-// Búsqueda en catálogo
-$('#search_products').on('input', function () {
-    let searchVal = $(this).val().toLowerCase();
-    $('.product-card-item').each(function () {
-        let nombre = $(this).data('nombre') || '';
-        let categoria = $(this).data('categoria') || '';
-        let marca = $(this).data('marca') || '';
-
-        if (nombre.includes(searchVal) || categoria.includes(searchVal) || marca.includes(searchVal)) {
-            $(this).show();
-        } else {
-            $(this).hide();
+    // 2.0 Preparar y enviar petición - Cambiar estado del botón
+    MACRO_SAVE.originalText = MACRO_SAVE.btn.innerHTML;
+    MACRO_SAVE.btn.disabled = true;
+    MACRO_SAVE.btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+    // 2.1 Enviar AJAX
+    $.ajax({
+        url: SITE_URL + '/dispatch/save',
+        type: 'POST',
+        data: new FormData(MACRO_SAVE.form),
+        processData: false,
+        contentType: false,
+        success: function (resp) {
+            if (typeof resp === 'string') {
+                try { resp = JSON.parse(resp); } catch (e) { }
+            }
+            if (resp.status === 'success') {
+                swal('Éxito', resp.message, 'success').then(() => {
+                    MACRO_SAVE.form.reset();
+                    $('#remisiones_create_view').addClass('d-none');
+                    $('#remisiones_list_view').removeClass('d-none');
+                    if ($.fn.DataTable.isDataTable('#tbl_list_remisiones')) {
+                        $('#tbl_list_remisiones').DataTable().ajax.reload(null, false);
+                    }
+                });
+            } else {
+                swal('Error', resp.message || 'Error al guardar la remisión', 'error');
+            }
+        },
+        error: function () {
+            swal('Error', 'Hubo un problema de conexión con el servidor', 'error');
+        },
+        complete: function () {
+            MACRO_SAVE.btn.disabled = false;
+            MACRO_SAVE.btn.innerHTML = MACRO_SAVE.originalText;
         }
     });
 });
@@ -998,13 +568,12 @@ function toggleLoader(isLoading) {
 function showScreen(screenId) {
     // 1.0 Ocultar todas las pantallas
     for (const key in SCREENS) {
-        $('#' + SCREENS[key]).addClass('d-none');
+        $('#' + SCREENS[key][0]).addClass('d-none');
     }
     // 1.1 Mostrar loader
     toggleLoader(true)
     // 1.2 Actualizar navegación
-    $('#nav_first').text(screenId[1]);
-    $('#nav_second').text(screenId[2]);
+    $('#cont_title').text(screenId[1]);
     // 1.3 Mostrar pantalla después de un breve retraso
     setTimeout(() => {
         toggleLoader(false)
@@ -1012,199 +581,17 @@ function showScreen(screenId) {
     }, 800)
 }
 
-
-// developments
-
-function guardarImplemento() {
-    // 1.2 Obtener valores del formulario
-    const nombreProducto = document.getElementById('nombreProducto').value;
-    const capacidad = document.getElementById('capacidad').value;
-    const dimension = document.getElementById('dimension').value;
-    const modelo = document.getElementById('modelo').value;
-    const descripcion = document.getElementById('descripcion').value;
-    const cantidad = document.getElementById('cantidad').value;
-
-    // 1.3 Validar campos requeridos
-    if (!nombreProducto || !capacidad || !dimension || !modelo) {
-        swal('Validación', 'Por favor complete todos los campos requeridos', 'warning');
-        return;
-    }
-
-    // 1.4 Mostrar mensaje de éxito
-    swal('Éxito', 'Implemento médico guardado correctamente', 'success');
-
-    // 1.5 Limpiar formulario después de guardar
-    limpiarFormulario();
+function switchSubScreen(idClose, idShow) {
+    // 1.0 Alternar visibilidad de pantallas - Ocultar pantalla actual
+    $('#' + idClose).addClass('d-none');
+    // 1.1 Mostrar nueva pantalla
+    $('#' + idShow).removeClass('d-none');
+    // 1.2 Ajustar scroll
+    $('html, body').scrollTop($('#' + idShow).offset().top - 100);
 }
 
-
-function limpiarFormulario() {
-    // 2.1 Restablecer todos los campos
-    document.getElementById('nombreProducto').value = '';
-    document.getElementById('capacidad').value = '';
-    document.getElementById('dimension').value = '';
-    document.getElementById('modelo').value = '';
-    document.getElementById('descripcion').value = '';
-    document.getElementById('cantidad').value = '';
-
-    // 2.2 Enfocar el primer campo
-    document.getElementById('nombreProducto').focus();
-}
-
-
-function cancelar() {
-    // 3.1 Confirmar antes de cancelar
-    swal({
-        title: '¿Cancelar?',
-        text: 'Los datos no guardados se perderán',
-        icon: 'warning',
-        buttons: true,
-        dangerMode: true,
-    }).then((willCancel) => {
-        if (willCancel) {
-            // 3.2 Limpiar formulario si confirma
-            limpiarFormulario();
-            swal('Cancelado', 'Formulario limpiado', 'info');
-        }
-    });
-}
-
-function guardarCliente() {
-    const formData = new FormData(document.getElementById('form_client_create'));
-    const nombreCliente = formData.get('nombre_cliente');
-    const numeroDocumento = formData.get('numero_documento');
-
-    if (!nombreCliente || !numeroDocumento) {
-        swal('Validación', 'Por favor complete todos los campos requeridos', 'warning');
-        return;
-    }
-
-    // Bloquear boton temporalmente
-    const btn = document.querySelector('#cont_client_create .btn-success');
-    const originalText = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
-
-    $.ajax({
-        url: SITE_URL + '/client/save', // Endpoint en backend
-        type: 'POST',
-        data: formData,
-        processData: false,
-        contentType: false,
-        success: function (resp) {
-            if (typeof resp === 'string') {
-                try { resp = JSON.parse(resp); } catch (e) { }
-            }
-
-            if (resp.status === 'success') {
-                swal('Éxito', 'Cliente guardado correctamente en la tabla', 'success');
-                document.getElementById('form_client_create').reset();
-            } else {
-                swal('Error', resp.message || 'Error al guardar el cliente', 'error');
-            }
-        },
-        error: function () {
-            swal('Error', 'Hubo un problema de conexión intentando guardar en base de datos', 'error');
-        },
-        complete: function () {
-            btn.disabled = false;
-            btn.innerHTML = originalText;
-        }
-    });
-}
-
-/* ======================================================== */
-/*   REMISIONES                                           */
-/* ======================================================== */
-
-function agregarLineaRemision() {
-    const tbody = document.getElementById('remision_items_body');
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-        <td>
-            <input type="text" class="form-control" name="item_referencia[]" placeholder="Ej: REF-01">
-        </td>
-        <td>
-            <input type="text" class="form-control" name="item_descripcion[]" placeholder="Descripción del item">
-        </td>
-        <td>
-            <input type="text" class="form-control" name="item_lote[]" placeholder="Ej: L-01">
-        </td>
-        <td>
-            <input type="date" class="form-control" name="item_vencimiento[]">
-        </td>
-        <td>
-            <input type="number" class="form-control" name="item_cantidad[]" min="1" value="1">
-        </td>
-        <td class="text-center">
-            <button type="button" class="btn btn-danger btn-sm btn-round btn-remove-item" onclick="removerLineaRemision(this)"><i class="fas fa-trash"></i></button>
-        </td>
-    `;
-    tbody.appendChild(tr);
-}
-
-function removerLineaRemision(btn) {
-    const tr = btn.closest('tr');
-    if (document.querySelectorAll('#remision_items_body tr').length > 1) {
-        tr.remove();
-    } else {
-        swal('Atención', 'Debe haber al menos una línea en la remisión.', 'warning');
-    }
-}
-
-function guardarRemision() {
-    const ciudad = document.getElementById('remision_ciudad').value;
-
-    if (!ciudad) {
-        swal('Validación', 'Por favor seleccione una ciudad para generar el consecutivo', 'warning');
-        return;
-    }
-
-    const form = document.getElementById('form_remision_create');
-    const formData = new FormData(form);
-
-    // Deshabilitar botón para evitar doble envío
-    const btn = document.querySelector('#remisiones_create_view .btn-success');
-    const originalText = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
-
-    $.ajax({
-        url: SITE_URL + '/dispatch/save',
-        type: 'POST',
-        data: formData,
-        processData: false,
-        contentType: false,
-        success: function (resp) {
-            if (typeof resp === 'string') {
-                try { resp = JSON.parse(resp); } catch (e) { }
-            }
-
-            if (resp.status === 'success') {
-                swal('Éxito', resp.message, 'success').then(() => {
-                    form.reset();
-                    $('#remisiones_create_view').addClass('d-none');
-                    $('#remisiones_list_view').removeClass('d-none');
-                    if ($.fn.DataTable.isDataTable('#tbl_list_remisiones')) {
-                        $('#tbl_list_remisiones').DataTable().ajax.reload(null, false);
-                    }
-                });
-            } else {
-                swal('Error', resp.message || 'Error al guardar la remisión', 'error');
-            }
-        },
-        error: function () {
-            swal('Error', 'Hubo un problema de conexión con el servidor', 'error');
-        },
-        complete: function () {
-            btn.disabled = false;
-            btn.innerHTML = originalText;
-        }
-    });
-}
-
-function verRemisionPdf(id) {
-    const iframe = document.getElementById('remision_pdf_iframe');
-    iframe.src = SITE_URL + '/dispatch/view_pdf/' + id;
-    $('#modal_view_remision').modal('show');
+function viewPdf(url, title) {
+    $('#modalViewPdfLabel').text(title);
+    $('#pdf_viewer_iframe').attr('src', url);
+    $('#modal_view_pdf').modal('show');
 }

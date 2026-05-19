@@ -178,7 +178,7 @@
 
     <!-- Ini Content -->
     <div class="main-panel">
-      <!-- Header -->
+      <!-- Ini Header -->
       <div class="main-header">
         <div class="main-header-logo">
           <!-- Logo Header -->
@@ -329,45 +329,31 @@
         </nav>
         <!-- End Navbar -->
       </div>
+      <!-- End Header -->
 
-      <!-- Body -->
+      <!-- Ini Body -->
       <div class="container">
         <div class="page-inner">
+          <!-- Ini Panel Nav -->
           <div class="page-header">
-            <h4 class="page-title">Dashboard</h4>
-            <ul class="breadcrumbs">
-              <li class="nav-home">
-                <a href="#">
-                  <i class="icon-home"></i>
-                </a>
-              </li>
-              <li class="separator">
-                <i class="icon-arrow-right"></i>
-              </li>
-              <li class="nav-item">
-                <div id="nav_first">Inicio</div>
-              </li>
-              <li class="separator">
-                <i class="icon-arrow-right"></i>
-              </li>
-              <li class="nav-item">
-                <a id="nav_second">Dashboard</a>
-              </li>
-            </ul>
+            <h4 id="cont_title" class="page-title">Dashboard</h4>
           </div>
+          <!-- End Panel Nav -->
 
-          <!-- Ini Screens -->
+          <!-- ======================================================== -->
+          <!--   Screens                                               -->
+          <!-- ======================================================== -->
 
-          <!-- Loading Screen -->
+          <!-- Ini Loading Screen -->
           <div id='cont_loading' class="row d-none">
             <div class="col-md-12 d-flex justify-content-center">
               <div class="loader_spinner"></div>
             </div>
           </div>
+          <!-- End Loading Screen -->
 
-          <!-- Dashboard Screen -->
+          <!-- Ini Dashboard Screen -->
           <div id="cont_dashboard" class="row">
-
             <div class="col-md-12">
               <div class="card card-round">
                 <div class="card-body">
@@ -376,133 +362,13 @@
                 </div>
               </div>
             </div>
-
           </div>
+          <!-- End Dashboard Screen -->
 
-          <!-- Product Create Screen -->
-          <div id="cont_product_create" class="row d-none">
-            <div class="col-md-12">
-              <div class="card">
-                <!-- 1.1 Encabezado de la tarjeta -->
-                <div class="card-header">
-                  <div class="card-title">
-                    <i class="fas fa-syringe"></i> Crear Implemento Médico
-                  </div>
-                </div>
-
-                <!-- 1.2 Cuerpo de la tarjeta -->
-                <div class="card-body">
-                  <!-- 1.3 Formulario para crear implemento -->
-                  <form action="#" method="POST">
-                    <div class="row">
-                      <!-- 2.0 Nombre de Producto -->
-                      <div class="col-md-6">
-                        <div class="form-group form-group-default">
-                          <label for="nombreProducto">Nombre de Producto</label>
-                          <input
-                            type="text"
-                            class="form-control"
-                            id="nombreProducto"
-                            name="nombre_producto"
-                            placeholder="Ej: Jeringa de 10ml"
-                            required>
-                          <small class="form-text text-muted">Ingrese el nombre del implemento médico</small>
-                        </div>
-                      </div>
-
-                      <!-- 2.1 Capacidad -->
-                      <div class="col-md-6">
-                        <div class="form-group form-group-default">
-                          <label for="capacidad">Capacidad</label>
-                          <input
-                            type="text"
-                            class="form-control"
-                            id="capacidad"
-                            name="capacidad"
-                            placeholder="Ej: 10ml, 500cc, 1L"
-                            required>
-                          <small class="form-text text-muted">Especifique la capacidad o volumen</small>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="row">
-                      <!-- 2.2 Dimensión -->
-                      <div class="col-md-6">
-                        <div class="form-group form-group-default">
-                          <label for="dimension">Dimensión</label>
-                          <input
-                            type="text"
-                            class="form-control"
-                            id="dimension"
-                            name="dimension"
-                            placeholder="Ej: 25cm x 15cm x 10cm"
-                            required>
-                          <small class="form-text text-muted">Ingrese las dimensiones del producto</small>
-                        </div>
-                      </div>
-
-                      <!-- 2.3 Modelo -->
-                      <div class="col-md-6">
-                        <div class="form-group form-group-default">
-                          <label for="modelo">Modelo</label>
-                          <input
-                            type="text"
-                            class="form-control"
-                            id="modelo"
-                            name="modelo"
-                            placeholder="Ej: JRS-100, MED-2024"
-                            required>
-                          <small class="form-text text-muted">Código o modelo del producto</small>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- 2.4 Descripción adicional -->
-                    <div class="form-group">
-                      <label for="descripcion">Descripción</label>
-                      <textarea
-                        class="form-control"
-                        id="descripcion"
-                        name="descripcion"
-                        rows="4"
-                        placeholder="Descripción detallada del implemento médico..."></textarea>
-                    </div>
-
-                    <!-- 2.5 Cantidad -->
-                    <div class="form-group">
-                      <label for="cantidad">Cantidad en Inventario</label>
-                      <input
-                        type="number"
-                        class="form-control"
-                        id="cantidad"
-                        name="cantidad"
-                        placeholder="0"
-                        min="0">
-                    </div>
-                  </form>
-                </div>
-
-                <!-- 1.4 Botones de acción -->
-                <div class="card-action">
-                  <button class="btn btn-round btn-success" onclick="guardarImplemento()">
-                    <i class="fas fa-save"></i> Guardar Implemento
-                  </button>
-                  <button class="btn btn-round btn-secondary" onclick="limpiarFormulario()">
-                    <i class="fas fa-redo"></i> Limpiar
-                  </button>
-                  <button class="btn btn-round btn-danger" onclick="cancelar()">
-                    <i class="fas fa-times"></i> Cancelar
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Product List Screen -->
-          <div id="cont_product_list" class="row d-none">
-
-            <div class="col-md-12" id="wrapper_catalog">
+          <!-- Ini Product Screen -->
+          <div id="cont_product" class="row d-none">
+            <!-- Ini Producct List Sub-Screen -->
+            <div class="col-md-12" id="screen_catalog_products">
               <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
                   <h4 class="card-title mb-0">Catálogo de Productos</h4>
@@ -522,9 +388,11 @@
                 </div>
               </div>
             </div>
+            <!-- End Producct List Sub-Screen -->
 
-            <div class="row d-none" id="cont_detalle_producto">
-
+            <!-- Ini Product Detail Sub-Screen -->
+            <div class="row d-none" id="screen_product_detail">
+              <!-- Panel Opciones -->
               <div class="col-md-12 d-flex align-items-center mb-4">
                 <button class="btn btn-secondary btn-round me-3" id="btn_back_to_catalog">
                   <i class="fas fa-arrow-left"></i> Volver al Catálogo
@@ -532,49 +400,11 @@
                 <h1 class="m-0 flex-grow-1 text-center" style="margin-left: -150px !important;">Detalles</h1>
               </div>
 
-              <div class="col-md-12 d-none">
-                <div class="card">
-                  <div class="card-header">
-                    <h4 class="card-title">Opciones</h4>
-                  </div>
-                  <div class="card-body">
-
-                    <button class="btn btn-round btn-success en-desarrollo">
-                      <span class="btn-label">
-                        <i class="fa fa-link"></i>
-                      </span>
-                      Compartir
-                    </button>
-
-                    <button id="btn_product_edit" class="btn btn-round btn-secondary en-desarrollo">
-                      <span class="btn-label">
-                        <i class="fa fa-edit"></i>
-                      </span>
-                      Modificar
-                    </button>
-
-                    <button class="btn btn-round btn-info en-desarrollo">
-                      <span class="btn-label">
-                        <i class="fas fa-sticky-note"></i>
-                      </span>
-                      Agregar Nota
-                    </button>
-
-                    <button class="btn btn-round btn-danger en-desarrollo">
-                      <span class="btn-label">
-                        <i class="fas fa-ban"></i>
-                      </span>
-                      Inactivar
-                    </button>
-
-                  </div>
-                </div>
-              </div>
-
+              <!-- Panel Información General -->
               <div class="col-md-4">
                 <div class="card">
                   <div class="card-header">
-                    <h4 class="card-title">General</h4>
+                    <h4 class="card-title">Información General</h4>
                   </div>
                   <div class="card-body">
                     <div class="form-group">
@@ -602,7 +432,9 @@
                 </div>
               </div>
 
+              <!-- Panel Contenido -->
               <div class="col-md-7">
+                <!-- Panel Documentos -->
                 <div class="col-md-12">
                   <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
@@ -617,7 +449,7 @@
                     </div>
                   </div>
                 </div>
-
+                <!-- Panel Imagenes -->
                 <div class="col-md-12">
                   <div class="card">
                     <div class="card-header">
@@ -628,7 +460,7 @@
                     </div>
                   </div>
                 </div>
-
+                <!-- Panel Videos -->
                 <div class="col-md-12">
                   <div class="card">
                     <div class="card-header">
@@ -641,6 +473,7 @@
                 </div>
               </div>
 
+              <!-- Panel Referencias -->
               <div class="col-md-12 d-none" id="cont_variantes_wrapper">
                 <div class="card">
                   <div class="card-header">
@@ -666,154 +499,14 @@
               </div>
 
             </div>
-
+            <!-- End Product Detail Sub-Screen -->
           </div>
+          <!-- End Product Create Screen -->
 
-          <!-- Client Create Screen -->
-          <div id="cont_client_create" class="row d-none">
-            <div class="col-md-12">
-              <div class="card">
-                <div class="card-header">
-                  <div class="card-title">
-                    <i class="fas fa-user-plus"></i> Crear Cliente
-                  </div>
-                </div>
-                <div class="card-body">
-                  <form action="#" method="POST" id="form_client_create">
-                    <div class="row">
-                      <div class="col-md-6">
-                        <div class="form-group form-group-default">
-                          <label for="nombreCliente">Nombre / Razón Social</label>
-                          <input type="text" class="form-control" id="nombreCliente" name="nombre_cliente" required>
-                        </div>
-                      </div>
-                      <div class="col-md-6">
-                        <div class="form-group form-group-default">
-                          <label for="tipoDocumento">Tipo de Documento</label>
-                          <select class="form-select" id="tipoDocumento" name="tipo_documento">
-                            <option value="CC">Cédula de Ciudadanía</option>
-                            <option value="NIT">NIT</option>
-                            <option value="CE">Cédula de Extranjería</option>
-                            <option value="PAS">Pasaporte</option>
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="row">
-                      <div class="col-md-6">
-                        <div class="form-group form-group-default">
-                          <label for="numeroDocumento">Número de Documento</label>
-                          <input type="text" class="form-control" id="numeroDocumento" name="numero_documento" required>
-                        </div>
-                      </div>
-                      <div class="col-md-6">
-                        <div class="form-group form-group-default">
-                          <label for="telefonoCliente">Teléfono / Celular</label>
-                          <input type="text" class="form-control" id="telefonoCliente" name="telefono_cliente" required>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="row">
-                      <div class="col-md-6">
-                        <div class="form-group form-group-default">
-                          <label for="correoCliente">Correo Electrónico</label>
-                          <input type="email" class="form-control" id="correoCliente" name="correo_cliente" required>
-                        </div>
-                      </div>
-                      <div class="col-md-6">
-                        <div class="form-group form-group-default">
-                          <label for="direccionCliente">Dirección y Ciudad</label>
-                          <input type="text" class="form-control" id="direccionCliente" name="direccion_cliente" required>
-                        </div>
-                      </div>
-                    </div>
-                  </form>
-                </div>
-                <div class="card-action">
-                  <button class="btn btn-round btn-success" onclick="guardarCliente()">
-                    <i class="fas fa-save"></i> Guardar Cliente
-                  </button>
-                  <button class="btn btn-round btn-secondary" onclick="document.getElementById('form_client_create').reset()">
-                    <i class="fas fa-redo"></i> Limpiar
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Client List Screen -->
-          <div id="cont_client_list" class="row d-none">
-            <div class="col-md-12">
-              <div class="card">
-                <div class="card-header">
-                  <h4 class="card-title">Listado de Clientes</h4>
-                </div>
-                <div class="card-body">
-                  <div class="table-responsive">
-                    <table id="tbl_list_clientes" class="display table table-striped table-hover">
-                      <thead>
-                        <tr>
-                          <th>ID</th>
-                          <th>Nombre / Razón Social</th>
-                          <th>Tipo Doc</th>
-                          <th>Número Doc</th>
-                          <th>Teléfono</th>
-                          <th>Correo</th>
-                          <th>Dirección</th>
-                          <th class="text-center">Abrir</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Client Details Screen -->
-          <div id="cont_detalle_cliente" class="row d-none">
-            <div class="col-md-12 text-center">
-              <h1>Detalles del Cliente</h1>
-              <h3 id="detalle_cliente_nombre" class="text-primary"></h3>
-            </div>
-
-            <div class="col-md-6">
-              <div class="card">
-                <div class="card-header">
-                  <h4 class="card-title">Añadir Evaluación / Comentario</h4>
-                </div>
-                <div class="card-body">
-                  <form id="form_add_comment">
-                    <input type="hidden" id="detalle_client_id" name="client_id">
-                    <div class="form-group">
-                      <label>Comentario de Progreso</label>
-                      <textarea class="form-control" id="detalle_comment" name="comment" rows="4" required></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-round btn-primary mt-3">Guardar Progreso</button>
-                  </form>
-                </div>
-              </div>
-            </div>
-
-            <div class="col-md-6">
-              <div class="card">
-                <div class="card-header">
-                  <h4 class="card-title">Historial de Progreso</h4>
-                </div>
-                <div class="card-body">
-                  <ul class="list-group list-group-bordered" id="list_client_comments">
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Remisiones Screen -->
+          <!-- Ini Remisiones Screen -->
           <div id="cont_remisiones" class="row d-none">
 
-            <!-- Vista de Lista de Remisiones -->
+            <!-- Ini Lista de Remisiones Sub-Screen -->
             <div class="col-md-12" id="remisiones_list_view">
               <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
@@ -850,8 +543,9 @@
                 </div>
               </div>
             </div>
+            <!-- End Lista de Remisiones Sub-Screen -->
 
-            <!-- Vista de Crear Remisión -->
+            <!-- Ini Crear Remisión Sub-Screen -->
             <div class="col-md-12 d-none" id="remisiones_create_view">
               <div class="card">
                 <div class="card-header">
@@ -948,12 +642,12 @@
                               <input type="number" class="form-control" name="item_cantidad[]" min="1" value="1">
                             </td>
                             <td class="text-center">
-                              <button type="button" class="btn btn-danger btn-sm btn-round btn-remove-item" onclick="removerLineaRemision(this)"><i class="fas fa-trash"></i></button>
+                              <button type="button" class="btn btn-danger btn-sm btn-round btn-remove-item" data-selector="remover_linea_remision"><i class="fas fa-trash"></i></button>
                             </td>
                           </tr>
                         </tbody>
                       </table>
-                      <button type="button" class="btn btn-info btn-sm btn-round mt-2" onclick="agregarLineaRemision()">
+                      <button type="button" class="btn btn-info btn-sm btn-round mt-2" id="btn_agregar_linea_remision">
                         <i class="fas fa-plus"></i> Agregar Línea
                       </button>
                     </div>
@@ -964,264 +658,23 @@
                   <button class="btn btn-round btn-secondary" onclick="document.getElementById('form_remision_create').reset()">
                     <i class="fas fa-redo"></i> Limpiar
                   </button>
-                  <button class="btn btn-round btn-success" onclick="guardarRemision()">
+                  <button class="btn btn-round btn-success" id="btn_guardar_remision">
                     <i class="fas fa-save"></i> Generar Remisión
                   </button>
                 </div>
               </div>
             </div>
+            <!-- End Crear Remisión Sub-Screen -->
 
           </div>
-
-          <!-- Activity Center View -->
-          <style>
-            .timeline-modern {
-              position: relative;
-              padding-left: 2rem;
-              margin: 1.5rem 0;
-            }
-
-            .timeline-modern::before {
-              content: '';
-              position: absolute;
-              top: 0;
-              bottom: 0;
-              left: 0.75rem;
-              width: 3px;
-              background: linear-gradient(180deg, #e9ecef 0%, #e9ecef 80%, rgba(233, 236, 239, 0) 100%);
-            }
-
-            .timeline-modern-item {
-              position: relative;
-              margin-bottom: 2rem;
-              opacity: 0;
-              transform: translateY(20px);
-              animation: fadeInUp 0.5s ease forwards;
-            }
-
-            @keyframes fadeInUp {
-              to {
-                opacity: 1;
-                transform: translateY(0);
-              }
-            }
-
-            .timeline-modern-icon {
-              position: absolute;
-              left: -2.6rem;
-              top: 0.2rem;
-              width: 40px;
-              height: 40px;
-              border-radius: 50%;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              color: white;
-              box-shadow: 0 4px 10px rgba(0, 0, 0, .15);
-              font-size: 1.2rem;
-              z-index: 2;
-              border: 3px solid #fff;
-            }
-
-            .timeline-modern-content {
-              background: #fff;
-              border-radius: 0.75rem;
-              padding: 1.5rem;
-              box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
-              border: 1px solid rgba(0, 0, 0, 0.04);
-              transition: transform 0.3s ease, box-shadow 0.3s ease;
-              position: relative;
-            }
-
-            .timeline-modern-content:hover {
-              transform: translateY(-3px);
-              box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
-            }
-
-            .timeline-modern-content::before {
-              content: "";
-              position: absolute;
-              top: 15px;
-              left: -8px;
-              border-style: solid;
-              border-width: 8px 8px 8px 0;
-              border-color: transparent #fff transparent transparent;
-            }
-
-            .timeline-time {
-              font-size: 0.85rem;
-              color: #888;
-              margin-bottom: 0.8rem;
-              display: flex;
-              align-items: center;
-              gap: 0.4rem;
-            }
-
-            .timeline-user {
-              font-weight: 700;
-              color: #1a2035;
-              font-size: 1.1rem;
-            }
-
-            .timeline-badge-role {
-              font-size: 0.7rem;
-              padding: 0.2rem 0.5rem;
-              border-radius: 20px;
-              margin-left: 0.5rem;
-              font-weight: 600;
-            }
-          </style>
-
-          <!-- Activity Center Screen -->
-          <div id="cont_activity_center" class="row d-none">
-            <div class="col-md-12">
-              <div class="card card-round">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                  <div class="card-title text-primary"><i class="fas fa-satellite-dish me-2"></i>Centro de Actividades (Vista Administrador)</div>
-                  <span class="badge badge-success">En Vivo <span class="spinner-grow spinner-grow-sm text-success ms-1" role="status" aria-hidden="true" style="width: 10px; height: 10px;"></span></span>
-                </div>
-                <div class="card-body bg-light rounded-bottom">
-                  <p class="text-muted mb-4">Monitor de eventos de sistema. Datos de prueba cargados automáticamente.</p>
-
-                  <div class="timeline-modern" id="admin_activity_timeline">
-                    <!-- Renderizado por JS -->
-                  </div>
-
-                </div>
-              </div>
-            </div>
-          </div>
+          <!-- End Remisiones Screen -->
         </div>
-
-        <!-- RESOLVER SCREEN FUERA DE ETIQUETAS -->
-
-        <!-- Activities Screen -->
-        <div id="cont_activities" class="row d-none">
-          <div class="col-md-12">
-            <div class="card">
-              <div class="card-header d-flex justify-content-between align-items-center">
-                <h4 class="card-title"><i class="fas fa-tasks"></i> Tablero de Actividades</h4>
-                <button class="btn btn-primary btn-round btn-sm module_development" id="btn_add_task">
-                  <i class="fas fa-plus"></i> Nueva Tarea
-                </button>
-              </div>
-              <div class="card-body bg-light" style="border-radius: 0 0 10px 10px;">
-                <div class="row">
-                  <!-- Columna Pendientes -->
-                  <div class="col-md-4">
-                    <div class="card mb-3 border-0 shadow-sm" style="background-color: #f4f6f9;">
-                      <div class="card-header bg-transparent border-0 pb-0">
-                        <h5 class="card-title text-secondary font-weight-bold"><i class="fas fa-clipboard-list text-warning me-2"></i> Pendientes <span class="badge badge-count float-end">2</span></h5>
-                      </div>
-                      <div class="card-body" style="min-height: 400px;">
-                        <!-- Tarea ejemplo -->
-                        <div class="card mb-3 shadow-sm card-task border-left-warning" style="border-left: 4px solid #ffad46; cursor: grab;">
-                          <div class="card-body p-3">
-                            <h6 class="font-weight-bold text-dark">Revisar inventario general</h6>
-                            <p class="text-muted small mb-2" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">Hacer conteo físico de los productos en almacén principal y verificar inconsistencias.</p>
-                            <div class="d-flex justify-content-between align-items-center">
-                              <span class="badge badge-warning">Alta</span>
-                              <small class="text-muted"><i class="far fa-clock"></i> 10 Oct</small>
-                            </div>
-                          </div>
-                        </div>
-
-                        <!-- Tarea ejemplo -->
-                        <div class="card mb-3 shadow-sm card-task" style="border-left: 4px solid #48abf7; cursor: grab;">
-                          <div class="card-body p-3">
-                            <h6 class="font-weight-bold text-dark">Llamar a proveedores</h6>
-                            <p class="text-muted small mb-2" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">Confirmar la entrega del pedido #405 para implementos de cirugía.</p>
-                            <div class="d-flex justify-content-between align-items-center">
-                              <span class="badge badge-info">Media</span>
-                              <small class="text-muted"><i class="far fa-clock"></i> 12 Oct</small>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Columna En Progreso -->
-                  <div class="col-md-4">
-                    <div class="card mb-3 border-0 shadow-sm" style="background-color: #f4f6f9;">
-                      <div class="card-header bg-transparent border-0 pb-0">
-                        <h5 class="card-title text-secondary font-weight-bold"><i class="fas fa-spinner text-primary me-2"></i> En Progreso <span class="badge badge-count float-end">1</span></h5>
-                      </div>
-                      <div class="card-body" style="min-height: 400px;">
-                        <!-- Tarea ejemplo -->
-                        <div class="card mb-3 shadow-sm card-task" style="border-left: 4px solid #f25961; cursor: grab;">
-                          <div class="card-body p-3">
-                            <h6 class="font-weight-bold text-dark">Actualización de precios</h6>
-                            <p class="text-muted small mb-2" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">Actualizar los precios en el sistema principal según la última TRM.</p>
-                            <div class="d-flex justify-content-between align-items-center">
-                              <span class="badge badge-danger">Crítica</span>
-                              <div class="avatar-sm">
-                                <img src="<?= base_url('public/assets/img/avatar-male.jpg') ?>" alt="..." class="avatar-img rounded-circle border border-white">
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Columna Completado -->
-                  <div class="col-md-4">
-                    <div class="card mb-3 border-0 shadow-sm" style="background-color: #f4f6f9;">
-                      <div class="card-header bg-transparent border-0 pb-0">
-                        <h5 class="card-title text-secondary font-weight-bold"><i class="fas fa-check-circle text-success me-2"></i> Completado <span class="badge badge-count float-end">1</span></h5>
-                      </div>
-                      <div class="card-body" style="min-height: 400px;">
-                        <!-- Tarea ejemplo -->
-                        <div class="card mb-3 shadow-sm card-task" style="border-left: 4px solid #31ce36; opacity: 0.7; cursor: grab;">
-                          <div class="card-body p-3">
-                            <h6 class="font-weight-bold text-dark text-decoration-line-through">Facturación mensual</h6>
-                            <p class="text-muted small mb-2" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">Generar facturas de cierre de mes de Septiembre.</p>
-                            <div class="d-flex justify-content-between align-items-center">
-                              <span class="badge badge-success">Completado</span>
-                              <small class="text-success"><i class="fas fa-check-double"></i> Listo</small>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- News Wall Screen -->
-        <div id="cont_news_wall" class="row d-none">
-          <div class="col-md-12">
-            <div class="card card-round border-0 shadow-sm">
-              <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #1572e8 0%, #0d47a1 100%); border-radius: 10px 10px 0 0;">
-                <div class="card-title text-white fw-bold"><i class="fas fa-newspaper me-2"></i>Mural de Noticias y Recomendaciones</div>
-                <button class="btn btn-light btn-round btn-sm text-primary fw-bold shadow-sm" onclick="$('#modal_recommend_article').modal('show')">
-                  <i class="fas fa-plus"></i> Compartir Artículo
-                </button>
-              </div>
-              <div class="card-body bg-light rounded-bottom p-4">
-                <div class="text-center mb-5 mt-3">
-                  <h2 class="fw-bold text-dark mb-2">Mantente Informado</h2>
-                  <p class="text-muted">Descubre los últimos artículos, tendencias y recomendaciones compartidas por el equipo de GM Suministros.</p>
-                </div>
-
-                <div class="row" id="news_wall_grid">
-                  <!-- Rendered by JS -->
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- End Screens -->
       </div>
+      <!-- End Body -->
     </div>
+    <!-- End Content -->
 
-    <!-- Footers -->
+    <!-- Ini Footer -->
     <footer class="footer">
       <div class="container-fluid d-flex justify-content-between">
         <div>
@@ -1230,8 +683,8 @@
         </div>
       </div>
     </footer>
-  </div>
-  <!-- End Content -->
+    <!-- End Footer -->
+
   </div>
 
   <!-- ======================================================== -->
