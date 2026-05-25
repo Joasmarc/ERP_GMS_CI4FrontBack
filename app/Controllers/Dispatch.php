@@ -75,6 +75,10 @@ class Dispatch extends BaseController
 
         $itemsCount = count($descripciones);
         for ($i = 0; $i < $itemsCount; $i++) {
+            // Evitar guardar líneas vacías
+            if (empty($referencias[$i]) && empty($descripciones[$i])) {
+                continue;
+            }
             $itemData = [
                 'id_base'         => $dispatchId,
                 'reference'       => $referencias[$i],

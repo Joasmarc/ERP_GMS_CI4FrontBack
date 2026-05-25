@@ -157,7 +157,7 @@
                             <td class="py-2.5 px-2 border-r border-primary"><?= $hasData ? esc($items[$i]['description']) : '' ?></td>
                             <td class="py-2.5 px-2 border-r border-primary text-center"><?= $hasData ? esc($items[$i]['batch']) : '' ?></td>
                             <td class="py-2.5 px-2 border-r border-primary text-center"><?= $hasData && $items[$i]['expiration_date'] ? esc(date('Y-m-d', strtotime($items[$i]['expiration_date']))) : '' ?></td>
-                            <td class="py-2.5 px-2 text-center font-medium"><?= $hasData ? esc($items[$i]['quiantity']) : '' ?></td>
+                            <td class="py-2.5 px-2 text-center font-medium"><?= ($hasData && $items[$i]['quiantity'] != 0) ? esc($items[$i]['quiantity']) : '' ?></td>
                         </tr>
                     <?php endfor; ?>
                     
@@ -165,7 +165,7 @@
                     <tr class="bg-accent-green border-t-2 border-secondary text-secondary">
                         <td colspan="5" class="py-1.5 px-3 border-r border-primary font-bold text-right uppercase">Total
                             Cantidad de Insumos:</td>
-                        <td class="py-1.5 px-2 text-center font-bold text-base"><?= esc($totalCantidad) ?></td>
+                        <td class="py-1.5 px-2 text-center font-bold text-base"><?= $totalCantidad > 0 ? esc($totalCantidad) : '' ?></td>
                     </tr>
                 </tbody>
             </table>

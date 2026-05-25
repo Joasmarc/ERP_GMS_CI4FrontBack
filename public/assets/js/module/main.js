@@ -455,7 +455,7 @@ $('#btn_agregar_linea_remision').on('click', function () {
             <input type="date" class="form-control" name="item_vencimiento[]">
         </td>
         <td>
-            <input type="number" class="form-control" name="item_cantidad[]" min="1" value="1">
+            <input type="number" class="form-control" name="item_cantidad[]" min="0" value="1">
         </td>
         <td class="text-center">
             <button type="button" class="btn btn-danger btn-sm btn-round btn-remove-item" data-selector="remover_linea_remision"><i class="fas fa-trash"></i></button>
