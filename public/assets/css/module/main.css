@@ -32,3 +32,222 @@
     padding-bottom: 200px;
     padding-top: 200px;
 }
+
+/* ======================================================== */
+/*   RESPONSIVE - Mobile Devices                            */
+/* ======================================================== */
+
+/* --- Tablets and below (max-width: 991px) --- */
+@media (max-width: 991.98px) {
+    /* Page inner padding */
+    .page-inner {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    /* Product detail: stack info + content vertically */
+    #screen_product_detail > .col-md-4,
+    #screen_product_detail > .col-md-7 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+
+    /* Product detail: fix the "Volver" header bar */
+    #screen_product_detail > .col-md-12:first-child {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px;
+    }
+    #screen_product_detail > .col-md-12:first-child h1 {
+        margin-left: 0 !important;
+        text-align: left;
+        font-size: 1.4rem;
+    }
+
+    /* Card headers: wrap when search bar is present */
+    .card-header.d-flex {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .card-header .form-group {
+        width: 100%;
+    }
+    .card-header .input-icon {
+        min-width: unset !important;
+        width: 100%;
+    }
+
+    /* Product images and videos: make them fluid */
+    #cont_imagenes_producto img,
+    #cont_videos_producto video {
+        max-width: 100% !important;
+        height: auto !important;
+        margin: 5px 0 !important;
+    }
+
+    /* Documents grid: 2 columns instead of 3 on tablets */
+    #cont_documentos_producto > .col-4 {
+        flex: 0 0 50%;
+        max-width: 50%;
+    }
+
+    /* Remisiones create: stack columns */
+    #remisiones_create_view .col-md-3,
+    #remisiones_create_view .col-md-6 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+
+    /* Modal PDF viewers: reduce height */
+    #pdf_viewer_iframe,
+    #remision_pdf_iframe {
+        height: 60vh !important;
+    }
+
+    /* Footer: stack */
+    footer .container-fluid {
+        flex-direction: column;
+        text-align: center;
+        gap: 5px;
+    }
+}
+
+/* --- Small phones (max-width: 575px) --- */
+@media (max-width: 575.98px) {
+    /* Reduce page title size */
+    .page-title {
+        font-size: 1.2rem;
+    }
+
+    /* Product catalog cards: full width on phones */
+    .product-card-item {
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* Product card image container: shorter on phones */
+    .card-img-container {
+        height: 160px !important;
+    }
+
+    /* Documents grid: full width single column */
+    #cont_documentos_producto > .col-4 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+
+    /* Card body padding reduction */
+    .card-body {
+        padding: 15px 12px;
+    }
+
+    /* Remisiones table: make cells stack-friendly */
+    #tbl_remision_items th,
+    #tbl_remision_items td {
+        white-space: nowrap;
+        font-size: 0.85rem;
+    }
+    #tbl_remision_items input.form-control {
+        min-width: 100px;
+        font-size: 0.85rem;
+    }
+
+    /* Card action buttons: stack vertically */
+    .card-action.text-end {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .card-action.text-end .btn {
+        width: 100%;
+    }
+
+    /* Profile username: hide on very small screens */
+    .profile-username .op-7 {
+        display: none;
+    }
+
+    /* Modal PDF viewers: smaller on phones */
+    #pdf_viewer_iframe,
+    #remision_pdf_iframe {
+        height: 50vh !important;
+    }
+
+    /* Modals: less padding on body */
+    .modal-body {
+        padding: 15px !important;
+    }
+
+    /* Drag-drop area: less padding */
+    #drag_drop_area {
+        padding: 20px 15px !important;
+    }
+    #drag_drop_area h5 {
+        font-size: 0.95rem;
+    }
+
+    /* Remisiones list card tools: full width create button */
+    .card-tools .btn {
+        font-size: 0.85rem;
+        padding: 6px 12px;
+    }
+
+    /* Product detail button back */
+    #btn_back_to_catalog {
+        width: 100%;
+        margin-bottom: 5px;
+    }
+
+    /* Welcome card: smaller text */
+    #cont_dashboard .card-body h2 {
+        font-size: 1.3rem;
+    }
+    #cont_dashboard .card-body p {
+        font-size: 0.9rem;
+    }
+
+    /* Navbar notification dropdown */
+    .dropdown-menu.notif-box {
+        width: 280px;
+        right: -50px;
+    }
+
+    /* DataTables responsive helpers */
+    .dataTables_wrapper .dataTables_length,
+    .dataTables_wrapper .dataTables_filter {
+        text-align: left;
+        margin-bottom: 10px;
+    }
+    .dataTables_wrapper .dataTables_filter input {
+        width: 100% !important;
+        margin-left: 0 !important;
+    }
+    .dataTables_wrapper .dataTables_info,
+    .dataTables_wrapper .dataTables_paginate {
+        text-align: center;
+        margin-top: 10px;
+    }
+}
+
+/* --- Extra small phones (max-width: 374px) --- */
+@media (max-width: 374.98px) {
+    .page-inner {
+        padding-left: 5px;
+        padding-right: 5px;
+    }
+
+    .card {
+        margin-bottom: 15px;
+    }
+
+    /* Even smaller card body padding */
+    .card-body {
+        padding: 10px 8px;
+    }
+
+    /* Reduce button sizes globally */
+    .btn-sm {
+        font-size: 0.75rem;
+        padding: 4px 8px;
+    }
+}

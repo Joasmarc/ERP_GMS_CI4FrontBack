@@ -162,6 +162,14 @@ $(function () {
 /*   EVENTS                                                 */
 /* ======================================================== */
 
+// Mobile - Cerrar sidebar al hacer clic en un item del menú
+$('.sidebar .nav-item a').on('click', function () {
+    if ($(window).width() <= 991) {
+        $('html').removeClass('nav_open');
+        $('.sidenav-toggler').removeClass('toggled');
+    }
+});
+
 // Main - Abrir dashboard
 $('#btn_open_dashboard').on('click', function () {
     showScreen(SCREENS.dashboard);
@@ -254,7 +262,7 @@ $(document).on('click', '[data-selector="abrir"]', function () {
         success: function (resp) {
             let imagenes_html = '';
             resp.imagePaths.forEach(path => {
-                imagenes_html += `<img src="${SITE_URL}${path}" alt="Producto" style="max-width: 500px; max-height: 500px; margin: 5px;">`;
+                imagenes_html += `<img src="${SITE_URL}${path}" alt="Producto" style="max-width: 100%; width: auto; max-height: 500px; margin: 5px; border-radius: 8px;">`;
             });
             $('#cont_imagenes_producto').html(imagenes_html);
         },
@@ -280,7 +288,7 @@ $(document).on('click', '[data-selector="abrir"]', function () {
                     src="${SITE_URL}${path}" 
                     controls 
                     preload="metadata" 
-                    style="max-width: 500px; max-height: 500px; margin: 5px;"
+                    style="max-width: 100%; width: auto; max-height: 500px; margin: 5px;"
                     onerror="this.style.display='none'" 
                     >
                     Tu navegador no soporta el elemento de video.
@@ -311,7 +319,7 @@ $(document).on('click', '[data-selector="abrir"]', function () {
                 let documentos_html = '';
                 resp.documents.forEach((document, index) => {
                     documentos_html += `
-                        <div class="col-4 text-center mb-3">
+                        <div class="col-6 col-md-4 text-center mb-3">
                             <a href="javascript:void(0)" class="text-danger text-decoration-none" onclick="viewPdf('${SITE_URL}${document.path}', '${document.name}')">
                                 <i class="fas fa-file-pdf fa-3x"></i>
                                 <p class="mt-2 mb-0 text-dark fw-bold" style="font-size:0.85rem; line-height: 1.2;">${document.name}</p>
