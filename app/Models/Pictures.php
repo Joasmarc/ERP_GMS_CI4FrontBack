@@ -19,16 +19,11 @@ class Pictures extends Model
     // 3.0 Configurar tipos de datos
     protected $castings = [
         'id' => 'int',
-        'path' => 'string',
-        'created_at' => 'date',
-        'updated_at' => 'date'
+        'path' => 'string'
     ];
 
-    // 4.0 Habilitar timestamps
-    protected $useTimestamps = true;
-    protected $createdField = 'created_at';
-    protected $updatedField = 'updated_at';
-    protected $dateFormat = 'date';
+    // 4.0 Deshabilitar timestamps ya que no existen en la definición de la tabla
+    protected $useTimestamps = false;
 
     // 5.0 Validación de datos
     protected $validationRules = [
