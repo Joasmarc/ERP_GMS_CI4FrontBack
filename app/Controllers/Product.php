@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Models\Products;
 
+
 class Product extends BaseController
 {
     // Tabla_G03
@@ -247,4 +248,40 @@ class Product extends BaseController
             ]
         ]);
     }
+
+    public function upload_image()
+    {
+        // 1.0 Validar entrada
+        $familyId = $this->request->getPost('family_id');
+        $file = $this->request->getFile('image');
+
+        if (!$familyId || !$file || !$file->isValid() || !in_array($file->getMimeType(), ['image/jpeg', 'image/png', 'image/gif', 'image/webp'])) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Archivo de imagen inválido o falta family_id.']);
+        }
+
+        // 2.0 Subir archivo
+        $newName = $file->getRandomName();
+        $uploadPath = 'uploads/families/';
+
+        if (!is_dir(ROOTPATH . $uploadPath)) {
+            mkdir(ROOTPATH . $uploadPath, 0777, true);
+        }
+
+        $file->move(ROOTPATH . $uploadPath, $newName);
+        $publicPath = '/' . $uploadPath . $newName;
+
+        // 3.0 Actualizar en base de datos la familia
+        $familiesModel = new \App\Models\Families();
+        $familiesModel->update($familyId, [
+            'img_path' => $publicPath
+        ]);
+
+        // 4.0 Retornar éxito
+        return $this->response->setJSON([
+            'status' => 'success',
+            'message' => 'Imagen de producto actualizada correctamente.',
+            'path' => $publicPath
+        ]);
+    }
 }
+

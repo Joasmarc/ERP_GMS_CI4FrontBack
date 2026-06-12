@@ -123,7 +123,7 @@ class Auth extends BaseController
                 return json_decode($response->getBody(), true);
             }
             // 2.2 Manejar error de autenticación
-            log_message('error', 'Error al autenticar en Siigo: ' . $response->getBody());
+            log_message('error', 'Error al autenticar en Siigo: ' . $response->getBody() . ' | Username: ' . env('SIIGO_USERNAME') . ' | Partner-Id: ' . env('SIIGO_PARTNER_ID') . ' | Auth URL: ' . env('SIIGO_AUTH_URL'));
             return null;
         } catch (\Exception $e) {
             // 2.3 Manejar excepción de conexión

@@ -407,6 +407,18 @@
                     <h4 class="card-title">Información General</h4>
                   </div>
                   <div class="card-body">
+                    <!-- Contenedor para Imagen de la Familia en Información General -->
+                    <div id="cont_info_general_image" class="form-group text-center d-none" style="border-top: 1px solid #ebedf2; padding-top: 15px; margin-top: 15px;">
+                      <img id="info_general_family_image" src="" alt="Imagen Principal" class="img-fluid rounded shadow-sm" style="max-height: 180px; object-fit: contain;">
+                    </div>
+
+                    <?php if (isset($credentials[12]) && $credentials[12] === '1'): ?>
+                      <div class="form-group text-center mt-2">
+                        <button id="btn_change_family_image" class="btn btn-primary btn-round btn-sm w-100">
+                          <i class="fas fa-camera"></i> Cambiar Imagen Principal
+                        </button>
+                      </div>
+                    <?php endif; ?>
                     <div class="form-group">
                       <label for="in_nombre_producto">Nombre</label>
                       <input id="in_nombre_producto" disabled type="text" class="form-control form-control-lg">
@@ -427,7 +439,6 @@
                       <label for="in_comentario_producto">Comentario</label>
                       <textarea id="in_comentario_producto" class="form-control" rows="5" disabled>                          </textarea>
                     </div>
-
                   </div>
                 </div>
               </div>
@@ -749,6 +760,7 @@
         <div class="modal-body">
           <!-- Hidden input for Siigo Product ID -->
           <input type="hidden" id="siigo_product_id_upload">
+          <input type="hidden" id="family_id_upload">
 
           <div id="drag_drop_area" class="border border-primary border-2 rounded p-5 text-center p-5 mb-3" style="border-style: dashed !important; cursor: pointer;">
             <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>

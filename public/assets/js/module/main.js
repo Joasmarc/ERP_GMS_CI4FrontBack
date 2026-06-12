@@ -255,20 +255,34 @@ $(document).on('click', '[data-selector="abrir"]', function () {
 
     // 5.0 Mostrar imagen del producto
     $('#cont_imagenes_producto').empty();
+    if (MACRO.fila_producto.img) {
+        let familyImgSrc = SITE_URL + '/' + MACRO.fila_producto.img.replace(/^\/+/, '');
+        $('#info_general_family_image').attr('src', familyImgSrc);
+        $('#cont_info_general_image').removeClass('d-none');
+    } else {
+        $('#info_general_family_image').attr('src', '');
+        $('#cont_info_general_image').addClass('d-none');
+    }
+
     $.ajax({
         url: SITE_URL + '/product/img/' + MACRO.fila_producto.id,
         type: 'GET',
         dataType: 'json',
         success: function (resp) {
             let imagenes_html = '';
-            resp.imagePaths.forEach(path => {
-                imagenes_html += `<img src="${SITE_URL}${path}" alt="Producto" style="max-width: 100%; width: auto; max-height: 500px; margin: 5px; border-radius: 8px;">`;
-            });
+            if (resp.imagePaths && resp.imagePaths.length > 0) {
+                imagenes_html += '<div class="d-flex flex-wrap justify-content-center">';
+                resp.imagePaths.forEach(path => {
+                    imagenes_html += `<img src="${SITE_URL}${path}" alt="Producto" style="max-width: 200px; width: auto; max-height: 200px; margin: 5px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">`;
+                });
+                imagenes_html += '</div>';
+            } else {
+                imagenes_html = '<div class="text-center text-muted"><p>No hay imágenes adicionales asociadas</p></div>';
+            }
             $('#cont_imagenes_producto').html(imagenes_html);
         },
         error: function (xhr, status, error) {
             console.log(error);
-            Swal.fire('<h5> ❌ OC No pudo ser registrada</h5>')
         },
         complete: function () {
             // always
@@ -364,6 +378,134 @@ $('#btn_upload_pdf').on('click', function () {
     $('#modal_upload_pdf').modal('show');
 });
 
+// Imagen_G03 - Abrir Modal de Subida de Imagen Principal (Familia)
+$(document).on('click', '#btn_change_family_image', function () {
+    const familyId = $('#btn_upload_pdf').data('family-id');
+    if (!familyId) {
+        swal('Error', 'No se encontró el ID de la familia de productos', 'error');
+        return;
+    }
+    // Set family id and reset modal preview/files
+    $('#family_id_upload').val(familyId);
+    $('#siigo_product_id_upload').val(''); // Clear product upload to distinguish
+    $('#file_input_image').val('');
+    $('#image_preview_container').addClass('d-none');
+    $('#image_preview').attr('src', '');
+    $('#image_filename').text('');
+    $('#modal_upload_image').modal('show');
+});
+
+// Imagen_G03 - Manejar Drag & Drop y Click en el área
+$(document).on('click', '#drag_drop_area', function () {
+    $('#file_input_image').trigger('click');
+});
+
+$(document).on('change', '#file_input_image', function () {
+    const file = this.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            $('#image_preview').attr('src', e.target.result);
+            $('#image_filename').text(file.name);
+            $('#image_preview_container').removeClass('d-none');
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+// Drag & drop events
+$(document).on('dragover', '#drag_drop_area', function (e) {
+    e.preventDefault();
+    $(this).addClass('bg-light');
+});
+
+$(document).on('dragleave', '#drag_drop_area', function (e) {
+    e.preventDefault();
+    $(this).removeClass('bg-light');
+});
+
+$(document).on('drop', '#drag_drop_area', function (e) {
+    e.preventDefault();
+    $(this).removeClass('bg-light');
+    const files = e.originalEvent.dataTransfer.files;
+    if (files.length) {
+        document.getElementById('file_input_image').files = files;
+        $('#file_input_image').trigger('change');
+    }
+});
+
+// Imagen_G03 - Enviar Imagen por AJAX
+$(document).on('click', '#btn_upload_image', function () {
+    const familyId = $('#family_id_upload').val();
+    const fileInput = document.getElementById('file_input_image');
+    const selectedImage = fileInput.files[0];
+
+    if (!familyId) {
+        // Si no hay family_id, podría ser el flujo antiguo de producto
+        const productId = $('#siigo_product_id_upload').val();
+        if (!productId) {
+            swal('Error', 'No se ha definido el producto o familia a actualizar', 'error');
+            return;
+        }
+    }
+
+    if (!selectedImage) {
+        swal('Atención', 'Selecciona una imagen primero', 'warning');
+        return;
+    }
+
+    let formData = new FormData();
+    formData.append('image', selectedImage);
+    formData.append('family_id', familyId);
+
+    const btn = $(this);
+    btn.prop('disabled', true).text('Subiendo...');
+
+    $.ajax({
+        url: SITE_URL + '/product/upload_image',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function (resp) {
+            if (typeof resp === 'string') {
+                try {
+                    resp = JSON.parse(resp);
+                } catch (e) { }
+            }
+
+            if (resp.status === 'success') {
+                swal('Éxito', 'Imagen actualizada correctamente', 'success');
+                $('#modal_upload_image').modal('hide');
+
+                // Recargar el catálogo completo para actualizar la imagen en GLOBAL_PRODUCTS_DATA
+                $.ajax({
+                    url: SITE_URL + '/product/listing_siigo',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (catalog_resp) {
+                        GLOBAL_PRODUCTS_DATA = catalog_resp.data || [];
+                        // Recargar los detalles del producto automáticamente con los datos frescos
+                        const productId = $('#btn_product_edit').data('id');
+                        if (productId) {
+                            $(`[data-selector="abrir"][data-id="${productId}"]`).trigger('click');
+                        }
+                    }
+                });
+            } else {
+                swal('Error', resp.message || 'Error al subir la imagen', 'error');
+            }
+        },
+        error: function (xhr, status, error) {
+            swal('Error', 'Hubo un problema de conexión', 'error');
+            console.error(error);
+        },
+        complete: function () {
+            btn.prop('disabled', false).text('Subir Imagen');
+        }
+    });
+});
+
 // Documentos_G03 - Limpiar iframe al cerrar el modal para detener la carga
 $('#modal_view_pdf').on('hidden.bs.modal', function () {
     $('#pdf_viewer_iframe').attr('src', '');
@@ -429,6 +571,7 @@ $('#btn_save_upload_pdf').on('click', function () {
         }
     });
 });
+
 
 // Tabla_G05 - Ver PDF de Remisión
 $(document).on('click', '[data-selector="ver_remision_pdf"]', function () {
