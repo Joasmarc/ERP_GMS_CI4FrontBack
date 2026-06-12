@@ -283,5 +283,105 @@ class Product extends BaseController
             'path' => $publicPath
         ]);
     }
+
+    public function listing_img()
+    {
+        $id = $this->request->getUri()->getSegment(3);
+        $familyPicsModel = new \App\Models\FamilyPictures();
+        $data = $familyPicsModel->join('pictures b', 'b.id = family_pictures.picture_id', 'inner')
+            ->where('family_pictures.family_id', $id)
+            ->select("b.path")
+            ->get()->getResultArray();
+
+        $imagePaths = array_column($data, 'path');
+        return $this->response->setJSON(['imagePaths' => $imagePaths]);
+    }
+
+    public function listing_video()
+    {
+        $id = $this->request->getUri()->getSegment(3);
+        $familyVideosModel = new \App\Models\FamilyVideos();
+        $data = $familyVideosModel->join('videos b', 'b.id = family_videos.video_id', 'inner')
+            ->where('family_videos.family_id', $id)
+            ->select("b.path")
+            ->get()->getResultArray();
+
+        $videoPaths = array_column($data, 'path');
+        return $this->response->setJSON(['videoPaths' => $videoPaths]);
+    }
+
+    public function upload_family_picture()
+    {
+        $familyId = $this->request->getPost('family_id');
+        $file = $this->request->getFile('image');
+
+        if (!$familyId || !$file || !$file->isValid() || !in_array($file->getMimeType(), ['image/jpeg', 'image/png', 'image/gif', 'image/webp'])) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Archivo de imagen inválido o falta family_id.']);
+        }
+
+        $newName = $file->getRandomName();
+        $uploadPath = 'uploads/pictures/';
+
+        if (!is_dir(ROOTPATH . $uploadPath)) {
+            mkdir(ROOTPATH . $uploadPath, 0777, true);
+        }
+
+        $file->move(ROOTPATH . $uploadPath, $newName);
+        $publicPath = '/' . $uploadPath . $newName;
+
+        $pictureModel = new \App\Models\Pictures();
+        $pictureId = $pictureModel->insert([
+            'path' => $publicPath
+        ]);
+
+        $familyPicsModel = new \App\Models\FamilyPictures();
+        $familyPicsModel->insert([
+            'family_id' => $familyId,
+            'picture_id' => $pictureId
+        ]);
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'message' => 'Imagen vinculada exitosamente.',
+            'path' => $publicPath
+        ]);
+    }
+
+    public function upload_family_video()
+    {
+        $familyId = $this->request->getPost('family_id');
+        $file = $this->request->getFile('video');
+
+        if (!$familyId || !$file || !$file->isValid() || !in_array($file->getMimeType(), ['video/mp4', 'video/webm', 'video/ogg'])) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Archivo de video inválido o falta family_id.']);
+        }
+
+        $newName = $file->getRandomName();
+        $uploadPath = 'uploads/videos/';
+
+        if (!is_dir(ROOTPATH . $uploadPath)) {
+            mkdir(ROOTPATH . $uploadPath, 0777, true);
+        }
+
+        $file->move(ROOTPATH . $uploadPath, $newName);
+        $publicPath = '/' . $uploadPath . $newName;
+
+        $videoModel = new \App\Models\Videos();
+        $videoId = $videoModel->insert([
+            'path' => $publicPath
+        ]);
+
+        $familyVideosModel = new \App\Models\FamilyVideos();
+        $familyVideosModel->insert([
+            'family_id' => $familyId,
+            'video_id' => $videoId
+        ]);
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'message' => 'Video vinculado exitosamente.',
+            'path' => $publicPath
+        ]);
+    }
 }
 

@@ -463,8 +463,11 @@
                 <!-- Panel Imagenes -->
                 <div class="col-md-12">
                   <div class="card">
-                    <div class="card-header">
+                    <div class="card-header d-flex justify-content-between align-items-center">
                       <h4 class="card-title">Imagenes</h4>
+                      <?php if (isset($credentials[8]) && $credentials[8] === '1'): ?>
+                        <button id="btn_upload_picture" class="btn btn-round btn-primary btn-sm"><i class="fas fa-upload"></i> Subir Imagen</button>
+                      <?php endif; ?>
                     </div>
                     <div class="card-body">
                       <div id="cont_imagenes_producto"></div>
@@ -474,8 +477,11 @@
                 <!-- Panel Videos -->
                 <div class="col-md-12">
                   <div class="card">
-                    <div class="card-header">
+                    <div class="card-header d-flex justify-content-between align-items-center">
                       <h4 class="card-title">Videos</h4>
+                      <?php if (isset($credentials[8]) && $credentials[8] === '1'): ?>
+                        <button id="btn_upload_video" class="btn btn-round btn-primary btn-sm"><i class="fas fa-upload"></i> Subir Video</button>
+                      <?php endif; ?>
                     </div>
                     <div class="card-body">
                       <div id="cont_videos_producto"></div>
@@ -804,6 +810,52 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-round btn-secondary" data-bs-dismiss="modal">Cancelar</button>
           <button type="button" class="btn btn-round btn-primary" id="btn_save_upload_pdf">Subir Documento</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para Carga de Imágenes de la Galería -->
+  <div class="modal fade" id="modal_upload_picture" tabindex="-1" aria-labelledby="modalUploadPictureLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalUploadPictureLabel">Cargar Imagen para la Familia</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="picture_family_id_upload">
+          <div class="form-group">
+            <label for="file_input_picture">Seleccionar archivo de Imagen</label>
+            <input type="file" class="form-control" id="file_input_picture" accept="image/*">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-round btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-round btn-primary" id="btn_save_upload_picture">Subir Imagen</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para Carga de Videos -->
+  <div class="modal fade" id="modal_upload_video" tabindex="-1" aria-labelledby="modalUploadVideoLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalUploadVideoLabel">Cargar Video para la Familia</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="video_family_id_upload">
+          <div class="form-group">
+            <label for="file_input_video">Seleccionar archivo de Video</label>
+            <input type="file" class="form-control" id="file_input_video" accept="video/mp4,video/webm,video/ogg">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-round btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-round btn-primary" id="btn_save_upload_video">Subir Video</button>
         </div>
       </div>
     </div>

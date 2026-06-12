@@ -265,7 +265,7 @@ $(document).on('click', '[data-selector="abrir"]', function () {
     }
 
     $.ajax({
-        url: SITE_URL + '/product/img/' + MACRO.fila_producto.id,
+        url: SITE_URL + '/product/img/' + (MACRO.fila_producto.family_id || MACRO.fila_producto.id),
         type: 'GET',
         dataType: 'json',
         success: function (resp) {
@@ -288,26 +288,30 @@ $(document).on('click', '[data-selector="abrir"]', function () {
             // always
         }
     });
-
+ 
     // 6.0 Mostrar video del producto
     $('#cont_videos_producto').empty();
     $.ajax({
-        url: SITE_URL + '/product/video/' + MACRO.fila_producto.id,
+        url: SITE_URL + '/product/video/' + (MACRO.fila_producto.family_id || MACRO.fila_producto.id),
         type: 'GET',
         dataType: 'json',
         success: function (resp) {
             let videos_html = '';
-            resp.videoPaths.forEach(path => {
-                videos_html += `<video 
-                    src="${SITE_URL}${path}" 
-                    controls 
-                    preload="metadata" 
-                    style="max-width: 100%; width: auto; max-height: 500px; margin: 5px;"
-                    onerror="this.style.display='none'" 
-                    >
-                    Tu navegador no soporta el elemento de video.
-                </video>`;
-            });
+            if (resp.videoPaths && resp.videoPaths.length > 0) {
+                resp.videoPaths.forEach(path => {
+                    videos_html += `<video 
+                        src="${SITE_URL}${path}" 
+                        controls 
+                        preload="metadata" 
+                        style="max-width: 100%; width: auto; max-height: 500px; margin: 5px;"
+                        onerror="this.style.display='none'" 
+                        >
+                        Tu navegador no soporta el elemento de video.
+                    </video>`;
+                });
+            } else {
+                videos_html = '<div class="text-center text-muted"><p>No hay videos asociados</p></div>';
+            }
             $('#cont_videos_producto').html(videos_html);
         },
         error: function (xhr, status, error) {
@@ -318,11 +322,13 @@ $(document).on('click', '[data-selector="abrir"]', function () {
             // always
         }
     });
-
+ 
     // 7.0 Mostrar documentos del producto
     $('#cont_documentos_producto').empty();
-    // 7.1 Guardar ID en el botón de subir PDF
+    // 7.1 Guardar ID en los botones de subir
     $('#btn_upload_pdf').data('family-id', MACRO.fila_producto.family_id || MACRO.fila_producto.id);
+    $('#btn_upload_picture').data('family-id', MACRO.fila_producto.family_id || MACRO.fila_producto.id);
+    $('#btn_upload_video').data('family-id', MACRO.fila_producto.family_id || MACRO.fila_producto.id);
     // 7.2 Obtener documentos
     $.ajax({
         url: SITE_URL + '/product/document/' + (MACRO.fila_producto.family_id || MACRO.fila_producto.id),
@@ -746,3 +752,129 @@ function viewPdf(url, title) {
     $('#pdf_viewer_iframe').attr('src', url);
     $('#modal_view_pdf').modal('show');
 }
+
+// Imagenes_G03 - Abrir modal de subida de imagen de la galeria
+$('#btn_upload_picture').on('click', function () {
+    const familyId = $(this).data('family-id');
+    if (!familyId) {
+        swal('Error', 'No hay una familia seleccionada', 'error');
+        return;
+    }
+    $('#picture_family_id_upload').val(familyId);
+    $('#file_input_picture').val('');
+    $('#modal_upload_picture').modal('show');
+});
+
+// Imagenes_G03 - Guardar imagen de la galeria
+$('#btn_save_upload_picture').on('click', function () {
+    const familyId = $('#picture_family_id_upload').val();
+    const fileInput = document.getElementById('file_input_picture');
+    const selectedFile = fileInput.files[0];
+
+    if (!selectedFile) {
+        swal('Atención', 'Selecciona una imagen primero', 'warning');
+        return;
+    }
+
+    let formData = new FormData();
+    formData.append('image', selectedFile);
+    formData.append('family_id', familyId);
+
+    const btn = $(this);
+    btn.prop('disabled', true).text('Subiendo...');
+
+    $.ajax({
+        url: SITE_URL + '/product/upload_family_picture',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function (resp) {
+            if (typeof resp === 'string') {
+                try { resp = JSON.parse(resp); } catch (e) { }
+            }
+
+            if (resp.status === 'success') {
+                swal('Éxito', 'Imagen subida correctamente', 'success');
+                $('#modal_upload_picture').modal('hide');
+
+                const productId = $('#btn_product_edit').data('id');
+                if (productId) {
+                    $(`[data-selector="abrir"][data-id="${productId}"]`).trigger('click');
+                }
+            } else {
+                swal('Error', resp.message || 'Error al subir la imagen', 'error');
+            }
+        },
+        error: function (xhr, status, error) {
+            swal('Error', 'Hubo un problema de conexión', 'error');
+            console.error(error);
+        },
+        complete: function () {
+            btn.prop('disabled', false).text('Subir Imagen');
+        }
+    });
+});
+
+// Videos_G03 - Abrir modal de subida de video
+$('#btn_upload_video').on('click', function () {
+    const familyId = $(this).data('family-id');
+    if (!familyId) {
+        swal('Error', 'No hay una familia seleccionada', 'error');
+        return;
+    }
+    $('#video_family_id_upload').val(familyId);
+    $('#file_input_video').val('');
+    $('#modal_upload_video').modal('show');
+});
+
+// Videos_G03 - Guardar video
+$('#btn_save_upload_video').on('click', function () {
+    const familyId = $('#video_family_id_upload').val();
+    const fileInput = document.getElementById('file_input_video');
+    const selectedFile = fileInput.files[0];
+
+    if (!selectedFile) {
+        swal('Atención', 'Selecciona un video primero', 'warning');
+        return;
+    }
+
+    let formData = new FormData();
+    formData.append('video', selectedFile);
+    formData.append('family_id', familyId);
+
+    const btn = $(this);
+    btn.prop('disabled', true).text('Subiendo...');
+
+    $.ajax({
+        url: SITE_URL + '/product/upload_family_video',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function (resp) {
+            if (typeof resp === 'string') {
+                try { resp = JSON.parse(resp); } catch (e) { }
+            }
+
+            if (resp.status === 'success') {
+                swal('Éxito', 'Video subido correctamente', 'success');
+                $('#modal_upload_video').modal('hide');
+
+                const productId = $('#btn_product_edit').data('id');
+                if (productId) {
+                    $(`[data-selector="abrir"][data-id="${productId}"]`).trigger('click');
+                }
+            } else {
+                swal('Error', resp.message || 'Error al subir el video', 'error');
+            }
+        },
+        error: function (xhr, status, error) {
+            swal('Error', 'Hubo un problema de conexión', 'error');
+            console.error(error);
+        },
+        complete: function () {
+            btn.prop('disabled', false).text('Subir Video');
+        }
+    });
+});
