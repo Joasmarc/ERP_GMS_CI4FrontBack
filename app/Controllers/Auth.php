@@ -67,9 +67,22 @@ class Auth extends BaseController
         if (!$AUTH['USER']) {
             return redirect()->back()->with('error', 'Correo no encontrado');
         }
-        // 3.2 Verificar PIN
-        if ($AUTH['USER']['pin'] !== $AUTH['PIN']) {
+        // 3.2 Verificar PIN usando BCRYPT con fallback a MD5 y texto plano para migración
+        $is_valid = false;
+        $needs_rehash = false;
+        if (password_verify($AUTH['PIN'], $AUTH['USER']['pin'])) {
+            $is_valid = true;
+        } elseif ($AUTH['USER']['pin'] === md5($AUTH['PIN']) || $AUTH['USER']['pin'] === $AUTH['PIN']) {
+            $is_valid = true;
+            $needs_rehash = true;
+        }
+        // 3.3 Validar resultado de verificación
+        if (!$is_valid) {
             return redirect()->back()->with('error', 'PIN incorrecto');
+        }
+        // 3.4 Re-hashear y actualizar el PIN en base de datos al nuevo formato seguro BCRYPT
+        if ($needs_rehash) {
+            $this->userModel->update($AUTH['USER']['id'], ['pin' => $AUTH['PIN']]);
         }
 
         // 4.0 Configurar sesión de usuario - Crear estructura base de sesión

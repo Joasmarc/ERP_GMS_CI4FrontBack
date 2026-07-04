@@ -30,7 +30,7 @@ class CreateUsersTable extends Migration
             // 1.5 Campo PIN de seguridad
             'pin' => [
                 'type' => 'VARCHAR',
-                'constraint' => 4
+                'constraint' => 255
             ],
             // 1.5.1 Campo de credenciales
             'credentials' => [

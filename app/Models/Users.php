@@ -32,6 +32,10 @@ class Users extends Model
     protected $createdField = 'created_at';
     protected $updatedField = 'updated_at';
 
+    // 4.5 Configurar callbacks de modelo
+    protected $beforeInsert = ['hashPin'];
+    protected $beforeUpdate = ['hashPin'];
+
     // 5.0 Validación de datos
     protected $validationRules = [
         'name' => 'required|string|min_length[3]',
@@ -40,4 +44,15 @@ class Users extends Model
         'credentials' => 'permit_empty|string|max_length[55]',
         'gender' => 'permit_empty|in_list[male,female]'
     ];
+
+    // 6.0 Métodos callback de CodeIgniter
+    protected function hashPin(array $DATA)
+    {
+        // 6.1 Verificar si el pin existe en los datos
+        if (isset($DATA['data']['pin'])) {
+            $DATA['data']['pin'] = password_hash($DATA['data']['pin'], PASSWORD_BCRYPT);
+        }
+        // 6.2 Retornar los datos procesados
+        return $DATA;
+    }
 }
