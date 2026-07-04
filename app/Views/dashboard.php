@@ -318,6 +318,7 @@
                       <a class="dropdown-item" href="#">Limpiar Cache</a>
                       <div class="dropdown-divider"></div>
                       <a class="dropdown-item" href="#">Configuracion</a>
+                      <a class="dropdown-item" href="#" id="btn_change_pin_trigger">Cambiar PIN</a>
                       <div class="dropdown-divider"></div>
                       <a class="dropdown-item" href="<?= base_url('logout') ?>">Salir</a>
                     </li>
@@ -891,6 +892,39 @@
     </div>
   </div>
 
+  <!-- Modal para Cambiar PIN -->
+  <div class="modal fade" id="modal_change_pin" tabindex="-1" aria-labelledby="modalChangePinLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header border-0" style="background: linear-gradient(135deg, #1572e8 0%, #0d47a1 100%);">
+          <h5 class="modal-title text-white fw-bold" id="modalChangePinLabel"><i class="fas fa-key me-2"></i>Cambiar PIN de Seguridad</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <form id="form_change_pin">
+            <?= csrf_field() ?>
+            <div class="form-group mb-3">
+              <label for="pin_actual" class="form-label fw-bold">PIN Actual</label>
+              <input type="password" class="form-control" id="pin_actual" name="pin_actual" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" placeholder="••••" required>
+            </div>
+            <div class="form-group mb-3">
+              <label for="pin_nuevo" class="form-label fw-bold">Nuevo PIN (4 dígitos)</label>
+              <input type="password" class="form-control" id="pin_nuevo" name="pin_nuevo" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" placeholder="••••" required>
+            </div>
+            <div class="form-group mb-3">
+              <label for="pin_confirmar" class="form-label fw-bold">Confirmar Nuevo PIN</label>
+              <input type="password" class="form-control" id="pin_confirmar" name="pin_confirmar" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" placeholder="••••" required>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer border-0 bg-light">
+          <button type="button" class="btn btn-secondary btn-round btn-border" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary btn-round shadow-sm" id="btn_save_pin">Guardar PIN</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ======================================================== -->
   <!--   SCRIPTS                                               -->
   <!-- ======================================================== -->
@@ -935,7 +969,10 @@
   <script>
     window.userCredentials = <?= json_encode($credentials ?? []) ?>;
   </script>
-  <script src="<?= base_url('public/assets/js/module/main.js') ?>?v=<?= filemtime(ROOTPATH . 'public/assets/js/module/main.js') ?>"></script>
+  <script src="<?= base_url('public/assets/js/module/dashboard/global.js') ?>?v=<?= filemtime(ROOTPATH . 'public/assets/js/module/dashboard/global.js') ?>"></script>
+  <script src="<?= base_url('public/assets/js/module/dashboard/init.js') ?>?v=<?= filemtime(ROOTPATH . 'public/assets/js/module/dashboard/init.js') ?>"></script>
+  <script src="<?= base_url('public/assets/js/module/dashboard/events.js') ?>?v=<?= filemtime(ROOTPATH . 'public/assets/js/module/dashboard/events.js') ?>"></script>
+  <script src="<?= base_url('public/assets/js/module/dashboard/utils.js') ?>?v=<?= filemtime(ROOTPATH . 'public/assets/js/module/dashboard/utils.js') ?>"></script>
 
 
 </body>

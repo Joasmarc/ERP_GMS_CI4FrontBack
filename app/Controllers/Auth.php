@@ -156,4 +156,73 @@ class Auth extends BaseController
         // 2.0 Redirigir al login
         return redirect()->to('/login')->with('success', 'Sesión cerrada correctamente');
     }
+
+    // Cambiar PIN de la cuenta iniciada
+    public function change_pin()
+    {
+        // 1.0 Inicializar interfaz y verificar sesión - Iniciar variable de interfaz
+        $CHANGE = [];
+        // 1.1 Verificar si usuario está autenticado
+        if (!session()->has('user_id')) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'No autorizado']);
+        }
+        // 1.2 Obtener ID de usuario de la sesión
+        $CHANGE['USER_ID'] = session()->get('user_id');
+
+        // 2.0 Obtener y validar datos de entrada - Obtener parámetros
+        $CHANGE['PIN_ACTUAL'] = trim((string)$this->request->getPost('pin_actual'));
+        $CHANGE['PIN_NUEVO'] = trim((string)$this->request->getPost('pin_nuevo'));
+        $CHANGE['PIN_CONFIRMAR'] = trim((string)$this->request->getPost('pin_confirmar'));
+        // 2.1 Configurar reglas de validación
+        $validation = \Config\Services::validation();
+        $validation->setRules([
+            'pin_actual' => 'required|numeric|exact_length[4]',
+            'pin_nuevo' => 'required|numeric|exact_length[4]',
+            'pin_confirmar' => 'required|matches[pin_nuevo]'
+        ]);
+        // 2.2 Ejecutar validación
+        if (!$validation->run([
+            'pin_actual' => $CHANGE['PIN_ACTUAL'],
+            'pin_nuevo' => $CHANGE['PIN_NUEVO'],
+            'pin_confirmar' => $CHANGE['PIN_CONFIRMAR']
+        ])) {
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => implode(' | ', $validation->getErrors())
+            ]);
+        }
+
+        // 3.0 Verificar PIN actual - Buscar usuario en base de datos
+        $CHANGE['USER'] = $this->userModel->find($CHANGE['USER_ID']);
+        // 3.1 Validar existencia del usuario
+        if (!$CHANGE['USER']) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Usuario no encontrado']);
+        }
+        // 3.2 Verificar coincidencia de PIN actual con fallbacks
+        $is_valid = false;
+        if (password_verify($CHANGE['PIN_ACTUAL'], $CHANGE['USER']['pin'])) {
+            $is_valid = true;
+        } elseif ($CHANGE['USER']['pin'] === md5($CHANGE['PIN_ACTUAL']) || $CHANGE['USER']['pin'] === $CHANGE['PIN_ACTUAL']) {
+            $is_valid = true;
+        }
+        // 3.3 Validar resultado de verificación
+        if (!$is_valid) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'El PIN actual es incorrecto']);
+        }
+
+        // 4.0 Actualizar PIN en la base de datos - Guardar nuevo PIN
+        $update_data = ['pin' => $CHANGE['PIN_NUEVO']];
+        // 4.1 Ejecutar actualización mediante el modelo
+        if (!$this->userModel->update($CHANGE['USER_ID'], $update_data)) {
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'No se pudo actualizar el PIN en el sistema'
+            ]);
+        }
+        // 4.2 Retornar respuesta exitosa
+        return $this->response->setJSON([
+            'status' => 'success',
+            'message' => 'El PIN ha sido actualizado con éxito'
+        ]);
+    }
 }

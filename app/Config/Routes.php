@@ -10,6 +10,7 @@ use CodeIgniter\Router\RouteCollection;
 $routes->get('login', 'Auth::login');
 $routes->post('auth/authenticate', 'Auth::authenticate');
 $routes->get('logout', 'Auth::logout');
+$routes->post('auth/change_pin', 'Auth::change_pin');
 
 // 2.0 Rutas principales
 $routes->get('/', 'Home::index');
