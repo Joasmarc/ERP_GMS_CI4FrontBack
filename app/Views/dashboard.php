@@ -170,6 +170,30 @@
                 </a>
               </li>
             <?php endif; ?>
+            <li class="nav-section">
+              <span class="sidebar-mini-icon">
+                <i class="fa fa-ellipsis-h"></i>
+              </span>
+              <h4 class="text-section">Contraparte</h4>
+            </li>
+            <li class="nav-item" style="background: transparent !important;">
+              <a href="#" id="btn_open_proveedor">
+                <i class="fas fa-truck"></i>
+                <p>Proveedor</p>
+              </a>
+            </li>
+            <li class="nav-item" style="background: transparent !important;">
+              <a href="#" id="btn_open_cliente">
+                <i class="fas fa-user-tie"></i>
+                <p>Cliente</p>
+              </a>
+            </li>
+            <li class="nav-item" style="background: transparent !important;">
+              <a href="#" id="btn_open_empleado">
+                <i class="fas fa-id-card"></i>
+                <p>Empleado</p>
+              </a>
+            </li>
           </ul>
         </div>
       </div>
