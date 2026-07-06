@@ -38,9 +38,9 @@ class Users extends Model
 
     // 5.0 Validación de datos
     protected $validationRules = [
-        'name' => 'required|string|min_length[3]',
-        'email' => 'required|valid_email|is_unique[users.email]',
-        'pin' => 'required|numeric|exact_length[4]',
+        'name' => 'permit_empty|string|min_length[3]',
+        'email' => 'permit_empty|valid_email',
+        'pin' => 'permit_empty|string|max_length[255]',
         'credentials' => 'permit_empty|string|max_length[55]',
         'gender' => 'permit_empty|in_list[male,female]'
     ];
@@ -50,7 +50,11 @@ class Users extends Model
     {
         // 6.1 Verificar si el pin existe en los datos
         if (isset($DATA['data']['pin'])) {
-            $DATA['data']['pin'] = password_hash($DATA['data']['pin'], PASSWORD_BCRYPT);
+            $pin = $DATA['data']['pin'];
+            // Evitar re-hashear si ya es un hash de BCRYPT
+            if (!(is_string($pin) && str_starts_with($pin, '$2y$') && strlen($pin) === 60)) {
+                $DATA['data']['pin'] = password_hash($pin, PASSWORD_BCRYPT);
+            }
         }
         // 6.2 Retornar los datos procesados
         return $DATA;
