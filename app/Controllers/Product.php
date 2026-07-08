@@ -63,46 +63,91 @@ class Product extends BaseController
         // 2.0 Preparar cliente y solicitar productos - Inicializar variables y estado
         $SIIGO['mapped_data'] = [];
         $SIIGO['total_results'] = 0;
-        $client = \Config\Services::curlrequest();
-        $url = 'https://api.siigo.com/v1/products';
-        // 2.1 Bucle para obtener todas las páginas
-        try {
-            while ($url) {
-                $response = $client->get($url, [
-                    'headers' => [
-                        'Partner-Id'    => env('SIIGO_PARTNER_ID', 'gsmerp'),
-                        'Authorization' => 'Bearer ' . $SIIGO['token'],
+
+        // 2.0.1 Usar simulación si está activa en local
+        if (env('SIIGO_SIMULATE') === true || env('SIIGO_SIMULATE') === 'true' || $SIIGO['token'] === 'simulated_siigo_token_12345') {
+            $siigo_data = [
+                'results' => [
+                    [
+                        'id' => 'siigo-prod-1',
+                        'name' => 'Producto Simulado 1 (Siigo)',
+                        'account_group' => ['name' => 'Categoría Simbólica A'],
+                        'unit_label' => 'Caja',
+                        'code' => 'MOCK-001',
+                        'description' => 'Descripción de producto simulado 1 para pruebas locales.'
                     ],
-                    'http_errors' => false
-                ]);
-                // 2.2 Verificar respuesta exitosa
-                if ($response->getStatusCode() === 200) {
-                    $siigo_data = json_decode($response->getBody(), true);
-                    // 2.3 Mapear datos al formato de DataTables
-                    foreach ($siigo_data['results'] as $product) {
-                        $SIIGO['mapped_data'][] = [
-                            'id'           => $product['id'],
-                            'nombre'       => $product['name'],
-                            'id_categoria' => $product['account_group']['name'] ?? '',
-                            'presentacion' => $product['unit_label'] ?? '',
-                            'id_marca'     => $product['code'] ?? '',
-                            'observacion'  => $product['description'] ?? '',
-                            'img'          => null
-                        ];
-                    }
-                    // 2.4 Obtener total de resultados
-                    $SIIGO['total_results'] = $siigo_data['pagination']['total_results'] ?? count($SIIGO['mapped_data']);
-                    // 2.5 Obtener URL de la siguiente página
-                    $url = $siigo_data['_links']['next']['href'] ?? null;
-                } else {
-                    // 2.6 Registrar error si la petición falla y salir del bucle
-                    log_message('error', 'Error listando productos Siigo en URL ' . $url . ': ' . $response->getBody());
-                    break;
-                }
+                    [
+                        'id' => 'siigo-prod-2',
+                        'name' => 'Producto Simulado 2 (Siigo)',
+                        'account_group' => ['name' => 'Categoría Simbólica B'],
+                        'unit_label' => 'Unidad',
+                        'code' => 'MOCK-002',
+                        'description' => 'Descripción de producto simulado 2 para pruebas locales.'
+                    ],
+                    [
+                        'id' => 'siigo-prod-3',
+                        'name' => 'Producto Simulado 3 (Siigo)',
+                        'account_group' => ['name' => 'Categoría Simbólica C'],
+                        'unit_label' => 'Paquete',
+                        'code' => 'MOCK-003',
+                        'description' => 'Descripción de producto simulado 3 para pruebas locales.'
+                    ]
+                ]
+            ];
+            foreach ($siigo_data['results'] as $product) {
+                $SIIGO['mapped_data'][] = [
+                    'id'           => $product['id'],
+                    'nombre'       => $product['name'],
+                    'id_categoria' => $product['account_group']['name'] ?? '',
+                    'presentacion' => $product['unit_label'] ?? '',
+                    'id_marca'     => $product['code'] ?? '',
+                    'observacion'  => $product['description'] ?? '',
+                    'img'          => null
+                ];
             }
-        } catch (\Exception $e) {
-            // 2.7 Manejar excepción
-            log_message('error', 'Excepción listando productos Siigo: ' . $e->getMessage());
+            $SIIGO['total_results'] = count($SIIGO['mapped_data']);
+        } else {
+            $client = \Config\Services::curlrequest();
+            $url = 'https://api.siigo.com/v1/products';
+            // 2.1 Bucle para obtener todas las páginas
+            try {
+                while ($url) {
+                    $response = $client->get($url, [
+                        'headers' => [
+                            'Partner-Id'    => env('SIIGO_PARTNER_ID', 'gsmerp'),
+                            'Authorization' => 'Bearer ' . $SIIGO['token'],
+                        ],
+                        'http_errors' => false
+                    ]);
+                    // 2.2 Verificar respuesta exitosa
+                    if ($response->getStatusCode() === 200) {
+                        $siigo_data = json_decode($response->getBody(), true);
+                        // 2.3 Mapear datos al formato de DataTables
+                        foreach ($siigo_data['results'] as $product) {
+                            $SIIGO['mapped_data'][] = [
+                                'id'           => $product['id'],
+                                'nombre'       => $product['name'],
+                                'id_categoria' => $product['account_group']['name'] ?? '',
+                                'presentacion' => $product['unit_label'] ?? '',
+                                'id_marca'     => $product['code'] ?? '',
+                                'observacion'  => $product['description'] ?? '',
+                                'img'          => null
+                            ];
+                        }
+                        // 2.4 Obtener total de resultados
+                        $SIIGO['total_results'] = $siigo_data['pagination']['total_results'] ?? count($SIIGO['mapped_data']);
+                        // 2.5 Obtener URL de la siguiente página
+                        $url = $siigo_data['_links']['next']['href'] ?? null;
+                    } else {
+                        // 2.6 Registrar error si la petición falla y salir del bucle
+                        log_message('error', 'Error listando productos Siigo en URL ' . $url . ': ' . $response->getBody());
+                        break;
+                    }
+                }
+            } catch (\Exception $e) {
+                // 2.7 Manejar excepción
+                log_message('error', 'Excepción listando productos Siigo: ' . $e->getMessage());
+            }
         }
 
         // 3.0 Sincronizar familias y fusionar datos - Instanciar modelo y obtener familias

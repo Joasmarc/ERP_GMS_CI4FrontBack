@@ -15,7 +15,8 @@ class Cities extends Model
     protected $allowedFields = [
         'name',
         'code',
-        'state'
+        'state',
+        'department_id'
     ];
 
     // 3.0 Configurar tipos de datos
@@ -23,7 +24,8 @@ class Cities extends Model
         'id' => 'int',
         'name' => 'string',
         'code' => 'string',
-        'state' => 'string'
+        'state' => 'string',
+        'department_id' => 'int'
     ];
 
     // 4.0 Configurar Timestamps (deshabilitado por falta de columnas en BD)
@@ -33,6 +35,7 @@ class Cities extends Model
     protected $validationRules = [
         'name' => 'required|string|max_length[55]',
         'code' => 'required|string|max_length[10]',
-        'state' => 'required|in_list[ACTIVO,INACTIVO]'
+        'state' => 'required|in_list[ACTIVO,INACTIVO]',
+        'department_id' => 'permit_empty|integer'
     ];
 }

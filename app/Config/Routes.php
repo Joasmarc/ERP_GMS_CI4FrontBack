@@ -24,6 +24,20 @@ $routes->group('client', ['filter' => 'cors'], static function ($routes) {
     $routes->get('list_comments/(:num)', 'Client::list_comments/$1');
 });
 
+// Counterparties (Admin actions)
+$routes->group('counterparty', ['filter' => 'cors'], static function ($routes) {
+    $routes->get('listing', 'Counterparty::listing');
+    $routes->post('save', 'Counterparty::save');
+    $routes->post('share', 'Counterparty::share');
+    $routes->post('upload_policy', 'Counterparty::upload_policy');
+});
+
+// Public form (Guest access)
+$routes->get('register/form/(:any)', 'PublicForm::index/$1');
+$routes->post('register/submit/(:any)', 'PublicForm::submit/$1');
+$routes->get('public/departments', 'PublicForm::getDepartments');
+$routes->get('public/cities/(:num)', 'PublicForm::getCitiesByDepartment/$1');
+
 // Dispatch (Remisiones)
 $routes->group('dispatch', ['filter' => 'cors'], static function ($routes) {
     $routes->post('save', 'Dispatch::save');

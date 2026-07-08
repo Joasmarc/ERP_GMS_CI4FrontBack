@@ -113,6 +113,14 @@ class Auth extends BaseController
     // Obtener token de la API de Siigo
     private function getSiigoToken()
     {
+        // 0.1 Retornar token simulado si la simulación está activa en local
+        if (env('SIIGO_SIMULATE') === true || env('SIIGO_SIMULATE') === 'true') {
+            return [
+                'access_token' => 'simulated_siigo_token_12345',
+                'expires_in'   => 86400
+            ];
+        }
+
         // 1.0 Inicializar interfaz y cliente HTTP - Iniciar variable de interfaz
         $API = [];
         // 1.1 Iniciar cliente HTTP

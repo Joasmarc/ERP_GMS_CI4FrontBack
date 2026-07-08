@@ -4,7 +4,7 @@ namespace App\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
 
-class CreateClientsTable extends Migration
+class CreateDispatchAdviceItemsTable extends Migration
 {
     public function up()
     {
@@ -12,35 +12,36 @@ class CreateClientsTable extends Migration
             'id' => [
                 'type'           => 'INT',
                 'constraint'     => 11,
-                'unsigned'       => true,
+                'unsigned'       => false,
                 'auto_increment' => true,
             ],
-            'nombre_cliente' => [
-                'type'       => 'VARCHAR',
-                'constraint' => '255',
-            ],
-            'tipo_documento' => [
-                'type'       => 'VARCHAR',
-                'constraint' => '50',
+            'id_base' => [
+                'type'       => 'INT',
+                'constraint' => 11,
                 'null'       => true,
             ],
-            'numero_documento' => [
+            'reference' => [
                 'type'       => 'VARCHAR',
-                'constraint' => '100',
-            ],
-            'telefono_cliente' => [
-                'type'       => 'VARCHAR',
-                'constraint' => '50',
+                'constraint' => '75',
                 'null'       => true,
             ],
-            'correo_cliente' => [
+            'description' => [
                 'type'       => 'VARCHAR',
-                'constraint' => '255',
+                'constraint' => '75',
                 'null'       => true,
             ],
-            'direccion_cliente' => [
+            'batch' => [
                 'type'       => 'VARCHAR',
-                'constraint' => '255',
+                'constraint' => '10',
+                'null'       => true,
+            ],
+            'expiration_date' => [
+                'type' => 'DATETIME',
+                'null' => true,
+            ],
+            'quiantity' => [
+                'type'       => 'INT',
+                'constraint' => 11,
                 'null'       => true,
             ],
             'created_at' => [
@@ -52,16 +53,18 @@ class CreateClientsTable extends Migration
                 'null' => true,
             ],
             'deleted_at' => [
-                'type' => 'DATETIME',
-                'null' => true,
+                'type'       => 'INT',
+                'constraint' => 11,
+                'null'       => true,
             ],
         ]);
+        
         $this->forge->addKey('id', true);
-        $this->forge->createTable('clients');
+        $this->forge->createTable('dispatch_advice_items');
     }
 
     public function down()
     {
-        $this->forge->dropTable('clients', true);
+        $this->forge->dropTable('dispatch_advice_items', true);
     }
 }
