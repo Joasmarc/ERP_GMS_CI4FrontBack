@@ -710,6 +710,913 @@
 
           </div>
           <!-- End Remisiones Screen -->
+
+          <!-- ======================================================== -->
+          <!--   PROVEEDORES Y CLIENTES (CONTRAPARTE) SCREENS           -->
+          <!-- ======================================================== -->
+
+          <!-- Ini Proveedor Screen -->
+          <div id="cont_proveedor" class="row d-none">
+            <div class="col-md-12" id="proveedor_list_view">
+              <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                  <h4 class="card-title mb-0">Listado de Proveedores</h4>
+                  <div class="card-tools">
+                    <button class="btn btn-round btn-secondary me-2" onclick="openUploadPolicyModal()">
+                      <i class="fas fa-file-upload"></i> Subir Política PDF
+                    </button>
+                    <button class="btn btn-round btn-info me-2" onclick="openShareModal('proveedor')">
+                      <i class="fas fa-share-alt"></i> Compartir Formulario
+                    </button>
+                    <button class="btn btn-round btn-primary" onclick="openCreateForm('proveedor')">
+                      <i class="fa fa-plus"></i> Registrar Proveedor
+                    </button>
+                  </div>
+                </div>
+                <div class="card-body">
+                  <div class="table-responsive">
+                    <table id="tbl_list_proveedores" class="display table table-striped table-hover w-100">
+                      <thead>
+                        <tr>
+                          <th>ID</th>
+                          <th>Razón Social / Nombre</th>
+                          <th>NIT / Cédula</th>
+                          <th>Tipo Persona</th>
+                          <th>Email Principal</th>
+                          <th>Teléfono Principal</th>
+                          <th>Régimen</th>
+                          <th class="text-center">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- End Proveedor Screen -->
+
+          <!-- Ini Cliente Screen -->
+          <div id="cont_cliente" class="row d-none">
+            <div class="col-md-12" id="cliente_list_view">
+              <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                  <h4 class="card-title mb-0">Listado de Clientes</h4>
+                  <div class="card-tools">
+                    <button class="btn btn-round btn-secondary me-2" onclick="openUploadPolicyModal()">
+                      <i class="fas fa-file-upload"></i> Subir Política PDF
+                    </button>
+                    <button class="btn btn-round btn-info me-2" onclick="openShareModal('cliente')">
+                      <i class="fas fa-share-alt"></i> Compartir Formulario
+                    </button>
+                    <button class="btn btn-round btn-primary" onclick="openCreateForm('cliente')">
+                      <i class="fa fa-plus"></i> Registrar Cliente
+                    </button>
+                  </div>
+                </div>
+                <div class="card-body">
+                  <div class="table-responsive">
+                    <table id="tbl_list_clientes" class="display table table-striped table-hover w-100">
+                      <thead>
+                        <tr>
+                          <th>ID</th>
+                          <th>Razón Social / Nombre</th>
+                          <th>NIT / Cédula</th>
+                          <th>Tipo Persona</th>
+                          <th>Email Principal</th>
+                          <th>Teléfono Principal</th>
+                          <th>Régimen</th>
+                          <th class="text-center">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- End Cliente Screen -->
+
+          <!-- Ini Crear Contraparte Sub-Screen -->
+          <div class="col-md-12 d-none" id="counterparty_create_view">
+            <div class="card">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="card-title mb-0" id="counterparty_form_title"><i class="fas fa-user-plus"></i> Registrar Contraparte</h4>
+                <button class="btn btn-sm btn-secondary btn-round" id="btn_back_to_counterparty_list">
+                  <i class="fas fa-arrow-left"></i> Volver
+                </button>
+              </div>
+              <div class="card-body">
+                <form id="form_counterparty_create" method="POST">
+                  <?= csrf_field() ?>
+                  <input type="hidden" id="form_contraparte_type" name="contraparte_type" value="proveedor">
+                  <input type="hidden" id="form_counterparty_id" name="id" value="">
+
+                  <style>
+                    .form-group-default label, label.form-label, label {
+                      font-weight: 700 !important; /* Force all label titles to be bold */
+                      color: #111827 !important; /* Make labels darker (almost black) for readability */
+                    }
+                  </style>
+
+                  <!-- Selección del Tipo de Persona -->
+                  <div class="row mb-4">
+                    <div class="col-md-5">
+                      <div>
+                        <label class="d-block mb-2 text-muted text-uppercase fw-bold" style="font-size: 11px;">Tipo de Persona</label>
+                        <div class="btn-group w-100" role="group">
+                          <input type="radio" class="btn-check" name="person_type" id="form_person_type_juridica" value="juridica" checked autocomplete="off">
+                          <label class="btn btn-outline-primary fw-bold" for="form_person_type_juridica">Persona Jurídica</label>
+
+                          <input type="radio" class="btn-check" name="person_type" id="form_person_type_natural" value="natural" autocomplete="off">
+                          <label class="btn btn-outline-primary fw-bold" for="form_person_type_natural">Persona Natural</label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- ========================================== -->
+                  <!-- SECCIÓN DATOS JURÍDICOS                   -->
+                  <!-- ========================================== -->
+                  <div id="sec_juridica">
+                    <h4 class="fw-bold text-primary mb-3"><i class="fas fa-building"></i> Datos de Persona Jurídica</h4>
+                    <div class="row">
+                      <div class="col-md-6">
+                        <div class="form-group form-group-default">
+                          <label>Nombre del Proveedor (Razón Social o Nombre Completo) *</label>
+                          <input type="text" class="form-control" name="nombre_completo" id="jur_nombre_completo" required placeholder="Nombre o Razón social">
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label>Tipo de Identificación *</label>
+                          <select class="form-select" name="tipo_identificacion" id="jur_tipo_identificacion">
+                            <option value="NIT">NIT</option>
+                            <option value="Cédula">Cédula</option>
+                            <option value="Pasaporte">Pasaporte</option>
+                            <option value="Cédula Extranjería">Cédula Extranjería</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label>Número de Identificación *</label>
+                          <input type="text" class="form-control" name="numero_identificacion" id="jur_numero_identificacion" required placeholder="Ej: 901234567-8">
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="row mt-2">
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label>País de Identificación</label>
+                          <input type="text" class="form-control" name="pais_identificacion" placeholder="Ej: Colombia">
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label>Fecha Expedición Identificación</label>
+                          <input type="date" class="form-control" name="fecha_expedicion_identificacion">
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label>Fecha Vencimiento Identificación</label>
+                          <input type="date" class="form-control" name="fecha_vencimiento_identificacion">
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label>Régimen Tributario</label>
+                          <input type="text" class="form-control" name="regimen_tributario" placeholder="Ej: Común, Simplificado">
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="row mt-2">
+                      <div class="col-md-4">
+                        <div class="form-group form-group-default">
+                          <label>País de Residencia</label>
+                          <input type="text" class="form-control" name="pais_residencia" placeholder="Ej: Colombia">
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-group form-group-default">
+                          <label>País de Origen</label>
+                          <input type="text" class="form-control" name="pais_origen" placeholder="Ej: Colombia">
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-group form-group-default">
+                          <label>Dirección Completa</label>
+                          <input type="text" class="form-control" name="direccion_completa" placeholder="Dirección de la empresa">
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="row mt-2">
+                      <div class="col-md-4">
+                        <div class="form-group form-group-default">
+                          <label>Email Principal *</label>
+                          <input type="email" class="form-control" name="email_principal" id="jur_email_principal" required placeholder="correo@empresa.com">
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-group form-group-default">
+                          <label>Teléfono Principal *</label>
+                          <input type="text" class="form-control" name="telefono_principal" id="jur_telefono_principal" required placeholder="Teléfono de contacto">
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-group form-group-default">
+                          <label>Teléfono Secundario</label>
+                          <input type="text" class="form-control" name="telefono_secundario" placeholder="Teléfono alternativo">
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="row mt-2">
+                      <div class="col-md-6">
+                        <div class="form-group form-group-default">
+                          <label>Página Web</label>
+                          <input type="url" class="form-control" name="pagina_web" placeholder="https://ejemplo.com">
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="form-group form-group-default">
+                          <label>LinkedIn / Redes Sociales</label>
+                          <input type="text" class="form-control" name="linkedin_redes" placeholder="Perfil o enlace">
+                        </div>
+                      </div>
+                    </div>
+
+                    <h5 class="fw-bold mt-4 mb-3 text-secondary">Cumplimiento y screening</h5>
+                    <div class="row">
+                      <div class="col-md-4">
+                        <div class="form-group form-group-default">
+                          <label>Estado Tributario</label>
+                          <select class="form-select" name="estado_tributario">
+                            <option value="Activo">Activo</option>
+                            <option value="Inactivo">Inactivo</option>
+                            <option value="Verificado">Verificado</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-group form-group-default">
+                          <label>¿Tiene antecedentes judiciales?</label>
+                          <select class="form-select" name="antecedentes_judiciales">
+                            <option value="No">No</option>
+                            <option value="Sí">Sí</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-group form-group-default">
+                          <label>¿Tiene antecedentes disciplinarios?</label>
+                          <select class="form-select" name="antecedentes_disciplinarios">
+                            <option value="No">No</option>
+                            <option value="Sí">Sí</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="row mt-2">
+                      <div class="col-md-4">
+                        <div class="form-group form-group-default">
+                          <label>¿Está reportado en listas OFAC?</label>
+                          <select class="form-select" name="reportado_ofac">
+                            <option value="No">No</option>
+                            <option value="Sí">Sí</option>
+                            <option value="Pendiente">Pendiente</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-group form-group-default">
+                          <label>¿Está reportado en listas ONU?</label>
+                          <select class="form-select" name="reportado_onu">
+                            <option value="No">No</option>
+                            <option value="Sí">Sí</option>
+                            <option value="Pendiente">Pendiente</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-group form-group-default">
+                          <label>¿Está reportado en listas locales?</label>
+                          <select class="form-select" name="reportado_locales">
+                            <option value="No">No</option>
+                            <option value="Sí">Sí</option>
+                            <option value="Pendiente">Pendiente</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="row mt-2">
+                      <div class="col-md-4">
+                        <div class="form-group form-group-default">
+                          <label>Fecha último screening realizado</label>
+                          <input type="datetime-local" class="form-control" name="fecha_ultimo_screening">
+                        </div>
+                      </div>
+                      <div class="col-md-8">
+                        <div class="form-group form-group-default">
+                          <label>Resultado último screening</label>
+                          <input type="text" class="form-control" name="resultado_ultimo_screening" placeholder="Descripción de los hallazgos">
+                        </div>
+                      </div>
+                    </div>
+
+                    <h5 class="fw-bold mt-4 mb-3 text-secondary">Clasificación de Riesgos y Actividad</h5>
+                    <div class="row">
+                      <div class="col-md-4">
+                        <div class="form-group form-group-default">
+                          <label>Sector Económico (Clasificación CIIU)</label>
+                          <input type="text" class="form-control" name="sector_economico" placeholder="Ej: 4646 - Comercio de productos farmacéuticos">
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-group form-group-default">
+                          <label>Subsector Específico</label>
+                          <input type="text" class="form-control" name="subsector_especifico" placeholder="Ej: Insumos hospitalarios">
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-group form-group-default">
+                          <label>Tipo de Producto/Servicio suministrado</label>
+                          <input type="text" class="form-control" name="tipo_producto_servicio" placeholder="Ej: Jeringas, Gasas, Equipos">
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="row mt-2">
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label>Nivel de Riesgo Inicial</label>
+                          <select class="form-select" name="nivel_riesgo_inicial">
+                            <option value="Bajo">Bajo</option>
+                            <option value="Medio">Medio</option>
+                            <option value="Alto">Alto</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="col-md-9">
+                        <div class="form-group form-group-default">
+                          <label>Justificación de Riesgo</label>
+                          <input type="text" class="form-control" name="justificacion_riesgo" placeholder="Justificación del nivel de riesgo asignado">
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="row mt-2">
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label>¿Es PEP?</label>
+                          <select class="form-select" name="es_pep">
+                            <option value="No">No</option>
+                            <option value="Sí">Sí</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label>¿Tiene conexión con PEP?</label>
+                          <select class="form-select" name="conexion_pep">
+                            <option value="No">No</option>
+                            <option value="Sí">Sí</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label>¿Opera en país de alto riesgo?</label>
+                          <select class="form-select" name="opera_pais_alto_riesgo">
+                            <option value="No">No</option>
+                            <option value="Sí">Sí</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label>Países donde opera</label>
+                          <input type="text" class="form-control" name="paises_opera" placeholder="Ej: Colombia, Panamá">
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- ========================================== -->
+                  <!-- SECCIÓN DATOS NATURALES                   -->
+                  <!-- ========================================== -->
+                  <div id="sec_natural" class="d-none">
+                    <h4 class="fw-bold text-primary mb-3"><i class="fas fa-user"></i> Datos de Persona Natural</h4>
+                    
+                    <h5 class="fw-bold text-secondary mb-3">Identificación y Datos Personales</h5>
+                    <div class="row">
+                      <div class="col-md-4">
+                        <div class="form-group form-group-default">
+                          <label>Tipo de Documento *</label>
+                          <select class="form-select" name="tipo_identificacion" id="nat_tipo_identificacion">
+                            <option value="Cédula de ciudadanía">Cédula de ciudadanía</option>
+                            <option value="Cédula de extranjería">Cédula de extranjería</option>
+                            <option value="Pasaporte">Pasaporte</option>
+                            <option value="Permiso de residencia">Permiso de residencia</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="col-md-5">
+                        <div class="form-group form-group-default">
+                          <label>Número de Documento *</label>
+                          <input type="text" class="form-control" name="numero_identificacion" id="nat_numero_identificacion" placeholder="Número de documento">
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label>Dígito Verificador</label>
+                          <input type="text" class="form-control" name="digito_verificador" placeholder="Opcional">
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="row mt-2">
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label>País Emisor del Documento</label>
+                          <input type="text" class="form-control" name="pais_identificacion" placeholder="Ej: Colombia">
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label>Fecha de Expedición</label>
+                          <input type="date" class="form-control" name="fecha_expedicion_identificacion">
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label>Fecha de Vencimiento</label>
+                          <input type="date" class="form-control" name="fecha_vencimiento_identificacion">
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label>Departamento Expedición</label>
+                          <input type="text" class="form-control" name="departamento_expedicion" placeholder="Depto expedición">
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="row mt-2">
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label>Ciudad Expedición</label>
+                          <input type="text" class="form-control" name="ciudad_expedicion" placeholder="Ciudad expedición">
+                        </div>
+                      </div>
+                      <div class="col-md-5">
+                        <div class="form-group form-group-default">
+                          <label>Nombre Completo *</label>
+                          <input type="text" class="form-control" name="nombre_completo" id="nat_nombre_completo" placeholder="Nombres">
+                        </div>
+                      </div>
+                      <div class="col-md-2">
+                        <div class="form-group form-group-default">
+                          <label>Primer Apellido *</label>
+                          <input type="text" class="form-control" name="primer_apellido" id="nat_primer_apellido" placeholder="Primer apellido">
+                        </div>
+                      </div>
+                      <div class="col-md-2">
+                        <div class="form-group form-group-default">
+                          <label>Segundo Apellido</label>
+                          <input type="text" class="form-control" name="segundo_apellido" placeholder="Segundo apellido">
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="row mt-2">
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label>Fecha de Nacimiento *</label>
+                          <input type="date" class="form-control" name="fecha_nacimiento" id="nat_fecha_nacimiento">
+                        </div>
+                      </div>
+                      <div class="col-md-2">
+                        <div class="form-group form-group-default">
+                          <label>Depto Nacimiento</label>
+                          <select class="form-select" id="form_dept_nacimiento" name="departamento_nacimiento">
+                            <option value="">Seleccione Depto</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label>Lugar de Nacimiento (Ciudad)</label>
+                          <select class="form-select" id="form_city_nacimiento" name="lugar_nacimiento_ciudad">
+                            <option value="">Seleccione Ciudad</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="col-md-2">
+                        <div class="form-group form-group-default">
+                          <label>País de Nacimiento</label>
+                          <input type="text" class="form-control" name="pais_nacimiento" placeholder="País">
+                        </div>
+                      </div>
+                      <div class="col-md-2">
+                        <div class="form-group form-group-default">
+                          <label>Sexo</label>
+                          <select class="form-select" name="sexo">
+                            <option value="">Seleccione</option>
+                            <option value="Masculino">Masculino</option>
+                            <option value="Femenino">Femenino</option>
+                            <option value="Otro">Otro</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="row mt-2">
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label>Estado Civil</label>
+                          <select class="form-select" name="estado_civil">
+                            <option value="">Seleccione</option>
+                            <option value="Soltero">Soltero</option>
+                            <option value="Casado">Casado</option>
+                            <option value="Unión libre">Unión libre</option>
+                            <option value="Separado">Separado</option>
+                            <option value="Divorciado">Divorciado</option>
+                            <option value="Viudo">Viudo</option>
+                            <option value="Otro">Otro</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <h5 class="fw-bold text-secondary mt-4 mb-3">Ubicación y Datos de Residencia</h5>
+                    <div class="row">
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label>País de Residencia *</label>
+                          <input type="text" class="form-control" name="pais_residencia" id="nat_pais_residencia" placeholder="Ej: Colombia">
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label>Departamento de Residencia</label>
+                          <select class="form-select" id="form_dept_residencia" name="departamento_residencia">
+                            <option value="">Seleccione Departamento</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label>Ciudad de Residencia</label>
+                          <select class="form-select" id="form_city_residencia" name="ciudad_residencia">
+                            <option value="">Seleccione Ciudad</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label>Dirección Completa *</label>
+                          <input type="text" class="form-control" name="direccion_completa" id="nat_direccion_completa" placeholder="Dirección completa">
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="row mt-2">
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label>Número Exterior</label>
+                          <input type="text" class="form-control" name="numero_exterior" placeholder="Ej: 45A-23">
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label>Número Interior (Opcional)</label>
+                          <input type="text" class="form-control" name="numero_interior" placeholder="Ej: Apto 302">
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label>Apartamento/Complemento</label>
+                          <input type="text" class="form-control" name="apartamento_complemento" placeholder="Ej: Torre B">
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label>Código Postal</label>
+                          <input type="text" class="form-control" name="codigo_postal" placeholder="Ej: 050012">
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="row mt-2">
+                      <div class="col-md-4">
+                        <div class="form-group form-group-default">
+                          <label>Teléfono Residencial *</label>
+                          <input type="text" class="form-control" name="telefono_principal" id="nat_telefono_principal" placeholder="Teléfono de casa/celular">
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-group form-group-default">
+                          <label>Tiempo Residiendo (meses)</label>
+                          <input type="number" class="form-control" name="tiempo_residencia_meses" placeholder="Cantidad de meses">
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-group form-group-default">
+                          <label>Dirección Anterior</label>
+                          <input type="text" class="form-control" name="direccion_anterior" placeholder="Dirección anterior">
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="row mt-2">
+                      <div class="col-md-4">
+                        <div class="form-group form-group-default">
+                          <label>Tiempo Dirección Anterior</label>
+                          <input type="text" class="form-control" name="tiempo_direccion_anterior" placeholder="Ej: 12 meses">
+                        </div>
+                      </div>
+                      <div class="col-md-8">
+                        <div class="form-group form-group-default">
+                          <label>Dirección Laboral</label>
+                          <input type="text" class="form-control" name="direccion_laboral" placeholder="Dirección de la empresa donde labora">
+                        </div>
+                      </div>
+                    </div>
+
+                    <h5 class="fw-bold text-secondary mt-4 mb-3">Datos Laborales y Profesionales</h5>
+                    <div class="row">
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label>Actividad Principal / Ocupación *</label>
+                          <input type="text" class="form-control" name="actividad_principal" id="nat_actividad_principal" placeholder="Ej: Empleado, Independiente">
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label>Profesión *</label>
+                          <input type="text" class="form-control" name="profesion" id="nat_profesion" placeholder="Ej: Médico, Ingeniero">
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label>Área de Especialización *</label>
+                          <input type="text" class="form-control" name="area_especializacion" id="nat_area_especializacion" placeholder="Ej: Cardiología, Logística">
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label>Sector Económico (CIIU) *</label>
+                          <input type="text" class="form-control" name="sector_economico" id="nat_sector_economico" placeholder="Código o Nombre">
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="row mt-2">
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label>Años de Experiencia *</label>
+                          <input type="number" class="form-control" name="anos_experiencia" id="nat_anos_experiencia" placeholder="Años de experiencia">
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label>Certificaciones Profesionales</label>
+                          <input type="text" class="form-control" name="certificaciones_profesionales" placeholder="Ej: ISO 9001, PMP">
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label>Membresías Profesionales</label>
+                          <input type="text" class="form-control" name="membresias_profesionales" placeholder="Ej: Colegio de Médicos">
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label>Licencias Profesionales</label>
+                          <input type="text" class="form-control" name="licencias_profesionales" placeholder="Ej: Licencia Médica 1234">
+                        </div>
+                      </div>
+                    </div>
+
+                    <h5 class="fw-bold text-danger mt-4 mb-3"><i class="fas fa-shield-alt"></i> Cumplimiento Legal y PEP (Políticamente Expuesto)</h5>
+                    <div class="row">
+                      <div class="col-md-4">
+                        <div class="form-group form-group-default">
+                          <label>¿Es Persona Expuesta Políticamente (PEP)? *</label>
+                          <select class="form-select" name="es_pep" id="nat_es_pep">
+                            <option value="No">No</option>
+                            <option value="Sí">Sí</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="col-md-8">
+                        <div class="form-group form-group-default">
+                          <label>Tipo de Vínculo PEP (Si aplica)</label>
+                          <select class="form-select" name="tipo_pep">
+                            <option value="">Ninguno</option>
+                            <option value="Funcionario público actual">Funcionario público actual</option>
+                            <option value="Funcionario público ex (últimos 5 años)">Funcionario público ex (últimos 5 años)</option>
+                            <option value="Familia de PEP">Familia de PEP</option>
+                            <option value="Allegado de PEP">Allegado de PEP</option>
+                            <option value="Accionista/Directivo de empresa vinculada a PEP">Accionista/Directivo de empresa vinculada a PEP</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="row mt-2">
+                      <div class="col-md-12">
+                        <div class="form-group form-group-default">
+                          <label>Descripción de Vínculo PEP (Cargo, Entidad, Período)</label>
+                          <input type="text" class="form-control" name="descripcion_vinculo_pep" placeholder="Ej: Cargo actual/anterior, Entidad, Período de desempeño">
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="row mt-2">
+                      <div class="col-md-4">
+                        <div class="form-group form-group-default">
+                          <label>¿Vínculos personajes de interés criminal?</label>
+                          <select class="form-select" name="vinculos_criminales">
+                            <option value="No">No</option>
+                            <option value="Sí">Sí</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-group form-group-default">
+                          <label>¿Tiene antecedentes penales?</label>
+                          <select class="form-select" name="antecedentes_judiciales">
+                            <option value="No">No</option>
+                            <option value="Sí">Sí</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-group form-group-default">
+                          <label>Tipos de Delito (Si aplica)</label>
+                          <input type="text" class="form-control" name="antecedentes_penales" placeholder="Ej: Delitos financieros, Lavado de activos, etc.">
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="row mt-2">
+                      <div class="col-md-12">
+                        <div class="form-group form-group-default">
+                          <label>Descripción de antecedentes (Tipo de delito, Fecha, Sentencia/Estado)</label>
+                          <input type="text" class="form-control" name="descripcion_antecedentes" placeholder="Descripción detallada de antecedentes penales">
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="row mt-2">
+                      <div class="col-md-4">
+                        <div class="form-group form-group-default">
+                          <label>¿Sancionado disciplinariamente?</label>
+                          <select class="form-select" name="sancionado_disciplinariamente">
+                            <option value="No">No</option>
+                            <option value="Sí">Sí</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="col-md-8">
+                        <div class="form-group form-group-default">
+                          <label>Descripción de Sanciones Disciplinarias</label>
+                          <input type="text" class="form-control" name="descripcion_sanciones" placeholder="Detalle de sanciones disciplinarias">
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="row mt-2">
+                      <div class="col-md-4">
+                        <div class="form-group form-group-default">
+                          <label>¿Opera en país de alto riesgo GAFILAT?</label>
+                          <select class="form-select" name="opera_pais_alto_riesgo">
+                            <option value="No">No</option>
+                            <option value="Sí">Sí</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="col-md-8">
+                        <div class="form-group form-group-default">
+                          <label>Justificación de exposición geográfica</label>
+                          <input type="text" class="form-control" name="justificacion_exposicion_geografica" placeholder="Justificación de la exposición geográfica">
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                </form>
+              </div>
+              <div class="card-action text-end">
+                <button class="btn btn-round btn-secondary" onclick="document.getElementById('form_counterparty_create').reset()">
+                  <i class="fas fa-redo"></i> Limpiar
+                </button>
+                <button class="btn btn-round btn-success" id="btn_save_counterparty">
+                  <i class="fas fa-save"></i> Guardar Registro
+                </button>
+              </div>
+            </div>
+          </div>
+          <!-- End Crear Contraparte Sub-Screen -->
+
+          <!-- ======================================================== -->
+          <!-- MODAL DE COMPARTIR FORMULARIO                            -->
+          <!-- ======================================================== -->
+          <div class="modal fade" id="modal_share_form" tabindex="-1" aria-labelledby="modalShareFormLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header border-0 bg-info">
+                  <h5 class="modal-title text-white fw-bold" id="modalShareFormLabel"><i class="fas fa-share-alt me-2"></i> Compartir Formulario de Registro</h5>
+                  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                  <form id="form_share_counterparty">
+                    <?= csrf_field() ?>
+                    <input type="hidden" id="share_contraparte_type" name="contraparte_type" value="proveedor">
+                    
+                    <div class="form-group mb-3">
+                      <label class="form-label fw-bold">Tipo de Persona</label>
+                      <div class="btn-group w-100" role="group">
+                        <input type="radio" class="btn-check" name="person_type" id="share_person_type_juridica" value="juridica" checked autocomplete="off">
+                        <label class="btn btn-outline-info fw-bold" for="share_person_type_juridica">Persona Jurídica</label>
+
+                        <input type="radio" class="btn-check" name="person_type" id="share_person_type_natural" value="natural" autocomplete="off">
+                        <label class="btn btn-outline-info fw-bold" for="share_person_type_natural">Persona Natural</label>
+                      </div>
+                    </div>
+
+                    <div class="form-group mb-3">
+                      <label for="share_numero_identificacion" class="form-label fw-bold">NIT o Cédula de Identificación *</label>
+                      <input type="text" class="form-control" id="share_numero_identificacion" name="numero_identificacion" placeholder="Ej: 901234567-8" required>
+                      <small class="text-muted">Este número quedará prellenado en el formulario y no podrá ser modificado por el destinatario.</small>
+                    </div>
+                  </form>
+
+                  <!-- Área donde se muestra el enlace generado -->
+                  <div class="d-none mt-4" id="div_generated_link">
+                    <hr>
+                    <label class="form-label fw-bold text-success"><i class="fas fa-link"></i> Enlace Generado</label>
+                    <div class="input-group mb-3">
+                      <input type="text" class="form-control" id="input_generated_link" readonly>
+                      <button class="btn btn-outline-info" type="button" id="btn_copy_link"><i class="fas fa-copy"></i> Copiar</button>
+                    </div>
+                    <div class="d-grid gap-2">
+                      <a href="#" target="_blank" class="btn btn-success" id="btn_whatsapp_share">
+                        <i class="fab fa-whatsapp"></i> Compartir por WhatsApp
+                      </a>
+                    </div>
+                  </div>
+                </div>
+                <div class="modal-footer border-0 bg-light">
+                  <button type="button" class="btn btn-secondary btn-round btn-border" data-bs-dismiss="modal">Cerrar</button>
+                  <button type="button" class="btn btn-info btn-round shadow-sm text-white" id="btn_generate_share_link">Generar Enlace</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ======================================================== -->
+          <!-- MODAL DE SUBIR POLÍTICA PDF                              -->
+          <!-- ======================================================== -->
+          <div class="modal fade" id="modal_upload_policy" tabindex="-1" aria-labelledby="modalUploadPolicyLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header border-0 bg-warning text-white">
+                  <h5 class="modal-title fw-bold" id="modalUploadPolicyLabel"><i class="fas fa-file-upload me-2"></i> Subir Política de Tratamiento de Datos (PDF)</h5>
+                  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                  <form id="form_upload_policy" enctype="multipart/form-data">
+                    <?= csrf_field() ?>
+                    
+                    <div class="form-group mb-3">
+                      <label class="form-label fw-bold text-dark">Seleccionar Archivo PDF *</label>
+                      <input type="file" class="form-control" id="policy_file" name="policy_file" accept=".pdf" required style="border: 1px solid #ced4da;">
+                      <small class="text-muted d-block mt-2">Suba el archivo de políticas que se mostrará a los clientes y proveedores en el formulario externo antes del registro.</small>
+                    </div>
+
+                    <div class="text-end mt-4">
+                      <button type="button" class="btn btn-secondary btn-round btn-border me-2" data-bs-dismiss="modal">Cerrar</button>
+                      <button type="submit" class="btn btn-warning btn-round text-white shadow-sm fw-bold" id="btn_submit_policy_file">Subir Archivo</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
       <!-- End Body -->
@@ -992,11 +1899,13 @@
   <!-- Main -->
   <script>
     window.userCredentials = <?= json_encode($credentials ?? []) ?>;
+    window.BASE_URL = '<?= base_url() ?>';
   </script>
   <script src="<?= base_url('public/assets/js/module/dashboard/global.js') ?>?v=<?= filemtime(ROOTPATH . 'public/assets/js/module/dashboard/global.js') ?>"></script>
   <script src="<?= base_url('public/assets/js/module/dashboard/init.js') ?>?v=<?= filemtime(ROOTPATH . 'public/assets/js/module/dashboard/init.js') ?>"></script>
   <script src="<?= base_url('public/assets/js/module/dashboard/events.js') ?>?v=<?= filemtime(ROOTPATH . 'public/assets/js/module/dashboard/events.js') ?>"></script>
   <script src="<?= base_url('public/assets/js/module/dashboard/utils.js') ?>?v=<?= filemtime(ROOTPATH . 'public/assets/js/module/dashboard/utils.js') ?>"></script>
+  <script src="<?= base_url('public/assets/js/module/dashboard/counterparty.js') ?>?v=<?= filemtime(ROOTPATH . 'public/assets/js/module/dashboard/counterparty.js') ?>"></script>
 
 
 </body>
