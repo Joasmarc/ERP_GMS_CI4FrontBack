@@ -24,8 +24,12 @@ class Documents extends Model
         'path' => 'string'
     ];
 
-    // 4.0 Deshabilitar timestamps ya que no existen en la definición de la tabla
-    protected $useTimestamps = false;
+    // 4.0 Configurar fechas y eliminación suave
+    protected $useTimestamps = true;
+    protected $useSoftDeletes = true;
+    protected $createdField  = 'created_at';
+    protected $updatedField  = 'updated_at';
+    protected $deletedField  = 'deleted_at';
 
     // 5.0 Validación de datos
     protected $validationRules = [
