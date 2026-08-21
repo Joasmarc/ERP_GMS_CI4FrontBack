@@ -346,10 +346,10 @@ $(document).on('click', '#btn_upload_image', function () {
                     dataType: 'json',
                     success: function (catalog_resp) {
                         GLOBAL_PRODUCTS_DATA = catalog_resp.data || [];
-                        // Recargar los detalles del producto automáticamente con los datos frescos
-                        const productId = $('#btn_product_edit').data('id');
-                        if (productId) {
-                            $(`[data-selector="abrir"][data-id="${productId}"]`).trigger('click');
+                        // Recargar imágenes del producto
+                        const familyId = $('#btn_upload_pdf').data('family-id');
+                        if (familyId) {
+                            reloadImages(familyId);
                         }
                     }
                 });
@@ -414,10 +414,10 @@ $('#btn_save_upload_pdf').on('click', function () {
                 swal('Éxito', 'Documento PDF subido correctamente', 'success');
                 $('#modal_upload_pdf').modal('hide');
 
-                // Recargar los detalles del producto automáticamente
-                const productId = $('#btn_product_edit').data('id');
-                if (productId) {
-                    $(`[data-selector="abrir"][data-id="${productId}"]`).trigger('click');
+                // Recargar los documentos del producto automáticamente
+                const familyId = $('#btn_upload_pdf').data('family-id');
+                if (familyId) {
+                    reloadDocuments(familyId);
                 }
             } else {
                 swal('Error', resp.message || 'Error al subir el documento', 'error');
@@ -597,12 +597,18 @@ $(document).on('click', '.btn-delete-file', function (e) {
                 dataType: 'json',
                 success: function (resp) {
                     if (resp.status === 'success') {
-                        swal('Eliminado', resp.message, 'success');
-                        // 3.0 Recargar detalle del producto para reflejar cambios
-                        const productId = $('#btn_product_edit').data('id');
-                        if (productId) {
-                            $(`[data-selector="abrir"][data-id="${productId}"]`).trigger('click');
-                        }
+                        swal('Eliminado', resp.message, 'success').then(function () {
+                            // 3.0 Recargar contenido del producto para reflejar cambios
+                            const familyId = $('#btn_upload_pdf').data('family-id');
+                            if (familyId) {
+                                // 3.1 Recargar documentos
+                                reloadDocuments(familyId);
+                                // 3.2 Recargar imágenes
+                                reloadImages(familyId);
+                                // 3.3 Recargar videos
+                                reloadVideos(familyId);
+                            }
+                        });
                     } else {
                         swal('Error', resp.message || 'Error al eliminar', 'error');
                     }

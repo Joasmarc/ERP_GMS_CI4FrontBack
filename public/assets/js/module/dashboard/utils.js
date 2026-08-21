@@ -105,9 +105,9 @@ $('#btn_save_upload_picture').on('click', function () {
                 swal('Éxito', 'Imagen subida correctamente', 'success');
                 $('#modal_upload_picture').modal('hide');
 
-                const productId = $('#btn_product_edit').data('id');
-                if (productId) {
-                    $(`[data-selector="abrir"][data-id="${productId}"]`).trigger('click');
+                const familyId = $('#btn_upload_pdf').data('family-id');
+                if (familyId) {
+                    reloadImages(familyId);
                 }
             } else {
                 swal('Error', resp.message || 'Error al subir la imagen', 'error');
@@ -168,9 +168,9 @@ $('#btn_save_upload_video').on('click', function () {
                 swal('Éxito', 'Video subido correctamente', 'success');
                 $('#modal_upload_video').modal('hide');
 
-                const productId = $('#btn_product_edit').data('id');
-                if (productId) {
-                    $(`[data-selector="abrir"][data-id="${productId}"]`).trigger('click');
+                const familyId = $('#btn_upload_pdf').data('family-id');
+                if (familyId) {
+                    reloadVideos(familyId);
                 }
             } else {
                 swal('Error', resp.message || 'Error al subir el video', 'error');
@@ -241,3 +241,101 @@ $('#btn_save_pin').on('click', function () {
         }
     });
 });
+
+// Reload_G03 - Recargar documentos del producto
+function reloadDocuments(familyId) {
+    $('#cont_documentos_producto').empty();
+    $.ajax({
+        url: SITE_URL + '/product/document/' + familyId,
+        type: 'GET',
+        dataType: 'json',
+        success: function (resp) {
+            if (resp.documents && resp.documents.length && resp.documents[0].name !== null) {
+                let html = '';
+                resp.documents.forEach(function (doc) {
+                    html += `
+                        <div class="col-6 col-md-4 text-center mb-3 position-relative">
+                            <a href="javascript:void(0)" class="text-danger text-decoration-none" onclick="viewPdf('${SITE_URL}${doc.path}', '${doc.name}')">
+                                <i class="fas fa-file-pdf fa-3x"></i>
+                                <p class="mt-2 mb-0 text-dark fw-bold" style="font-size:0.85rem; line-height: 1.2;">${doc.name}</p>
+                            </a>
+                            <button class="btn btn-danger btn-sm btn-round btn-delete-file" data-delete-type="document" data-delete-id="${doc.id}" style="position: absolute; top: -8px; right: 5px; width: 28px; height: 28px; padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.3);" title="Eliminar documento">
+                                <i class="fas fa-trash-alt" style="font-size: 12px;"></i>
+                            </button>
+                        </div>
+                    `;
+                });
+                $('#cont_documentos_producto').html(html);
+            } else {
+                $('#cont_documentos_producto').html('<div class="col-12 text-center text-muted"><p>No hay documentos asociados</p></div>');
+            }
+        },
+        error: function () {
+            console.log('Error al recargar documentos');
+        }
+    });
+}
+
+// Reload_G03 - Recargar imágenes del producto
+function reloadImages(familyId) {
+    $('#cont_imagenes_producto').empty();
+    $.ajax({
+        url: SITE_URL + '/product/img/' + familyId,
+        type: 'GET',
+        dataType: 'json',
+        success: function (resp) {
+            let html = '';
+            if (resp.images && resp.images.length > 0) {
+                html += '<div class="d-flex flex-wrap justify-content-center">';
+                resp.images.forEach(function (img) {
+                    html += `
+                        <div class="position-relative d-inline-block" style="margin: 5px;">
+                            <img src="${SITE_URL}${img.path}" alt="Producto" style="max-width: 200px; width: auto; max-height: 200px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                            <button class="btn btn-danger btn-sm btn-round btn-delete-file" data-delete-type="picture" data-delete-id="${img.id}" style="position: absolute; top: -8px; right: -8px; width: 28px; height: 28px; padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.3);" title="Eliminar imagen">
+                                <i class="fas fa-trash-alt" style="font-size: 12px;"></i>
+                            </button>
+                        </div>`;
+                });
+                html += '</div>';
+            } else {
+                html = '<div class="text-center text-muted"><p>No hay imágenes adicionales asociadas</p></div>';
+            }
+            $('#cont_imagenes_producto').html(html);
+        },
+        error: function () {
+            console.log('Error al recargar imágenes');
+        }
+    });
+}
+
+// Reload_G03 - Recargar videos del producto
+function reloadVideos(familyId) {
+    $('#cont_videos_producto').empty();
+    $.ajax({
+        url: SITE_URL + '/product/video/' + familyId,
+        type: 'GET',
+        dataType: 'json',
+        success: function (resp) {
+            let html = '';
+            if (resp.videos && resp.videos.length > 0) {
+                resp.videos.forEach(function (vid) {
+                    html += `
+                        <div class="position-relative d-inline-block" style="margin: 5px;">
+                            <video src="${SITE_URL}${vid.path}" controls preload="metadata" style="max-width: 100%; width: auto; max-height: 500px;" onerror="this.style.display='none'">
+                                Tu navegador no soporta el elemento de video.
+                            </video>
+                            <button class="btn btn-danger btn-sm btn-round btn-delete-file" data-delete-type="video" data-delete-id="${vid.id}" style="position: absolute; top: -8px; right: -8px; width: 28px; height: 28px; padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.3);" title="Eliminar video">
+                                <i class="fas fa-trash-alt" style="font-size: 12px;"></i>
+                            </button>
+                        </div>`;
+                });
+            } else {
+                html = '<div class="text-center text-muted"><p>No hay videos asociados</p></div>';
+            }
+            $('#cont_videos_producto').html(html);
+        },
+        error: function () {
+            console.log('Error al recargar videos');
+        }
+    });
+}
