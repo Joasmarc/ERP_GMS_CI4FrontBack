@@ -4,25 +4,31 @@ namespace App\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
 
-class CreateFamilyDocumentsTable extends Migration
+class CreateFamiliesTable extends Migration
 {
     public function up()
     {
         $this->forge->addField([
             'id' => [
                 'type'           => 'INT',
-                'unsigned'       => true,
+                'constraint'     => 11,
+                'unsigned'       => false,
                 'auto_increment' => true,
             ],
-            'family_id' => [
-                'type'       => 'INT',
-                'unsigned'   => false,
+            'keyword' => [
+                'type'       => 'VARCHAR',
+                'constraint' => '250',
                 'null'       => false,
             ],
-            'document_id' => [
-                'type'       => 'INT',
-                'unsigned'   => false,
-                'null'       => false,
+            'state' => [
+                'type'       => 'ENUM',
+                'constraint' => ['ACTIVO', 'INACTIVO'],
+                'default'    => 'ACTIVO',
+            ],
+            'img_path' => [
+                'type'       => 'VARCHAR',
+                'constraint' => '250',
+                'null'       => true,
             ],
             'created_at' => [
                 'type' => 'DATETIME',
@@ -39,17 +45,11 @@ class CreateFamilyDocumentsTable extends Migration
         ]);
         
         $this->forge->addKey('id', true);
-        
-        // Add foreign keys
-        // Assuming 'families' and 'documents' tables exist and 'id' is unsigned INT
-        $this->forge->addForeignKey('family_id', 'families', 'id', 'CASCADE', 'CASCADE');
-        $this->forge->addForeignKey('document_id', 'documents', 'id', 'CASCADE', 'CASCADE');
-        
-        $this->forge->createTable('family_documents');
+        $this->forge->createTable('families');
     }
 
     public function down()
     {
-        $this->forge->dropTable('family_documents');
+        $this->forge->dropTable('families', true);
     }
 }

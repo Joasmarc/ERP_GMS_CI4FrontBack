@@ -34,6 +34,11 @@ function showScreen(screenId) {
     for (const key in SCREENS) {
         $('#' + SCREENS[key][0]).addClass('d-none');
     }
+    // Asegurar que las sub-pantallas vuelvan a su estado de lista por defecto al navegar
+    $('#proveedor_list_view').removeClass('d-none');
+    $('#cliente_list_view').removeClass('d-none');
+    $('#counterparty_create_view').addClass('d-none');
+
     // 1.1 Mostrar loader
     toggleLoader(true)
     // 1.2 Actualizar navegación
