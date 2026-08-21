@@ -110,10 +110,16 @@ $(document).on('click', '[data-selector="abrir"]', function () {
         dataType: 'json',
         success: function (resp) {
             let imagenes_html = '';
-            if (resp.imagePaths && resp.imagePaths.length > 0) {
+            if (resp.images && resp.images.length > 0) {
                 imagenes_html += '<div class="d-flex flex-wrap justify-content-center">';
-                resp.imagePaths.forEach(path => {
-                    imagenes_html += `<img src="${SITE_URL}${path}" alt="Producto" style="max-width: 200px; width: auto; max-height: 200px; margin: 5px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">`;
+                resp.images.forEach(img => {
+                    imagenes_html += `
+                        <div class="position-relative d-inline-block" style="margin: 5px;">
+                            <img src="${SITE_URL}${img.path}" alt="Producto" style="max-width: 200px; width: auto; max-height: 200px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                            <button class="btn btn-danger btn-sm btn-round btn-delete-file" data-delete-type="picture" data-delete-id="${img.id}" style="position: absolute; top: -8px; right: -8px; width: 28px; height: 28px; padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.3);" title="Eliminar imagen">
+                                <i class="fas fa-trash-alt" style="font-size: 12px;"></i>
+                            </button>
+                        </div>`;
                 });
                 imagenes_html += '</div>';
             } else {
@@ -137,17 +143,23 @@ $(document).on('click', '[data-selector="abrir"]', function () {
         dataType: 'json',
         success: function (resp) {
             let videos_html = '';
-            if (resp.videoPaths && resp.videoPaths.length > 0) {
-                resp.videoPaths.forEach(path => {
-                    videos_html += `<video 
-                        src="${SITE_URL}${path}" 
-                        controls 
-                        preload="metadata" 
-                        style="max-width: 100%; width: auto; max-height: 500px; margin: 5px;"
-                        onerror="this.style.display='none'" 
-                        >
-                        Tu navegador no soporta el elemento de video.
-                    </video>`;
+            if (resp.videos && resp.videos.length > 0) {
+                resp.videos.forEach(vid => {
+                    videos_html += `
+                        <div class="position-relative d-inline-block" style="margin: 5px;">
+                            <video 
+                                src="${SITE_URL}${vid.path}" 
+                                controls 
+                                preload="metadata" 
+                                style="max-width: 100%; width: auto; max-height: 500px;"
+                                onerror="this.style.display='none'" 
+                                >
+                                Tu navegador no soporta el elemento de video.
+                            </video>
+                            <button class="btn btn-danger btn-sm btn-round btn-delete-file" data-delete-type="video" data-delete-id="${vid.id}" style="position: absolute; top: -8px; right: -8px; width: 28px; height: 28px; padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.3);" title="Eliminar video">
+                                <i class="fas fa-trash-alt" style="font-size: 12px;"></i>
+                            </button>
+                        </div>`;
                 });
             } else {
                 videos_html = '<div class="text-center text-muted"><p>No hay videos asociados</p></div>';
@@ -179,11 +191,14 @@ $(document).on('click', '[data-selector="abrir"]', function () {
                 let documentos_html = '';
                 resp.documents.forEach((document, index) => {
                     documentos_html += `
-                        <div class="col-6 col-md-4 text-center mb-3">
+                        <div class="col-6 col-md-4 text-center mb-3 position-relative">
                             <a href="javascript:void(0)" class="text-danger text-decoration-none" onclick="viewPdf('${SITE_URL}${document.path}', '${document.name}')">
                                 <i class="fas fa-file-pdf fa-3x"></i>
                                 <p class="mt-2 mb-0 text-dark fw-bold" style="font-size:0.85rem; line-height: 1.2;">${document.name}</p>
                             </a>
+                            <button class="btn btn-danger btn-sm btn-round btn-delete-file" data-delete-type="document" data-delete-id="${document.id}" style="position: absolute; top: -8px; right: 5px; width: 28px; height: 28px; padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.3);" title="Eliminar documento">
+                                <i class="fas fa-trash-alt" style="font-size: 12px;"></i>
+                            </button>
                         </div>
                     `;
                 });
@@ -527,6 +542,75 @@ $('#btn_guardar_remision').on('click', function () {
         complete: function () {
             MACRO_SAVE.btn.disabled = false;
             MACRO_SAVE.btn.innerHTML = MACRO_SAVE.originalText;
+        }
+    });
+});
+
+// Archivo_G03 - Eliminación lógica de archivos (documentos, imágenes, videos)
+$(document).on('click', '.btn-delete-file', function (e) {
+    console.log('DELETE CLICK', $(this).data('delete-type'), $(this).data('delete-id'));
+    e.preventDefault();
+    e.stopPropagation();
+
+    // 0.0 Variables Macro
+    const MACRO_DELETE = {
+        type: $(this).data('delete-type'),
+        id: $(this).data('delete-id'),
+        btn: $(this),
+        endpoints: {
+            'document': '/product/delete_document',
+            'picture': '/product/delete_picture',
+            'video': '/product/delete_video'
+        },
+        labels: {
+            'document': 'documento',
+            'picture': 'imagen',
+            'video': 'video'
+        }
+    };
+
+    // 1.0 Confirmar eliminación con SweetAlert
+    swal({
+        title: '¿Eliminar ' + MACRO_DELETE.labels[MACRO_DELETE.type] + '?',
+        text: 'Esta acción ocultará el archivo del listado.',
+        icon: 'warning',
+        buttons: {
+            cancel: {
+                text: 'Cancelar',
+                value: null,
+                visible: true
+            },
+            confirm: {
+                text: 'Sí, eliminar',
+                value: true,
+                className: 'swal-button--danger'
+            }
+        },
+        dangerMode: true
+    }).then(function (isConfirm) {
+        if (isConfirm) {
+            // 2.0 Enviar petición AJAX de eliminación lógica
+            $.ajax({
+                url: SITE_URL + MACRO_DELETE.endpoints[MACRO_DELETE.type],
+                type: 'POST',
+                data: { id: MACRO_DELETE.id },
+                dataType: 'json',
+                success: function (resp) {
+                    if (resp.status === 'success') {
+                        swal('Eliminado', resp.message, 'success');
+                        // 3.0 Recargar detalle del producto para reflejar cambios
+                        const productId = $('#btn_product_edit').data('id');
+                        if (productId) {
+                            $(`[data-selector="abrir"][data-id="${productId}"]`).trigger('click');
+                        }
+                    } else {
+                        swal('Error', resp.message || 'Error al eliminar', 'error');
+                    }
+                },
+                error: function () {
+                    swal('Error', 'Hubo un problema de conexión', 'error');
+                }
+            });
         }
     });
 });

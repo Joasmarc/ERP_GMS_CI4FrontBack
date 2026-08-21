@@ -179,19 +179,23 @@ class Product extends BaseController
 
         // 1.1 Intentar obtener por ID de familia primero
         $familyDocsModel = new \App\Models\FamilyDocuments();
-        $DOCUMENT['data'] = $familyDocsModel->join('documents b', 'b.id = family_documents.document_id', 'inner')
+        $DOCUMENT['data'] = $familyDocsModel
+            ->join('documents b', 'b.id = family_documents.document_id')
             ->where('family_documents.family_id', $id)
-            ->select("b.path, b.name")
-            ->get()->getResultArray();
+            ->where('b.deleted_at', null)
+            ->select('b.id, b.path, b.name')
+            ->findAll();
 
         // 1.2 Si no hay resultados y el ID parece ser de un producto legacy, buscar por producto
         if (empty($DOCUMENT['data']) && is_numeric($id)) {
             $model = new Products();
-            $DOCUMENT['data'] = $model->join('documents_products a', 'a.id_product = products.id', 'left')
-                ->join('documents b', 'b.id = a.id_document', 'inner')
+            $DOCUMENT['data'] = $model
+                ->join('documents_products a', 'a.id_product = products.id', 'left')
+                ->join('documents b', 'b.id = a.id_document')
                 ->where('products.id', $id)
-                ->select("b.path, b.name")
-                ->get()->getResultArray();
+                ->where('b.deleted_at', null)
+                ->select('b.id, b.path, b.name')
+                ->findAll();
         }
 
         // 2.0 Enviar respuesta JSON - Formatear y retornar datos
@@ -288,26 +292,28 @@ class Product extends BaseController
     {
         $id = $this->request->getUri()->getSegment(3);
         $familyPicsModel = new \App\Models\FamilyPictures();
-        $data = $familyPicsModel->join('pictures b', 'b.id = family_pictures.picture_id', 'inner')
+        $data = $familyPicsModel
+            ->join('pictures b', 'b.id = family_pictures.picture_id')
             ->where('family_pictures.family_id', $id)
-            ->select("b.path")
-            ->get()->getResultArray();
+            ->where('b.deleted_at', null)
+            ->select('b.id, b.path')
+            ->findAll();
 
-        $imagePaths = array_column($data, 'path');
-        return $this->response->setJSON(['imagePaths' => $imagePaths]);
+        return $this->response->setJSON(['images' => $data]);
     }
 
     public function listing_video()
     {
         $id = $this->request->getUri()->getSegment(3);
         $familyVideosModel = new \App\Models\FamilyVideos();
-        $data = $familyVideosModel->join('videos b', 'b.id = family_videos.video_id', 'inner')
+        $data = $familyVideosModel
+            ->join('videos b', 'b.id = family_videos.video_id')
             ->where('family_videos.family_id', $id)
-            ->select("b.path")
-            ->get()->getResultArray();
+            ->where('b.deleted_at', null)
+            ->select('b.id, b.path')
+            ->findAll();
 
-        $videoPaths = array_column($data, 'path');
-        return $this->response->setJSON(['videoPaths' => $videoPaths]);
+        return $this->response->setJSON(['videos' => $data]);
     }
 
     public function upload_family_picture()
@@ -383,5 +389,55 @@ class Product extends BaseController
             'path' => $publicPath
         ]);
     }
-}
 
+    // Archivo_G03 - Eliminación lógica de documento
+    public function delete_document()
+    {
+        // 1.0 Validar entrada - Obtener ID del documento
+        $id = $this->request->getPost('id');
+        if (!$id) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'ID de documento no proporcionado.']);
+        }
+
+        // 2.0 Ejecutar soft delete - Eliminar documento lógicamente
+        $documentModel = new \App\Models\Documents();
+        $documentModel->delete($id);
+
+        // 3.0 Retornar éxito
+        return $this->response->setJSON(['status' => 'success', 'message' => 'Documento eliminado correctamente.']);
+    }
+
+    // Archivo_G03 - Eliminación lógica de imagen
+    public function delete_picture()
+    {
+        // 1.0 Validar entrada - Obtener ID de la imagen
+        $id = $this->request->getPost('id');
+        if (!$id) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'ID de imagen no proporcionado.']);
+        }
+
+        // 2.0 Ejecutar soft delete - Eliminar imagen lógicamente
+        $pictureModel = new \App\Models\Pictures();
+        $pictureModel->delete($id);
+
+        // 3.0 Retornar éxito
+        return $this->response->setJSON(['status' => 'success', 'message' => 'Imagen eliminada correctamente.']);
+    }
+
+    // Archivo_G03 - Eliminación lógica de video
+    public function delete_video()
+    {
+        // 1.0 Validar entrada - Obtener ID del video
+        $id = $this->request->getPost('id');
+        if (!$id) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'ID de video no proporcionado.']);
+        }
+
+        // 2.0 Ejecutar soft delete - Eliminar video lógicamente
+        $videoModel = new \App\Models\Videos();
+        $videoModel->delete($id);
+
+        // 3.0 Retornar éxito
+        return $this->response->setJSON(['status' => 'success', 'message' => 'Video eliminado correctamente.']);
+    }
+}

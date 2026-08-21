@@ -46,6 +46,9 @@ $routes->group('product', ['filter' => 'cors'], static function ($routes) {
     $routes->post('upload_family_document', 'Product::upload_family_document');
     $routes->post('upload_family_picture', 'Product::upload_family_picture');
     $routes->post('upload_family_video', 'Product::upload_family_video');
+    $routes->post('delete_document', 'Product::delete_document');
+    $routes->post('delete_picture', 'Product::delete_picture');
+    $routes->post('delete_video', 'Product::delete_video');
 });
 
 // Preview Email Template Route
