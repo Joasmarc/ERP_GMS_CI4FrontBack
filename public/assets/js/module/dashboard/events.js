@@ -116,9 +116,9 @@ $(document).on('click', '[data-selector="abrir"]', function () {
                     imagenes_html += `
                         <div class="position-relative d-inline-block" style="margin: 5px;">
                             <img src="${SITE_URL}${img.path}" alt="Producto" style="max-width: 200px; width: auto; max-height: 200px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-                            <button class="btn btn-danger btn-sm btn-round btn-delete-file" data-delete-type="picture" data-delete-id="${img.id}" style="position: absolute; top: -8px; right: -8px; width: 28px; height: 28px; padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.3);" title="Eliminar imagen">
+                            ${CAN_DELETE ? `<button class="btn btn-danger btn-sm btn-round btn-delete-file" data-delete-type="picture" data-delete-id="${img.id}" style="position: absolute; top: -8px; right: -8px; width: 28px; height: 28px; padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.3);" title="Eliminar imagen">
                                 <i class="fas fa-trash-alt" style="font-size: 12px;"></i>
-                            </button>
+                            </button>` : ''}
                         </div>`;
                 });
                 imagenes_html += '</div>';
@@ -156,9 +156,9 @@ $(document).on('click', '[data-selector="abrir"]', function () {
                                 >
                                 Tu navegador no soporta el elemento de video.
                             </video>
-                            <button class="btn btn-danger btn-sm btn-round btn-delete-file" data-delete-type="video" data-delete-id="${vid.id}" style="position: absolute; top: -8px; right: -8px; width: 28px; height: 28px; padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.3);" title="Eliminar video">
+                            ${CAN_DELETE ? `<button class="btn btn-danger btn-sm btn-round btn-delete-file" data-delete-type="video" data-delete-id="${vid.id}" style="position: absolute; top: -8px; right: -8px; width: 28px; height: 28px; padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.3);" title="Eliminar video">
                                 <i class="fas fa-trash-alt" style="font-size: 12px;"></i>
-                            </button>
+                            </button>` : ''}
                         </div>`;
                 });
             } else {
@@ -196,9 +196,9 @@ $(document).on('click', '[data-selector="abrir"]', function () {
                                 <i class="fas fa-file-pdf fa-3x"></i>
                                 <p class="mt-2 mb-0 text-dark fw-bold" style="font-size:0.85rem; line-height: 1.2;">${document.name}</p>
                             </a>
-                            <button class="btn btn-danger btn-sm btn-round btn-delete-file" data-delete-type="document" data-delete-id="${document.id}" style="position: absolute; top: -8px; right: 5px; width: 28px; height: 28px; padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.3);" title="Eliminar documento">
+                            ${CAN_DELETE ? `<button class="btn btn-danger btn-sm btn-round btn-delete-file" data-delete-type="document" data-delete-id="${document.id}" style="position: absolute; top: -8px; right: 5px; width: 28px; height: 28px; padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.3);" title="Eliminar documento">
                                 <i class="fas fa-trash-alt" style="font-size: 12px;"></i>
-                            </button>
+                            </button>` : ''}
                         </div>
                     `;
                 });

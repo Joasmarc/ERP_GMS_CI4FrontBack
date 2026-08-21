@@ -15,3 +15,4 @@ const SCREENS = {
 /* ======================================================== */
 
 let GLOBAL_PRODUCTS_DATA = [];
+const CAN_DELETE = window.userCredentials && window.userCredentials[8] === '1';
