@@ -492,7 +492,7 @@ function groupWarehouseBalanceByFamily(items) {
  * Sub-líneas que lucen visualmente como filas de la tabla sin ID y sin repetir el nombre
  */
 function formatFamilySubLines(rowData) {
-    if (!rowData || !rowData.variations || rowData.variations.length === 0) {
+    if (!rowData || !rowData.variations || rowData.variations.length <= 1) {
         return '';
     }
 
@@ -577,10 +577,13 @@ function renderBalanceTable(items) {
         autoWidth: false,
         columns: [
             {
-                data: 'id_family',
+                data: null,
                 width: '50px',
-                render: function (data) {
-                    return data ? data : '-';
+                render: function (data, type, row) {
+                    if (row && row.variations && row.variations.length === 1) {
+                        return row.variations[0].id || '-';
+                    }
+                    return (row && row.id_family) ? row.id_family : (row ? row.id : '-');
                 }
             },
             { 
@@ -599,46 +602,73 @@ function renderBalanceTable(items) {
                 width: '120px',
                 render: function (variations) {
                     if (!variations || variations.length === 0) return '<span class="text-muted small">-</span>';
-                    return `<span class="badge badge-secondary"><i class="fas fa-layer-group me-1"></i>${variations.length} ${variations.length === 1 ? 'lote' : 'lotes'}</span>`;
+                    if (variations.length === 1) {
+                        const lot = variations[0].lot;
+                        return lot ? `<span class="badge badge-secondary"><i class="fas fa-barcode me-1"></i>${$('<div>').text(lot).html()}</span>` : '<span class="text-muted small">-</span>';
+                    }
+                    return `<span class="badge badge-secondary"><i class="fas fa-layer-group me-1"></i>${variations.length} lotes</span>`;
                 }
             },
             {
-                data: null,
+                data: 'variations',
                 width: '120px',
-                defaultContent: '<span class="text-muted small">-</span>',
-                render: function () {
+                render: function (variations) {
+                    if (!variations || variations.length === 0) return '<span class="text-muted small">-</span>';
+                    if (variations.length === 1) {
+                        const exp = variations[0].expiration_date;
+                        return exp ? `<span class="small text-muted"><i class="fas fa-calendar-alt me-1 text-secondary"></i>${$('<div>').text(exp.split(' ')[0]).html()}</span>` : '<span class="text-muted small">-</span>';
+                    }
                     return '<span class="text-muted small">-</span>';
                 }
             },
             { 
-                data: 'total_quantity',
+                data: null,
                 width: '100px',
                 className: 'text-center',
-                render: function (data) {
-                    let qty = parseInt(data || 0);
+                render: function (data, type, row) {
+                    let qty = 0;
+                    if (row && row.variations && row.variations.length === 1) {
+                        qty = parseInt(row.variations[0].quantity || 0);
+                    } else if (row) {
+                        qty = parseInt(row.total_quantity || 0);
+                    }
                     let badgeClass = qty > 10 ? 'badge-success' : (qty > 0 ? 'badge-warning' : 'badge-danger');
                     return `<span class="badge ${badgeClass} fs-6 fw-bold">${qty.toLocaleString()}</span>`;
                 }
             },
             {
-                data: 'latest_update',
+                data: null,
                 width: '150px',
-                render: function (data) {
-                    return data ? `<span class="small text-muted">${data}</span>` : '-';
+                render: function (data, type, row) {
+                    let updateVal = '-';
+                    if (row && row.variations && row.variations.length === 1) {
+                        updateVal = row.variations[0].updated_at || '-';
+                    } else if (row) {
+                        updateVal = row.latest_update || '-';
+                    }
+                    return updateVal ? `<span class="small text-muted">${updateVal}</span>` : '-';
                 }
             }
         ],
         processing: true,
         pageLength: 10,
         language: getDatatablesLanguageBodegas(),
-        createdRow: function (row) {
-            $(row).addClass('family-parent-row');
+        createdRow: function (row, data) {
+            // Aplicar estilo de fila padre solo si la familia tiene más de 1 lote
+            if (data && data.variations && data.variations.length > 1) {
+                $(row).addClass('family-parent-row');
+            }
         },
         drawCallback: function () {
-            // Mostrar siempre las sub-líneas bajo cada familia
+            // Solo mostrar sub-líneas si la familia tiene más de 1 lote
             const api = this.api();
             api.rows({ page: 'current' }).every(function () {
-                this.child(formatFamilySubLines(this.data()), 'child-subline p-0').show();
+                const data = this.data();
+                if (data && data.variations && data.variations.length > 1) {
+                    this.child(formatFamilySubLines(data), 'child-subline p-0').show();
+                } else {
+                    this.child.hide();
+                }
             });
             syncSublineColumns();
         }
