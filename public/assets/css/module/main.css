@@ -330,3 +330,29 @@
     outline: none !important;
     box-shadow: none !important;
 }
+
+.family-parent-row td {
+    background-color: #f8f9fa !important;
+    font-weight: 600;
+}
+
+#tbl_list_bodega_balance tbody tr.child-subline > td {
+    padding: 0 !important;
+    border-top: none !important;
+    background-color: transparent !important;
+}
+
+.subline-table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+}
+
+.subline-row td {
+    padding: 8px 10px !important;
+    border-bottom: 1px solid #ebedf2 !important;
+    background-color: #ffffff;
+}
+
+.subline-row:hover td {
+    background-color: #fcfdfe !important;
+}

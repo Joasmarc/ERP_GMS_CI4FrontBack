@@ -824,15 +824,15 @@
 
                   <!-- Tabla de existencias/balance -->
                   <div class="table-responsive">
-                    <table id="tbl_list_bodega_balance" class="display table table-striped table-hover w-100">
+                    <table id="tbl_list_bodega_balance" class="display table table-hover w-100 align-middle">
                       <thead>
                         <tr>
                           <th style="width: 50px;">ID</th>
-                          <th>Artículo / Insumo</th>
-                          <th style="width: 110px;">Lote</th>
+                          <th style="min-width: 250px;">Artículo / Insumo</th>
+                          <th style="width: 120px;">Lote</th>
                           <th style="width: 120px;">Vencimiento</th>
-                          <th class="text-center" style="width: 110px;">Cantidad</th>
-                          <th>Última Actualización</th>
+                          <th class="text-center" style="width: 100px;">Cantidad</th>
+                          <th style="width: 150px;">Última Actualización</th>
                         </tr>
                       </thead>
                       <tbody>

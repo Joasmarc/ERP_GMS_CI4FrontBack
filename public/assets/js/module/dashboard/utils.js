@@ -455,43 +455,164 @@ function viewWarehouseBalance(warehouseId) {
 }
 
 /**
- * Renderizar la tabla de balance de items para la bodega seleccionada
+ * Agrupar balance de inventario por familias de productos
+ */
+function groupWarehouseBalanceByFamily(items) {
+    const map = new Map();
+
+    (items || []).forEach(item => {
+        const famId = item.id_family || 0;
+        const famName = item.family_name || item.name_item || 'Sin nombre';
+        const key = famId > 0 ? `fam_${famId}` : `name_${famName}`;
+
+        if (!map.has(key)) {
+            map.set(key, {
+                id_family: famId > 0 ? famId : item.id,
+                family_name: famName,
+                total_quantity: 0,
+                latest_update: item.updated_at || item.created_at || '-',
+                variations: []
+            });
+        }
+
+        const group = map.get(key);
+        const qty = parseInt(item.quantity || 0);
+        group.total_quantity += qty;
+        group.variations.push(item);
+
+        if (item.updated_at && (!group.latest_update || group.latest_update === '-' || item.updated_at > group.latest_update)) {
+            group.latest_update = item.updated_at;
+        }
+    });
+
+    return Array.from(map.values());
+}
+
+/**
+ * Sub-líneas que lucen visualmente como filas de la tabla sin ID y sin repetir el nombre
+ */
+function formatFamilySubLines(rowData) {
+    if (!rowData || !rowData.variations || rowData.variations.length === 0) {
+        return '';
+    }
+
+    let rowsHtml = '';
+    rowData.variations.forEach(v => {
+        const safeLot = v.lot 
+            ? `<span class="badge badge-secondary"><i class="fas fa-barcode me-1"></i>${$('<div>').text(v.lot).html()}</span>` 
+            : '<span class="text-muted small">-</span>';
+        const safeExp = v.expiration_date 
+            ? `<span class="small text-muted"><i class="fas fa-calendar-alt me-1 text-secondary"></i>${$('<div>').text(v.expiration_date.split(' ')[0]).html()}</span>` 
+            : '<span class="text-muted small">-</span>';
+        const qty = parseInt(v.quantity || 0);
+        const badgeClass = qty > 10 ? 'badge-success' : (qty > 0 ? 'badge-warning' : 'badge-danger');
+        const safeDate = v.updated_at ? $('<div>').text(v.updated_at).html() : '-';
+
+        rowsHtml += `
+            <tr class="subline-row">
+                <td class="border-top-0 text-center"></td>
+                <td class="border-top-0 ps-3 text-muted">
+                    <i class="fas fa-level-up-alt fa-rotate-90 text-muted opacity-50 me-2"></i>
+                </td>
+                <td class="border-top-0">${safeLot}</td>
+                <td class="border-top-0">${safeExp}</td>
+                <td class="text-center border-top-0">
+                    <span class="badge ${badgeClass} fs-6 fw-bold">${qty.toLocaleString()}</span>
+                </td>
+                <td class="border-top-0 small text-muted">${safeDate}</td>
+            </tr>
+        `;
+    });
+
+    return `
+        <table class="table table-hover mb-0 w-100 align-middle subline-table">
+            <tbody>
+                ${rowsHtml}
+            </tbody>
+        </table>
+    `;
+}
+
+/**
+ * Sincronizar el ancho de las columnas de la sub-tabla con la tabla principal
+ */
+function syncSublineColumns() {
+    setTimeout(function () {
+        const ths = $('#tbl_list_bodega_balance thead th');
+        if (ths.length < 6) return;
+
+        const colWidths = [];
+        ths.each(function () {
+            colWidths.push($(this).outerWidth());
+        });
+
+        $('.subline-table tr.subline-row').each(function () {
+            $(this).find('> td').each(function (i) {
+                if (colWidths[i] !== undefined) {
+                    $(this).css({
+                        'width': colWidths[i] + 'px',
+                        'min-width': colWidths[i] + 'px',
+                        'max-width': colWidths[i] + 'px',
+                        'box-sizing': 'border-box'
+                    });
+                }
+            });
+        });
+    }, 20);
+}
+
+/**
+ * Renderizar la tabla de balance agrupada por familia con sub-líneas permanentemente visibles
  */
 function renderBalanceTable(items) {
     if ($.fn.DataTable.isDataTable('#tbl_list_bodega_balance')) {
         $('#tbl_list_bodega_balance').DataTable().destroy();
+        $('#tbl_list_bodega_balance tbody').off();
     }
 
+    const groupedData = groupWarehouseBalanceByFamily(items);
+
     dtBodegaBalance = $("#tbl_list_bodega_balance").DataTable({
-        data: items,
+        data: groupedData,
+        autoWidth: false,
         columns: [
-            { data: 'id' },
+            {
+                data: 'id_family',
+                width: '50px',
+                render: function (data) {
+                    return data ? data : '-';
+                }
+            },
             { 
-                data: 'name_item',
+                data: 'family_name',
                 defaultContent: '',
-                render: function (data, type, row) {
-                    const itemName = (row && row.family_name) ? row.family_name : (data || 'Sin nombre');
-                    return `<strong><i class="fas fa-box text-secondary me-2"></i>${$('<div>').text(itemName).html()}</strong>`;
+                render: function (data) {
+                    const safeName = $('<div>').text(data || 'Sin nombre').html();
+                    return `<div class="d-inline-flex align-items-center py-1 text-wrap">
+                        <i class="fas fa-box text-secondary me-2 fs-6 flex-shrink-0"></i>
+                        <strong class="text-dark" style="font-size: 0.94rem; word-break: break-word;">${safeName}</strong>
+                    </div>`;
                 }
             },
             {
-                data: 'lot',
-                defaultContent: '-',
-                render: function (data) {
-                    return data ? `<span class="badge badge-secondary"><i class="fas fa-barcode me-1"></i>${$('<div>').text(data).html()}</span>` : '<span class="text-muted small">-</span>';
+                data: 'variations',
+                width: '120px',
+                render: function (variations) {
+                    if (!variations || variations.length === 0) return '<span class="text-muted small">-</span>';
+                    return `<span class="badge badge-secondary"><i class="fas fa-layer-group me-1"></i>${variations.length} ${variations.length === 1 ? 'lote' : 'lotes'}</span>`;
                 }
             },
             {
-                data: 'expiration_date',
-                defaultContent: '-',
-                render: function (data) {
-                    if (!data) return '<span class="text-muted small">-</span>';
-                    const dateOnly = data.split(' ')[0];
-                    return `<span class="small text-muted"><i class="fas fa-calendar-alt me-1 text-secondary"></i>${dateOnly}</span>`;
+                data: null,
+                width: '120px',
+                defaultContent: '<span class="text-muted small">-</span>',
+                render: function () {
+                    return '<span class="text-muted small">-</span>';
                 }
             },
             { 
-                data: 'quantity',
+                data: 'total_quantity',
+                width: '100px',
                 className: 'text-center',
                 render: function (data) {
                     let qty = parseInt(data || 0);
@@ -500,17 +621,30 @@ function renderBalanceTable(items) {
                 }
             },
             {
-                data: 'updated_at',
+                data: 'latest_update',
+                width: '150px',
                 render: function (data) {
-                    return data ? data : '-';
+                    return data ? `<span class="small text-muted">${data}</span>` : '-';
                 }
             }
         ],
-        rowId: 'id',
         processing: true,
         pageLength: 10,
-        language: getDatatablesLanguageBodegas()
+        language: getDatatablesLanguageBodegas(),
+        createdRow: function (row) {
+            $(row).addClass('family-parent-row');
+        },
+        drawCallback: function () {
+            // Mostrar siempre las sub-líneas bajo cada familia
+            const api = this.api();
+            api.rows({ page: 'current' }).every(function () {
+                this.child(formatFamilySubLines(this.data()), 'child-subline p-0').show();
+            });
+            syncSublineColumns();
+        }
     });
+
+    $(window).off('resize.sublineColumns').on('resize.sublineColumns', syncSublineColumns);
 }
 
 /**
