@@ -63,6 +63,7 @@ class WarehousesBalance extends Model
             ->join('families', 'families.id = warehouses_balance.id_family AND families.deleted_at IS NULL', 'left')
             ->where('warehouses_balance.id_warehouse', $warehouseId)
             ->where('warehouses_balance.deleted_at IS NULL')
+            ->where('warehouses_balance.quantity >', 0)
             ->orderBy('warehouses_balance.id', 'DESC')
             ->findAll();
     }

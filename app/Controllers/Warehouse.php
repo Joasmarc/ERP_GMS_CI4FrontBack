@@ -53,7 +53,7 @@ class Warehouse extends BaseController
         $db = \Config\Database::connect();
         $builder = $db->table('warehouses_base wb');
         $builder->select('wb.id, wb.name, wb.adress, wb.state, wb.created_at, wb.updated_at, COUNT(b.id) as total_items');
-        $builder->join('warehouses_balance b', 'b.id_warehouse = wb.id AND b.deleted_at IS NULL', 'left');
+        $builder->join('warehouses_balance b', 'b.id_warehouse = wb.id AND b.deleted_at IS NULL AND b.quantity > 0', 'left');
         $builder->where('wb.deleted_at IS NULL');
         $builder->groupBy('wb.id, wb.name, wb.adress, wb.state, wb.created_at, wb.updated_at');
         $builder->orderBy('wb.id', 'ASC');

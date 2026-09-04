@@ -1216,7 +1216,7 @@ $(document).on('change', '.transfer-item-select', function () {
 
     if (!selectedVal) {
         badge.text('0').removeClass('badge-success badge-warning').addClass('badge-secondary');
-        inputQty.val('0').prop('disabled', true).attr('max', 0);
+        inputQty.val('').prop('disabled', true).attr('max', 0).attr('placeholder', 'Cant.');
         hiddenName.val('');
         return;
     }
@@ -1235,20 +1235,39 @@ $(document).on('change', '.transfer-item-select', function () {
         badge.removeClass('badge-secondary badge-success').addClass('badge-warning');
     }
 
-    inputQty.prop('disabled', false).attr('max', available).attr('min', 1).val(1);
+    // No forzar 1 por defecto para que el usuario pueda escribir directamente su cantidad
+    inputQty.prop('disabled', false).attr('max', available).attr('min', 1).val('').attr('placeholder', `1 - ${available}`).focus();
 });
 
-// Bodegas - Validación en tiempo real de cantidad a transferir
-$(document).on('input change', '.transfer-qty-input', function () {
+// Auto-seleccionar el texto al hacer clic o enfocar para cambiar el número sin tener que borrarlo manualmente
+$(document).on('focus', '.transfer-qty-input, input[name="item_cantidad[]"]', function () {
+    $(this).select();
+});
+
+// Bodegas - Validación en tiempo real de cantidad a transferir (permite borrar y escribir libremente)
+$(document).on('input', '.transfer-qty-input', function () {
     const input = $(this);
     const max = parseInt(input.attr('max') || 0);
-    let val = parseInt(input.val() || 0);
+    const raw = input.val();
+    if (raw === '') return; // Permite limpiar el campo para escribir el número deseado
 
-    if (val > max) {
+    const val = parseInt(raw);
+    if (!isNaN(val) && max > 0 && val > max) {
         input.val(max);
         swal("Atención", `La cantidad máxima disponible para transferir es de ${max} unidades.`, "warning");
-    } else if (val < 1 && max > 0) {
-        input.val(1);
+    }
+});
+
+// Al salir del campo (blur), solo si se ingresó un valor inválido menor a 1 se corrige
+$(document).on('blur', '.transfer-qty-input', function () {
+    const input = $(this);
+    const max = parseInt(input.attr('max') || 0);
+    const raw = input.val().trim();
+    if (raw !== '') {
+        const val = parseInt(raw);
+        if (isNaN(val) || val <= 0) {
+            if (max > 0) input.val(1);
+        }
     }
 });
 
@@ -1281,8 +1300,9 @@ $('#btn_submit_transfer').on('click', function () {
             }
             selectedItems.add(selectedVal);
 
-            if (qty <= 0 || qty > max) {
-                swal("Atención", `Verifique la cantidad a transferir para "${itemText}".`, "warning");
+            if (isNaN(qty) || qty <= 0 || qty > max) {
+                swal("Atención", `Por favor ingrese una cantidad válida (entre 1 y ${max}) para "${itemText}".`, "warning");
+                input.focus();
                 hasErrors = true;
                 return false;
             }

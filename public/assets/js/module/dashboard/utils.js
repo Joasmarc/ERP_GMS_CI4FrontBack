@@ -423,7 +423,7 @@ function addTransferLine() {
                 <span class="badge badge-secondary fs-6 transfer-avail-badge">0</span>
             </td>
             <td>
-                <input type="number" name="item_quantity[]" class="form-control text-center transfer-qty-input" min="1" max="0" value="1" required disabled>
+                <input type="number" name="item_quantity[]" class="form-control text-center transfer-qty-input" min="1" max="0" value="" placeholder="Cant." required disabled>
             </td>
             <td class="text-center">
                 <button type="button" class="btn btn-danger btn-sm btn-round btn-remove-transfer-line" title="Quitar línea">
@@ -453,7 +453,9 @@ function viewWarehouseBalance(warehouseId) {
             toggleLoader(false);
             if (resp.status === 'success') {
                 const warehouse = resp.warehouse;
-                const items = resp.data || [];
+                const rawItems = resp.data || [];
+                // No mostrar líneas que tienen cantidades en 0 en el módulo de bodegas
+                const items = rawItems.filter(i => parseInt(i.quantity || 0) > 0);
 
                 const isMainWarehouse = resp.is_main === true || (warehouse && warehouse.is_main === true);
 
@@ -463,7 +465,7 @@ function viewWarehouseBalance(warehouseId) {
                 }
 
                 // Guardar artículos con saldo disponible > 0 para transferencias
-                currentWarehouseItems = items.filter(i => parseInt(i.quantity || 0) > 0);
+                currentWarehouseItems = items;
 
                 // Actualizar títulos e información de cabecera
                 $('#bodega_detail_title').text(warehouse.name || 'Bodega');
@@ -485,7 +487,7 @@ function viewWarehouseBalance(warehouseId) {
                     $('#btn_add_warehouse_item').addClass('d-none');
                 }
 
-                // Actualizar total de artículos
+                // Actualizar total de artículos con saldo disponible
                 $('#stat_bodega_items').text(items.length);
 
                 // Actualizar o inicializar DataTable del balance
@@ -505,12 +507,15 @@ function viewWarehouseBalance(warehouseId) {
 }
 
 /**
- * Agrupar balance de inventario por familias de productos
+ * Agrupar balance de inventario por familias de productos (solo ítems con stock > 0)
  */
 function groupWarehouseBalanceByFamily(items) {
     const map = new Map();
 
     (items || []).forEach(item => {
+        const qty = parseInt(item.quantity || 0);
+        if (qty <= 0) return; // Omitir cualquier línea con stock en 0
+
         const famId = item.id_family || 0;
         const famName = item.family_name || item.name_item || 'Sin nombre';
         const key = famId > 0 ? `fam_${famId}` : `name_${famName}`;
@@ -526,7 +531,6 @@ function groupWarehouseBalanceByFamily(items) {
         }
 
         const group = map.get(key);
-        const qty = parseInt(item.quantity || 0);
         group.total_quantity += qty;
         group.variations.push(item);
 
@@ -535,19 +539,24 @@ function groupWarehouseBalanceByFamily(items) {
         }
     });
 
-    return Array.from(map.values());
+    return Array.from(map.values()).filter(g => g.total_quantity > 0);
 }
 
 /**
- * Sub-líneas que lucen visualmente como filas de la tabla sin ID y sin repetir el nombre
+ * Sub-líneas que lucen visualmente como filas de la tabla sin ID y sin repetir el nombre (solo stock > 0)
  */
 function formatFamilySubLines(rowData) {
-    if (!rowData || !rowData.variations || rowData.variations.length <= 1) {
+    if (!rowData || !rowData.variations) {
+        return '';
+    }
+
+    const validVariations = rowData.variations.filter(v => parseInt(v.quantity || 0) > 0);
+    if (validVariations.length <= 1) {
         return '';
     }
 
     let rowsHtml = '';
-    rowData.variations.forEach(v => {
+    validVariations.forEach(v => {
         const safeLot = v.lot 
             ? `<span class="badge badge-secondary"><i class="fas fa-barcode me-1"></i>${$('<div>').text(v.lot).html()}</span>` 
             : '<span class="text-muted small">-</span>';
@@ -555,7 +564,7 @@ function formatFamilySubLines(rowData) {
             ? `<span class="small text-muted"><i class="fas fa-calendar-alt me-1 text-secondary"></i>${$('<div>').text(v.expiration_date.split(' ')[0]).html()}</span>` 
             : '<span class="text-muted small">-</span>';
         const qty = parseInt(v.quantity || 0);
-        const badgeClass = qty > 10 ? 'badge-success' : (qty > 0 ? 'badge-warning' : 'badge-danger');
+        const badgeClass = qty > 10 ? 'badge-success' : 'badge-warning';
         const safeDate = v.updated_at ? $('<div>').text(v.updated_at).html() : '-';
 
         rowsHtml += `
