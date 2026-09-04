@@ -1011,18 +1011,24 @@ $(document).on('click', '.btn-remove-transfer-line', function () {
 $(document).on('change', '.transfer-item-select', function () {
     const select = $(this);
     const row = select.closest('tr');
-    const selectedName = select.val();
+    const selectedVal = select.val();
     const badge = row.find('.transfer-avail-badge');
     const inputQty = row.find('.transfer-qty-input');
+    const hiddenName = row.find('.transfer-item-name');
 
-    if (!selectedName) {
+    if (!selectedVal) {
         badge.text('0').removeClass('badge-success badge-warning').addClass('badge-secondary');
         inputQty.val('0').prop('disabled', true).attr('max', 0);
+        hiddenName.val('');
         return;
     }
 
-    const found = currentWarehouseItems.find(i => i.name_item === selectedName);
+    const selectedId = parseInt(selectedVal);
+    const found = currentWarehouseItems.find(i => parseInt(i.id) === selectedId || i.name_item === selectedVal);
     const available = found ? parseInt(found.quantity || 0) : 0;
+    const itemName = found ? (found.family_name || found.name_item || ('Producto #' + found.id)) : '';
+
+    hiddenName.val(itemName);
 
     badge.text(available.toLocaleString());
     if (available > 10) {
@@ -1059,25 +1065,26 @@ $('#btn_submit_transfer').on('click', function () {
     // Validar que haya al menos una línea con producto y cantidad
     let hasValidItems = false;
     let hasErrors = false;
-    const selectedProducts = new Set();
+    const selectedItems = new Set();
 
     $('#transfer_lines_tbody tr').each(function () {
         const select = $(this).find('.transfer-item-select');
         const input = $(this).find('.transfer-qty-input');
-        const itemName = select.val();
+        const selectedVal = select.val();
         const qty = parseInt(input.val() || 0);
         const max = parseInt(input.attr('max') || 0);
+        const itemText = select.find('option:selected').text();
 
-        if (itemName) {
-            if (selectedProducts.has(itemName)) {
-                swal("Atención", `El artículo "${itemName}" está duplicado en varias líneas. Por favor consolídelo en una sola línea.`, "warning");
+        if (selectedVal) {
+            if (selectedItems.has(selectedVal)) {
+                swal("Atención", `La opción "${itemText}" está duplicada en varias líneas. Por favor consolídela en una sola fila.`, "warning");
                 hasErrors = true;
                 return false;
             }
-            selectedProducts.add(itemName);
+            selectedItems.add(selectedVal);
 
             if (qty <= 0 || qty > max) {
-                swal("Atención", `Verifique la cantidad a transferir para "${itemName}".`, "warning");
+                swal("Atención", `Verifique la cantidad a transferir para "${itemText}".`, "warning");
                 hasErrors = true;
                 return false;
             }

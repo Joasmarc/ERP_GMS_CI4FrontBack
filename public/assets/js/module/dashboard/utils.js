@@ -356,18 +356,22 @@ function reloadVideos(familyId) {
  * Agregar una nueva fila de artículo a la tabla del modal de transferencia
  */
 function addTransferLine() {
-    let optionsHtml = '<option value="">Seleccione un artículo...</option>';
+    let optionsHtml = '<option value="">Seleccione un artículo / lote...</option>';
     currentWarehouseItems.forEach(item => {
         const itemName = item.family_name || item.name_item || ('Producto #' + item.id);
-        optionsHtml += `<option value="${$('<div>').text(itemName).html()}">${$('<div>').text(itemName).html()} [Disp: ${parseInt(item.quantity).toLocaleString()}]</option>`;
+        const lotInfo = (item.lot && item.lot.trim() !== '') ? `[Lote: ${item.lot.trim()}]` : '[Sin Lote]';
+        const safeItemName = $('<div>').text(itemName).html();
+        const safeLotInfo = $('<div>').text(lotInfo).html();
+        optionsHtml += `<option value="${item.id}" data-name="${safeItemName}">${safeItemName} ${safeLotInfo}</option>`;
     });
 
     const rowHtml = `
         <tr>
             <td>
-                <select name="item_name[]" class="form-select transfer-item-select" required>
+                <select name="balance_id[]" class="form-select transfer-item-select" required>
                     ${optionsHtml}
                 </select>
+                <input type="hidden" name="item_name[]" class="transfer-item-name" value="">
             </td>
             <td class="text-center">
                 <span class="badge badge-secondary fs-6 transfer-avail-badge">0</span>

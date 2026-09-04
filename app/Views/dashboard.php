@@ -1378,7 +1378,7 @@
                 <table class="table table-bordered table-hover align-middle mb-0" id="tbl_transfer_lines">
                   <thead class="bg-light">
                     <tr>
-                      <th>Artículo Disponible</th>
+                      <th>Artículo / Lote Disponible</th>
                       <th style="width: 140px;" class="text-center">Stock Disp.</th>
                       <th style="width: 150px;" class="text-center">Cantidad a Enviar</th>
                       <th style="width: 50px;" class="text-center">Acción</th>

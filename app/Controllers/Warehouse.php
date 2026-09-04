@@ -359,6 +359,7 @@ class Warehouse extends BaseController
 
         $idWarehouseSend = filter_var($this->request->getPost('id_warehouse_send'), FILTER_VALIDATE_INT);
         $idWarehouseReceives = filter_var($this->request->getPost('id_warehouse_receives'), FILTER_VALIDATE_INT);
+        $balanceIds = $this->request->getPost('balance_id');
         $itemNames = $this->request->getPost('item_name');
         $itemQuantities = $this->request->getPost('item_quantity');
 
@@ -376,7 +377,8 @@ class Warehouse extends BaseController
             ]);
         }
 
-        if (empty($itemNames) || !is_array($itemNames) || empty($itemQuantities) || !is_array($itemQuantities)) {
+        $itemsList = is_array($balanceIds) ? $balanceIds : (is_array($itemNames) ? $itemNames : []);
+        if (empty($itemsList) || empty($itemQuantities) || !is_array($itemQuantities)) {
             return $this->response->setJSON([
                 'status'  => 'error',
                 'message' => 'Debe incluir al menos un artículo válido para transferir.'
@@ -412,30 +414,46 @@ class Warehouse extends BaseController
 
         $balanceModel = new WarehousesBalance();
         $transferItemsModel = new WarehousesTransferItems();
+        $familyModel = new Families();
 
         $processedCount = 0;
-        $itemsCount = count($itemNames);
+        $itemsCount = count($itemsList);
 
         for ($i = 0; $i < $itemsCount; $i++) {
-            $nameItem = trim($itemNames[$i] ?? '');
+            $rawId = $balanceIds[$i] ?? null;
+            $rawName = trim($itemNames[$i] ?? '');
             $qty = filter_var($itemQuantities[$i] ?? 0, FILTER_VALIDATE_INT);
 
-            if (empty($nameItem) || $qty === false || $qty <= 0) {
+            if ((empty($rawId) && empty($rawName)) || $qty === false || $qty <= 0) {
                 continue;
             }
 
             // 2.0 Verificar stock disponible en bodega origen
-            $originBalance = $balanceModel->where('id_warehouse', $idWarehouseSend)
-                ->where('name_item', $nameItem)
-                ->where('deleted_at IS NULL')
-                ->first();
+            $originBalance = null;
+            if (!empty($rawId)) {
+                $originBalance = $balanceModel->where('id_warehouse', $idWarehouseSend)
+                    ->where('id', (int)$rawId)
+                    ->where('deleted_at IS NULL')
+                    ->first();
+            }
+
+            if (!$originBalance && !empty($rawName)) {
+                $family = $familyModel->where('keyword', $rawName)->where('deleted_at IS NULL')->first();
+                if ($family) {
+                    $originBalance = $balanceModel->where('id_warehouse', $idWarehouseSend)
+                        ->where('id_family', $family['id'])
+                        ->where('deleted_at IS NULL')
+                        ->first();
+                }
+            }
 
             if (!$originBalance || (int)$originBalance['quantity'] < $qty) {
                 $db->transRollback();
                 $available = $originBalance ? (int)$originBalance['quantity'] : 0;
+                $label = !empty($rawName) ? $rawName : ('ID #' . $rawId);
                 return $this->response->setJSON([
                     'status'  => 'error',
-                    'message' => "Stock insuficiente para '{$nameItem}'. Disponible: {$available}, Solicitado: {$qty}."
+                    'message' => "Stock insuficiente para '{$label}'. Disponible: {$available}, Solicitado: {$qty}."
                 ]);
             }
 
@@ -450,52 +468,67 @@ class Warehouse extends BaseController
                 $db->transRollback();
                 return $this->response->setJSON([
                     'status'  => 'error',
-                    'message' => "Error al descontar stock de '{$nameItem}' en la bodega de origen."
+                    'message' => "Error al descontar stock en la bodega de origen."
                 ]);
             }
 
             // 4.0 Aumentar saldo o registrar nuevo artículo en bodega destino
-            $destBalance = $balanceModel->where('id_warehouse', $idWarehouseReceives)
-                ->where('name_item', $nameItem)
-                ->where('deleted_at IS NULL')
-                ->first();
+            $destQuery = $balanceModel->where('id_warehouse', $idWarehouseReceives)
+                ->where('id_family', $originBalance['id_family'])
+                ->where('deleted_at IS NULL');
+
+            $itemLot = !empty($originBalance['lot']) ? trim($originBalance['lot']) : null;
+            if ($itemLot !== null && $itemLot !== '') {
+                $destQuery->where('lot', $itemLot);
+            } else {
+                $destQuery->where('(lot IS NULL OR lot = "")');
+            }
+
+            $destBalance = $destQuery->first();
 
             if ($destBalance) {
                 $newDestQty = (int)$destBalance['quantity'] + $qty;
-                $updateDest = $balanceModel->update($destBalance['id'], [
+                $updateDestData = [
                     'quantity'   => $newDestQty,
                     'updated_at' => $now
-                ]);
+                ];
+                if (!empty($originBalance['expiration_date']) && empty($destBalance['expiration_date'])) {
+                    $updateDestData['expiration_date'] = $originBalance['expiration_date'];
+                }
+
+                $updateDest = $balanceModel->update($destBalance['id'], $updateDestData);
 
                 if (!$updateDest) {
                     $db->transRollback();
                     return $this->response->setJSON([
                         'status'  => 'error',
-                        'message' => "Error al actualizar stock de '{$nameItem}' en la bodega de destino."
+                        'message' => "Error al actualizar stock en la bodega de destino."
                     ]);
                 }
             } else {
                 $insertDest = $balanceModel->insert([
-                    'id_warehouse' => $idWarehouseReceives,
-                    'name_item'    => $nameItem,
-                    'quantity'     => $qty,
-                    'created_at'   => $now,
-                    'updated_at'   => $now
+                    'id_warehouse'    => $idWarehouseReceives,
+                    'id_family'       => $originBalance['id_family'],
+                    'quantity'        => $qty,
+                    'lot'             => $itemLot,
+                    'expiration_date' => $originBalance['expiration_date'] ?? null,
+                    'created_at'      => $now,
+                    'updated_at'      => $now
                 ]);
 
                 if (!$insertDest) {
                     $db->transRollback();
                     return $this->response->setJSON([
                         'status'  => 'error',
-                        'message' => "Error al ingresar stock de '{$nameItem}' en la bodega de destino."
+                        'message' => "Error al ingresar stock en la bodega de destino."
                     ]);
                 }
             }
 
-            // 5.0 Registrar línea del item transferido
+            // 5.0 Registrar línea del item transferido con id_family
             $transferItemsModel->insert([
                 'id_warehouse_transfer' => $transferId,
-                'name'                  => $nameItem,
+                'id_family'             => $originBalance['id_family'],
                 'quantity'              => $qty
             ]);
 

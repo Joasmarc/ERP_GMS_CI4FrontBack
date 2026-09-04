@@ -14,16 +14,16 @@ class WarehousesTransferItems extends Model
     // 2.0 Configurar campos permitidos
     protected $allowedFields = [
         'id_warehouse_transfer',
-        'name',
+        'id_family',
         'quantity'
     ];
 
     // 3.0 Configurar tipos de datos
     protected $castings = [
         'id'                    => 'int',
-        'id_warehouse_transfer' => 'int',
-        'name'                  => 'string',
-        'quantity'              => 'int'
+        'id_warehouse_transfer' => '?int',
+        'id_family'             => '?int',
+        'quantity'              => '?int'
     ];
 
     // Timestamps no están definidos en esta tabla
@@ -31,8 +31,8 @@ class WarehousesTransferItems extends Model
 
     // 5.0 Validación de datos
     protected $validationRules = [
-        'id_warehouse_transfer' => 'required|integer',
-        'name'                  => 'required|string|max_length[55]',
-        'quantity'              => 'required|integer'
+        'id_warehouse_transfer' => 'permit_empty|integer',
+        'id_family'             => 'permit_empty|integer',
+        'quantity'              => 'permit_empty|integer'
     ];
 }
