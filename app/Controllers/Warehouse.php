@@ -6,6 +6,7 @@ use App\Models\WarehousesBase;
 use App\Models\WarehousesBalance;
 use App\Models\WarehousesTransferBase;
 use App\Models\WarehousesTransferItems;
+use App\Models\Families;
 
 class Warehouse extends BaseController
 {
@@ -20,6 +21,19 @@ class Warehouse extends BaseController
 
         $credentials = session('credentials');
         return isset($credentials[13]) && $credentials[13] === '1';
+    }
+
+    /**
+     * Obtener el ID de la primera bodega registrada (bodega principal de la empresa)
+     */
+    private function getMainWarehouseId(): ?int
+    {
+        $warehouseModel = new WarehousesBase();
+        $firstWarehouse = $warehouseModel->where('deleted_at IS NULL')
+            ->orderBy('id', 'ASC')
+            ->first();
+
+        return $firstWarehouse ? (int)$firstWarehouse['id'] : null;
     }
 
     /**
@@ -43,6 +57,12 @@ class Warehouse extends BaseController
         $builder->orderBy('wb.id', 'ASC');
 
         $records = $builder->get()->getResultArray();
+
+        $mainWarehouseId = $this->getMainWarehouseId();
+        foreach ($records as &$rec) {
+            $rec['is_main'] = ($mainWarehouseId !== null && (int)$rec['id'] === $mainWarehouseId);
+        }
+        unset($rec);
 
         return $this->response->setJSON([
             'status' => 'success',
@@ -112,15 +132,17 @@ class Warehouse extends BaseController
             ])->setStatusCode(404);
         }
 
+        $mainWarehouseId = $this->getMainWarehouseId();
+        $isMain = ($mainWarehouseId !== null && (int)$warehouse['id'] === $mainWarehouseId);
+        $warehouse['is_main'] = $isMain;
+
         $balanceModel = new WarehousesBalance();
-        $items = $balanceModel->where('id_warehouse', $warehouseId)
-            ->where('deleted_at IS NULL')
-            ->orderBy('id', 'DESC')
-            ->findAll();
+        $items = $balanceModel->getBalanceWithFamilies($warehouseId);
 
         return $this->response->setJSON([
             'status'    => 'success',
             'warehouse' => $warehouse,
+            'is_main'   => $isMain,
             'data'      => $items
         ]);
     }
@@ -179,7 +201,40 @@ class Warehouse extends BaseController
     }
 
     /**
-     * Guardar un nuevo artículo en el balance de la bodega
+     * Buscar familias activas para autocompletado en registro de items
+     */
+    public function search_families()
+    {
+        if (!$this->checkPermission()) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'No autorizado.'
+            ])->setStatusCode(403);
+        }
+
+        $term = trim($this->request->getGet('q') ?? '');
+
+        $familiesModel = new Families();
+        $builder = $familiesModel->select('id, keyword, img_path')
+            ->where('state', 'ACTIVO')
+            ->where('deleted_at IS NULL');
+
+        if (!empty($term)) {
+            $builder->like('keyword', $term);
+        }
+
+        $families = $builder->orderBy('keyword', 'ASC')
+            ->limit(50)
+            ->findAll();
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'data'   => $families
+        ]);
+    }
+
+    /**
+     * Guardar un nuevo artículo en el balance de la bodega con id_family
      */
     public function save_item()
     {
@@ -191,33 +246,97 @@ class Warehouse extends BaseController
         }
 
         $idWarehouse = filter_var($this->request->getPost('id_warehouse'), FILTER_VALIDATE_INT);
-        $nameItem = trim($this->request->getPost('name_item') ?? '');
-        $quantity = filter_var($this->request->getPost('quantity'), FILTER_VALIDATE_INT);
+        $idFamily    = filter_var($this->request->getPost('id_family'), FILTER_VALIDATE_INT);
+        $quantity    = filter_var($this->request->getPost('quantity'), FILTER_VALIDATE_INT);
+        $lotRaw      = trim($this->request->getPost('lot') ?? '');
+        $lot         = $lotRaw === '' ? null : substr($lotRaw, 0, 25);
+        $expDateRaw  = trim($this->request->getPost('expiration_date') ?? '');
+        $expirationDate = null;
+        if (!empty($expDateRaw)) {
+            $parsedDate = date_create($expDateRaw);
+            if ($parsedDate) {
+                $expirationDate = $parsedDate->format('Y-m-d H:i:s');
+            }
+        }
 
-        if (!$idWarehouse || empty($nameItem) || $quantity === false || $quantity < 0) {
+        if (!$idWarehouse || !$idFamily || $quantity === false || $quantity < 0) {
             return $this->response->setJSON([
                 'status'  => 'error',
-                'message' => 'Datos de artículo inválidos. Verifique el nombre y cantidad.'
+                'message' => 'Debe seleccionar un producto válido de la lista y especificar una cantidad permitida.'
             ]);
+        }
+
+        $familyModel = new Families();
+        $family = $familyModel->where('id', $idFamily)
+            ->where('state', 'ACTIVO')
+            ->where('deleted_at IS NULL')
+            ->first();
+
+        if (!$family) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'El producto seleccionado no pertenece al catálogo de familias activas.'
+            ])->setStatusCode(400);
+        }
+
+        $mainWarehouseId = $this->getMainWarehouseId();
+        if ($mainWarehouseId === null || (int)$idWarehouse !== $mainWarehouseId) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Solo se permite registrar artículos directamente en la bodega principal de la empresa.'
+            ])->setStatusCode(400);
         }
 
         $timezone = new \DateTimeZone('America/Bogota');
         $now = (new \DateTime('now', $timezone))->format('Y-m-d H:i:s');
 
         $balanceModel = new WarehousesBalance();
-        $data = [
-            'id_warehouse' => $idWarehouse,
-            'name_item'    => $nameItem,
-            'quantity'     => $quantity,
-            'created_at'   => $now,
-            'updated_at'   => $now
-        ];
+        $query = $balanceModel->where('id_warehouse', $idWarehouse)
+            ->where('id_family', $idFamily)
+            ->where('deleted_at IS NULL');
 
-        if ($balanceModel->insert($data)) {
-            return $this->response->setJSON([
-                'status'  => 'success',
-                'message' => 'Artículo agregado al balance correctamente.'
-            ]);
+        if ($lot !== null) {
+            $query->where('lot', $lot);
+        } else {
+            $query->where('(lot IS NULL OR lot = "")');
+        }
+
+        $existing = $query->first();
+
+        if ($existing) {
+            $newQuantity = (int)$existing['quantity'] + $quantity;
+            $updateData = [
+                'quantity'   => $newQuantity,
+                'updated_at' => $now
+            ];
+            if ($expirationDate !== null) {
+                $updateData['expiration_date'] = $expirationDate;
+            }
+            $updated = $balanceModel->update($existing['id'], $updateData);
+
+            if ($updated) {
+                return $this->response->setJSON([
+                    'status'  => 'success',
+                    'message' => 'Se incrementaron las existencias del producto en la bodega correctamente.'
+                ]);
+            }
+        } else {
+            $data = [
+                'id_warehouse'    => $idWarehouse,
+                'id_family'       => $idFamily,
+                'quantity'        => $quantity,
+                'lot'             => $lot,
+                'expiration_date' => $expirationDate,
+                'created_at'      => $now,
+                'updated_at'      => $now
+            ];
+
+            if ($balanceModel->insert($data)) {
+                return $this->response->setJSON([
+                    'status'  => 'success',
+                    'message' => 'Artículo agregado al balance correctamente.'
+                ]);
+            }
         }
 
         return $this->response->setJSON([

@@ -158,8 +158,12 @@ function initBodegasTable() {
             { data: 'id' },
             { 
                 data: 'name',
-                render: function (data) {
-                    return `<strong><i class="fas fa-warehouse text-primary me-2"></i>${$('<div>').text(data || '').html()}</strong>`;
+                render: function (data, type, row) {
+                    const isMain = row && (row.is_main === true || row.is_main === 1 || row.is_main === '1');
+                    const mainBadge = isMain 
+                        ? ' <span class="badge badge-primary ms-1"><i class="fas fa-star me-1"></i> Principal</span>' 
+                        : '';
+                    return `<strong><i class="fas fa-warehouse text-primary me-2"></i>${$('<div>').text(data || '').html()}</strong>${mainBadge}`;
                 }
             },
             { 

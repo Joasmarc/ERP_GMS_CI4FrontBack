@@ -40,6 +40,7 @@ function showScreen(screenId) {
     $('#counterparty_create_view').addClass('d-none');
     $('#bodega_list_view').removeClass('d-none');
     $('#bodega_detail_view').addClass('d-none');
+    $('#btn_add_warehouse_item').addClass('d-none');
 
     // 1.1 Mostrar loader
     toggleLoader(true)
@@ -357,7 +358,8 @@ function reloadVideos(familyId) {
 function addTransferLine() {
     let optionsHtml = '<option value="">Seleccione un artículo...</option>';
     currentWarehouseItems.forEach(item => {
-        optionsHtml += `<option value="${$('<div>').text(item.name_item).html()}">${$('<div>').text(item.name_item).html()} [Disp: ${parseInt(item.quantity).toLocaleString()}]</option>`;
+        const itemName = item.family_name || item.name_item || ('Producto #' + item.id);
+        optionsHtml += `<option value="${$('<div>').text(itemName).html()}">${$('<div>').text(itemName).html()} [Disp: ${parseInt(item.quantity).toLocaleString()}]</option>`;
     });
 
     const rowHtml = `
@@ -403,7 +405,13 @@ function viewWarehouseBalance(warehouseId) {
                 const warehouse = resp.warehouse;
                 const items = resp.data || [];
 
+                const isMainWarehouse = resp.is_main === true || (warehouse && warehouse.is_main === true);
+
                 currentWarehouseData = warehouse;
+                if (currentWarehouseData) {
+                    currentWarehouseData.is_main = isMainWarehouse;
+                }
+
                 // Guardar artículos con saldo disponible > 0 para transferencias
                 currentWarehouseItems = items.filter(i => parseInt(i.quantity || 0) > 0);
 
@@ -411,10 +419,21 @@ function viewWarehouseBalance(warehouseId) {
                 $('#bodega_detail_title').text(warehouse.name || 'Bodega');
                 $('#bodega_detail_adress').text(warehouse.adress || '');
                 
-                const statusBadge = warehouse.state === 'ACTIVE' 
+                let statusBadge = warehouse.state === 'ACTIVE' 
                     ? '<span class="badge badge-success"><i class="fas fa-check-circle me-1"></i> Activo</span>'
                     : '<span class="badge badge-danger"><i class="fas fa-times-circle me-1"></i> Inactivo</span>';
+
+                if (isMainWarehouse) {
+                    statusBadge += ' <span class="badge badge-primary ms-1"><i class="fas fa-star me-1"></i> Bodega Principal</span>';
+                }
                 $('#bodega_detail_status').html(statusBadge);
+
+                // Mostrar botón "Agregar Artículo" únicamente si es la bodega principal
+                if (isMainWarehouse) {
+                    $('#btn_add_warehouse_item').removeClass('d-none');
+                } else {
+                    $('#btn_add_warehouse_item').addClass('d-none');
+                }
 
                 // Actualizar total de artículos
                 $('#stat_bodega_items').text(items.length);
@@ -449,8 +468,26 @@ function renderBalanceTable(items) {
             { data: 'id' },
             { 
                 data: 'name_item',
+                defaultContent: '',
+                render: function (data, type, row) {
+                    const itemName = (row && row.family_name) ? row.family_name : (data || 'Sin nombre');
+                    return `<strong><i class="fas fa-box text-secondary me-2"></i>${$('<div>').text(itemName).html()}</strong>`;
+                }
+            },
+            {
+                data: 'lot',
+                defaultContent: '-',
                 render: function (data) {
-                    return `<strong><i class="fas fa-box text-secondary me-2"></i>${$('<div>').text(data || '').html()}</strong>`;
+                    return data ? `<span class="badge badge-secondary"><i class="fas fa-barcode me-1"></i>${$('<div>').text(data).html()}</span>` : '<span class="text-muted small">-</span>';
+                }
+            },
+            {
+                data: 'expiration_date',
+                defaultContent: '-',
+                render: function (data) {
+                    if (!data) return '<span class="text-muted small">-</span>';
+                    const dateOnly = data.split(' ')[0];
+                    return `<span class="small text-muted"><i class="fas fa-calendar-alt me-1 text-secondary"></i>${dateOnly}</span>`;
                 }
             },
             { 
@@ -460,12 +497,6 @@ function renderBalanceTable(items) {
                     let qty = parseInt(data || 0);
                     let badgeClass = qty > 10 ? 'badge-success' : (qty > 0 ? 'badge-warning' : 'badge-danger');
                     return `<span class="badge ${badgeClass} fs-6 fw-bold">${qty.toLocaleString()}</span>`;
-                }
-            },
-            {
-                data: 'created_at',
-                render: function (data) {
-                    return data ? data : '-';
                 }
             },
             {

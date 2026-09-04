@@ -251,3 +251,82 @@
         padding: 4px 8px;
     }
 }
+
+/* ======================================================== */
+/*   AUTOCOMPLETE - Families                                */
+/* ======================================================== */
+.bg-success-light {
+    background-color: rgba(40, 167, 69, 0.12) !important;
+}
+
+/* Evitar efectos de bordes, líneas internas y sombras al seleccionar o enfocar el campo */
+#group_family_search {
+    border-radius: 0.375rem;
+    overflow: visible;
+}
+
+#group_family_search .input-group-text {
+    border-color: #ebedf2 !important;
+    border-right: 0 !important;
+    background-color: #ffffff !important;
+    box-shadow: none !important;
+}
+
+#in_item_family_search,
+#in_item_family_search:focus,
+#in_item_family_search:active,
+#in_item_family_search:focus-visible {
+    border-color: #ebedf2 !important;
+    border-left: 0 !important;
+    box-shadow: none !important;
+    outline: none !important;
+    z-index: 1 !important;
+}
+
+#group_family_search:focus-within .input-group-text,
+#group_family_search:focus-within .form-control {
+    border-color: #ebedf2 !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+#group_family_search #btn_clear_family_search {
+    border-color: #ebedf2 !important;
+    border-left: 0 !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+#group_family_search #btn_clear_family_search:focus,
+#group_family_search #btn_clear_family_search:active {
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+/* Quitar efectos de bordes agresivos en el campo de cantidad */
+#in_item_quantity:focus,
+#in_item_quantity:active,
+#in_item_quantity:focus-visible {
+    box-shadow: none !important;
+    outline: none !important;
+    border-color: #31ce36 !important;
+}
+
+.family-autocomplete-item {
+    transition: background-color 0.15s ease-in-out;
+    cursor: pointer;
+    border: none !important;
+    border-bottom: 1px solid #f2f4f8 !important;
+}
+
+.family-autocomplete-item:last-child {
+    border-bottom: none !important;
+}
+
+.family-autocomplete-item:hover,
+.family-autocomplete-item.active,
+.family-autocomplete-item:focus {
+    background-color: #f0fbf4 !important;
+    outline: none !important;
+    box-shadow: none !important;
+}

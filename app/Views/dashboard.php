@@ -41,7 +41,7 @@
 
   <!-- CSS Just for demo purpose, don't include it in your project -->
   <link rel="stylesheet" href="<?= base_url('public/assets/css/demo.css') ?>" />
-  <link rel="stylesheet" href="<?= base_url('public/assets/css/module/main.css') ?>" />
+  <link rel="stylesheet" href="<?= base_url('public/assets/css/module/main.css') ?>?v=<?= filemtime(ROOTPATH . 'public/assets/css/module/main.css') ?>" />
 </head>
 
 <body>
@@ -790,7 +790,7 @@
                       </span>
                       Transferir Stock
                     </button>
-                    <button class="btn btn-round btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modal_add_warehouse_item">
+                    <button class="btn btn-round btn-success btn-sm d-none" id="btn_add_warehouse_item" data-bs-toggle="modal" data-bs-target="#modal_add_warehouse_item">
                       <span class="btn-label">
                         <i class="fa fa-plus"></i>
                       </span>
@@ -829,8 +829,9 @@
                         <tr>
                           <th style="width: 50px;">ID</th>
                           <th>Artículo / Insumo</th>
-                          <th class="text-center" style="width: 140px;">Cantidad</th>
-                          <th>Fecha Registro</th>
+                          <th style="width: 110px;">Lote</th>
+                          <th style="width: 120px;">Vencimiento</th>
+                          <th class="text-center" style="width: 110px;">Cantidad</th>
                           <th>Última Actualización</th>
                         </tr>
                       </thead>
@@ -1265,13 +1266,62 @@
           <form id="form_add_warehouse_item">
             <?= csrf_field() ?>
             <input type="hidden" id="in_item_warehouse_id" name="id_warehouse" value="">
-            <div class="form-group mb-3">
-              <label for="in_item_name" class="form-label fw-bold">Nombre del Artículo / Insumo *</label>
-              <input type="text" class="form-control" id="in_item_name" name="name_item" maxlength="85" placeholder="Ej: Jeringa 5ml estéril" required>
+            <div class="form-group mb-3 position-relative">
+              <label for="in_item_family_search" class="form-label fw-bold">
+                <i class="fas fa-tags text-success me-1"></i>Producto / Familia *
+              </label>
+              <div class="input-group" id="group_family_search">
+                <span class="input-group-text bg-white border-end-0 text-muted">
+                  <i class="fas fa-search"></i>
+                </span>
+                <input
+                  type="text"
+                  class="form-control border-start-0"
+                  id="in_item_family_search"
+                  placeholder="Escriba para buscar en familias de productos..."
+                  autocomplete="off"
+                  required>
+                <button class="btn btn-outline-secondary border-start-0 d-none" type="button" id="btn_clear_family_search" title="Limpiar selección">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+              <!-- Campo oculto con id_family para el backend -->
+              <input type="hidden" id="in_item_family_id" name="id_family" value="" required>
+
+              <!-- Confirmación visual de producto seleccionado -->
+              <div id="family_selected_badge" class="mt-2 d-none">
+                <div class="alert alert-success d-flex align-items-center py-2 px-3 mb-0 border-0 shadow-none bg-success-light text-success" style="font-size: 0.88rem;">
+                  <i class="fas fa-check-circle me-2 fs-5 text-success"></i>
+                  <div class="flex-grow-1">
+                    <span class="text-muted small d-block">Producto seleccionado:</span>
+                    <strong id="family_selected_name" class="text-dark"></strong>
+                    <span class="badge bg-success ms-2" id="family_selected_id_badge"></span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Menú desplegable dinámico de autocompletado -->
+              <div id="family_autocomplete_dropdown" class="dropdown-menu w-100 shadow-lg p-0 mt-1 border-0" style="max-height: 250px; overflow-y: auto; z-index: 1060; display: none;">
+              </div>
+              <small class="form-text text-muted">Solo se permiten productos registrados en el catálogo de familias.</small>
             </div>
             <div class="form-group mb-3">
               <label for="in_item_quantity" class="form-label fw-bold">Cantidad Inicial / Existencias *</label>
               <input type="number" class="form-control" id="in_item_quantity" name="quantity" min="0" value="1" required>
+            </div>
+            <div class="row">
+              <div class="col-md-6 form-group mb-3">
+                <label for="in_item_lot" class="form-label fw-bold">
+                  <i class="fas fa-barcode text-secondary me-1"></i>Lote
+                </label>
+                <input type="text" class="form-control" id="in_item_lot" name="lot" maxlength="25" placeholder="Ej: LOT-2026-A1">
+              </div>
+              <div class="col-md-6 form-group mb-3">
+                <label for="in_item_expiration_date" class="form-label fw-bold">
+                  <i class="fas fa-calendar-alt text-secondary me-1"></i>Fecha de Expiración
+                </label>
+                <input type="date" class="form-control" id="in_item_expiration_date" name="expiration_date">
+              </div>
             </div>
           </form>
         </div>

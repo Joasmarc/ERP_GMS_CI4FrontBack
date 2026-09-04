@@ -634,6 +634,220 @@ $(document).on('click', '.btn-delete-file', function (e) {
 // Bodegas - Volver a la lista de bodegas desde la sub-pantalla de detalle
 $('#btn_back_to_bodegas').on('click', function () {
     switchSubScreen('bodega_detail_view', 'bodega_list_view');
+    $('#btn_add_warehouse_item').addClass('d-none');
+    currentWarehouseData = null;
+    currentWarehouseId = null;
+});
+
+// Bodegas - Autocompletado de productos desde la tabla de familias
+let familySearchTimer = null;
+let activeFamilyItemIndex = -1;
+
+function resetWarehouseItemAutocomplete() {
+    $('#in_item_family_id').val('');
+    $('#in_item_family_search').val('').removeClass('is-invalid');
+    $('#family_selected_badge').addClass('d-none');
+    $('#family_selected_name').text('');
+    $('#family_selected_id_badge').text('');
+    $('#btn_clear_family_search').addClass('d-none');
+    $('#family_autocomplete_dropdown').hide().empty();
+    $('#in_item_lot').val('');
+    $('#in_item_expiration_date').val('');
+    activeFamilyItemIndex = -1;
+}
+
+function highlightFamilyMatch(text, query) {
+    if (!query) return $('<div>').text(text).html();
+    const safeText = $('<div>').text(text).html();
+    const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${escapedQuery})`, 'gi');
+    return safeText.replace(regex, '<mark class="bg-warning text-dark p-0">$1</mark>');
+}
+
+// Evento al escribir en el campo de búsqueda de familias
+$('#in_item_family_search').on('input', function () {
+    const query = $(this).val();
+    const selectedId = $('#in_item_family_id').val();
+
+    // Si el usuario edita el texto después de haber seleccionado, invalidar selección
+    if (selectedId) {
+        $('#in_item_family_id').val('');
+        $('#family_selected_badge').addClass('d-none');
+        $('#family_selected_name').text('');
+        $('#family_selected_id_badge').text('');
+    }
+
+    if (query.trim().length > 0) {
+        $('#btn_clear_family_search').removeClass('d-none');
+    } else {
+        $('#btn_clear_family_search').addClass('d-none');
+        $('#family_autocomplete_dropdown').hide().empty();
+        return;
+    }
+
+    clearTimeout(familySearchTimer);
+    familySearchTimer = setTimeout(function () {
+        const dropdown = $('#family_autocomplete_dropdown');
+        dropdown.html(`
+            <div class="p-3 text-center text-muted small">
+                <i class="fas fa-spinner fa-spin me-2 text-success"></i>Buscando en familias...
+            </div>
+        `).show();
+
+        $.ajax({
+            url: SITE_URL + '/warehouse/search_families',
+            type: 'GET',
+            data: { q: query.trim() },
+            dataType: 'json',
+            success: function (resp) {
+                if (resp.status === 'success' && resp.data && resp.data.length > 0) {
+                    let itemsHtml = '';
+                    resp.data.forEach((item) => {
+                        const escapedKeyword = $('<div>').text(item.keyword).html();
+                        const highlighted = highlightFamilyMatch(item.keyword, query.trim());
+                        itemsHtml += `
+                            <a href="javascript:void(0);" class="dropdown-item family-autocomplete-item d-flex align-items-center py-2 px-3 border-bottom text-decoration-none" data-id="${item.id}" data-keyword="${escapedKeyword}">
+                                <div class="avatar avatar-xs me-2">
+                                    <span class="avatar-title rounded-circle bg-success-light text-success fw-bold">
+                                        <i class="fas fa-box"></i>
+                                    </span>
+                                </div>
+                                <div class="flex-grow-1 text-truncate">
+                                    <div class="fw-bold text-dark text-truncate">${highlighted}</div>
+                                    <small class="text-muted">ID Familia: #${item.id}</small>
+                                </div>
+                                <span class="badge badge-success badge-sm ms-2"><i class="fas fa-check"></i> Elegir</span>
+                            </a>
+                        `;
+                    });
+                    dropdown.html(itemsHtml).show();
+                    activeFamilyItemIndex = -1;
+                } else {
+                    dropdown.html(`
+                        <div class="p-3 text-center text-muted small">
+                            <i class="fas fa-exclamation-circle text-warning me-1"></i>
+                            No se encontraron coincidencias en la tabla <strong>families</strong>.
+                        </div>
+                    `).show();
+                }
+            },
+            error: function () {
+                dropdown.html(`
+                    <div class="p-3 text-center text-danger small">
+                        <i class="fas fa-times-circle me-1"></i> Error al consultar familias.
+                    </div>
+                `).show();
+            }
+        });
+    }, 250);
+});
+
+// Selección de un producto del listado autocompletado
+$(document).on('click', '.family-autocomplete-item', function (e) {
+    e.preventDefault();
+    const id = $(this).data('id');
+    const keyword = $(this).data('keyword');
+
+    $('#in_item_family_id').val(id);
+    $('#in_item_family_search').val(keyword).removeClass('is-invalid');
+    $('#family_selected_name').text(keyword);
+    $('#family_selected_id_badge').text('ID #' + id);
+    $('#family_selected_badge').removeClass('d-none');
+    $('#btn_clear_family_search').removeClass('d-none');
+    $('#family_autocomplete_dropdown').hide().empty();
+
+    // Enfocar y seleccionar el valor del campo cantidad para facilitar el ingreso
+    setTimeout(function () {
+        const qtyEl = document.getElementById('in_item_quantity');
+        if (qtyEl) {
+            qtyEl.focus();
+            qtyEl.select();
+        }
+    }, 50);
+});
+
+// Seleccionar automáticamente el número al enfocar el campo de cantidad
+$('#in_item_quantity').on('focus', function () {
+    const el = this;
+    setTimeout(function () {
+        el.select();
+    }, 50);
+});
+
+// Botón para limpiar producto seleccionado
+$('#btn_clear_family_search').on('click', function () {
+    resetWarehouseItemAutocomplete();
+    $('#in_item_family_search').focus();
+});
+
+// Navegación con teclado en el autocompletado (Flechas, Enter, Escape)
+$('#in_item_family_search').on('keydown', function (e) {
+    const dropdown = $('#family_autocomplete_dropdown');
+    const items = dropdown.find('.family-autocomplete-item');
+
+    if (!dropdown.is(':visible') || items.length === 0) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+        }
+        return;
+    }
+
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeFamilyItemIndex = (activeFamilyItemIndex + 1) >= items.length ? 0 : (activeFamilyItemIndex + 1);
+        items.removeClass('active bg-light');
+        const current = items.eq(activeFamilyItemIndex);
+        current.addClass('active bg-light');
+        if (current[0]) {
+            current[0].scrollIntoView({ block: 'nearest' });
+        }
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeFamilyItemIndex = (activeFamilyItemIndex - 1) < 0 ? (items.length - 1) : (activeFamilyItemIndex - 1);
+        items.removeClass('active bg-light');
+        const current = items.eq(activeFamilyItemIndex);
+        current.addClass('active bg-light');
+        if (current[0]) {
+            current[0].scrollIntoView({ block: 'nearest' });
+        }
+    } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (activeFamilyItemIndex >= 0 && activeFamilyItemIndex < items.length) {
+            items.eq(activeFamilyItemIndex).trigger('click');
+        }
+    } else if (e.key === 'Escape') {
+        dropdown.hide();
+    }
+});
+
+// Cerrar autocompletado al hacer clic fuera del componente
+$(document).on('click', function (e) {
+    if (!$(e.target).closest('#in_item_family_search, #family_autocomplete_dropdown, #btn_clear_family_search').length) {
+        $('#family_autocomplete_dropdown').hide();
+        // Si el usuario escribió pero no seleccionó nada de la tabla de familias, limpiar para exigir selección
+        const selectedId = $('#in_item_family_id').val();
+        if (!selectedId) {
+            $('#in_item_family_search').val('');
+            $('#btn_clear_family_search').addClass('d-none');
+        }
+    }
+});
+
+// Bodegas - Limpiar formulario y verificar permiso antes de abrir modal de agregar artículo
+$('#modal_add_warehouse_item').on('show.bs.modal', function (e) {
+    if (!currentWarehouseData || !currentWarehouseData.is_main) {
+        e.preventDefault();
+        swal("No permitido", "Solo la bodega principal puede registrar nuevos artículos.", "warning");
+        return false;
+    }
+    $('#in_item_warehouse_id').val(currentWarehouseId);
+    resetWarehouseItemAutocomplete();
+});
+
+// Bodegas - Limpiar al cerrar modal de agregar artículo
+$('#modal_add_warehouse_item').on('hidden.bs.modal', function () {
+    resetWarehouseItemAutocomplete();
+    $('#form_add_warehouse_item')[0].reset();
 });
 
 // Bodegas - Guardar nueva bodega
@@ -676,11 +890,24 @@ $('#btn_save_warehouse').on('click', function () {
 // Bodegas - Guardar nuevo item en balance de la bodega
 $('#btn_save_warehouse_item').on('click', function () {
     const form = $('#form_add_warehouse_item');
-    const nameItem = $('#in_item_name').val().trim();
+    const familyId = $('#in_item_family_id').val();
     const quantity = $('#in_item_quantity').val();
 
-    if (!nameItem || quantity === '' || parseInt(quantity) < 0) {
-        swal("Atención", "Por favor ingrese el nombre del artículo y una cantidad válida.", "warning");
+    if (!currentWarehouseData || !currentWarehouseData.is_main) {
+        swal("No permitido", "Solo se permite registrar artículos directamente en la bodega principal de la empresa.", "warning");
+        $('#modal_add_warehouse_item').modal('hide');
+        return;
+    }
+
+    if (!familyId) {
+        swal("Atención", "Debe buscar y seleccionar un producto de la tabla de familias.", "warning");
+        $('#in_item_family_search').focus().addClass('is-invalid');
+        return;
+    }
+
+    if (quantity === '' || parseInt(quantity) < 0) {
+        swal("Atención", "Por favor ingrese una cantidad válida.", "warning");
+        $('#in_item_quantity').focus();
         return;
     }
 
@@ -699,6 +926,7 @@ $('#btn_save_warehouse_item').on('click', function () {
             if (resp.status === 'success') {
                 $('#modal_add_warehouse_item').modal('hide');
                 form[0].reset();
+                resetWarehouseItemAutocomplete();
                 swal("¡Agregado!", resp.message, "success");
                 if (currentWarehouseId) {
                     viewWarehouseBalance(currentWarehouseId);
