@@ -1275,7 +1275,7 @@
                 <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-list-check text-success me-2"></i>Líneas de Artículos</h6>
                 <small class="text-muted">Agregue los artículos e indique las cantidades para el ingreso a inventario.</small>
               </div>
-              <button type="button" class="btn btn-outline-success btn-sm btn-round" id="btn_add_remision_warehouse_line">
+              <button type="button" class="btn btn-outline-success btn-round px-3 fw-bold" id="btn_add_remision_warehouse_line">
                 <i class="fas fa-plus me-1"></i> Agregar Línea
               </button>
             </div>
@@ -1284,12 +1284,12 @@
               <table class="table table-bordered table-hover align-middle mb-0" id="tbl_remision_warehouse_items">
                 <thead class="bg-light">
                   <tr>
-                    <th style="min-width: 320px;">Producto / Familia *</th>
-                    <th style="width: 130px;">Referencia</th>
-                    <th style="width: 130px;">Lote</th>
-                    <th style="width: 150px;">F. Vencimiento</th>
-                    <th style="width: 100px;">Cantidad *</th>
-                    <th style="width: 50px;" class="text-center">Acción</th>
+                    <th style="min-width: 360px;"><i class="fas fa-box text-success me-1"></i> Producto / Familia *</th>
+                    <th style="width: 160px;"><i class="fas fa-tag text-muted me-1"></i> Referencia</th>
+                    <th style="width: 160px;"><i class="fas fa-barcode text-muted me-1"></i> Lote</th>
+                    <th style="width: 170px;"><i class="fas fa-calendar-alt text-muted me-1"></i> F. Vencimiento</th>
+                    <th style="width: 130px;" class="text-center"><i class="fas fa-cubes text-muted me-1"></i> Cantidad *</th>
+                    <th style="width: 70px;" class="text-center"><i class="fas fa-cog text-muted"></i></th>
                   </tr>
                 </thead>
                 <tbody id="remision_warehouse_items_body">

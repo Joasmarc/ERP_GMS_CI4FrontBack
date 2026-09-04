@@ -361,36 +361,39 @@ function addWarehouseRemisionLine() {
         <tr id="${rowId}">
             <td>
                 <div class="position-relative remision-family-cell">
-                    <div class="input-group input-group-sm remision-search-group">
-                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="fas fa-search"></i></span>
-                        <input type="text" class="form-control border-start-0 remision-family-search" placeholder="Buscar familia o producto..." autocomplete="off" required>
+                    <div class="remision-search-group position-relative">
+                        <i class="fas fa-search remision-search-icon"></i>
+                        <input type="text" class="form-control remision-family-search" placeholder="Buscar familia o producto..." autocomplete="off" required>
                     </div>
                     <input type="hidden" name="id_family[]" class="remision-family-id" value="" required>
                     <input type="hidden" name="item_name[]" class="remision-family-name" value="">
-                    <div class="remision-family-selected d-none mt-1">
-                        <span class="badge badge-success fs-6 py-1 px-2 remision-family-label"></span>
-                        <button type="button" class="btn btn-xs btn-link text-danger p-0 ms-1 btn-clear-remision-family" title="Cambiar producto">
-                            <i class="fas fa-times-circle"></i>
+                    <div class="remision-family-selected d-none">
+                        <div class="d-flex align-items-center text-truncate me-2">
+                            <i class="fas fa-check-circle text-success me-2 fs-5"></i>
+                            <span class="fw-bold text-dark fs-6 remision-family-label text-truncate"></span>
+                        </div>
+                        <button type="button" class="btn btn-outline-danger btn-round p-1 px-2 btn-clear-remision-family" title="Cambiar producto">
+                            <i class="fas fa-times me-1"></i>Cambiar
                         </button>
                     </div>
-                    <div class="dropdown-menu w-100 shadow-lg p-0 mt-1 border-0 remision-family-dropdown" style="max-height: 250px; overflow-y: auto; z-index: 1080; display: none;"></div>
+                    <div class="dropdown-menu w-100 shadow-lg p-0 mt-1 border-0 remision-family-dropdown" style="max-height: 260px; overflow-y: auto; z-index: 1080; display: none;"></div>
                 </div>
             </td>
             <td>
-                <input type="text" class="form-control form-control-sm" name="item_referencia[]" placeholder="Ej: REF-01">
+                <input type="text" class="form-control" name="item_referencia[]" placeholder="Ej: REF-01">
             </td>
             <td>
-                <input type="text" class="form-control form-control-sm" name="item_lote[]" placeholder="Ej: L-01" maxlength="25">
+                <input type="text" class="form-control" name="item_lote[]" placeholder="Ej: L-01" maxlength="25">
             </td>
             <td>
-                <input type="date" class="form-control form-control-sm" name="item_vencimiento[]">
+                <input type="date" class="form-control" name="item_vencimiento[]">
             </td>
             <td>
-                <input type="number" class="form-control form-control-sm text-center" name="item_cantidad[]" min="1" value="1" required>
+                <input type="number" class="form-control text-center fw-bold" name="item_cantidad[]" min="1" value="1" required>
             </td>
             <td class="text-center">
-                <button type="button" class="btn btn-danger btn-sm btn-round btn-remove-warehouse-remision-line" title="Quitar fila">
-                    <i class="fas fa-trash"></i>
+                <button type="button" class="btn btn-outline-danger btn-round btn-remove-warehouse-remision-line" title="Quitar fila">
+                    <i class="fas fa-trash-alt"></i>
                 </button>
             </td>
         </tr>

@@ -369,6 +369,31 @@
     overflow: visible !important;
 }
 
+#modal_add_warehouse_item .modal-dialog {
+    max-width: 1240px;
+}
+
+#tbl_remision_warehouse_items thead th {
+    font-size: 0.94rem;
+    font-weight: 700;
+    color: #2a2f5b;
+    padding: 14px 12px;
+    background-color: #f8fafc;
+    border-bottom: 2px solid #e2e8f0;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+#tbl_remision_warehouse_items tbody td {
+    padding: 12px 10px;
+    vertical-align: middle;
+    background-color: #ffffff;
+}
+
+#tbl_remision_warehouse_items tbody tr:hover td {
+    background-color: #fafbfc;
+}
+
 #tbl_remision_warehouse_items tbody tr {
     position: relative;
 }
@@ -379,10 +404,109 @@
     z-index: 1050;
 }
 
+/* Campos de entrada más grandes y cómodos */
+#tbl_remision_warehouse_items .form-control {
+    height: 44px;
+    font-size: 0.95rem;
+    border-radius: 6px;
+    border: 1px solid #dcdfe6;
+    background-color: #ffffff;
+}
+
+#tbl_remision_warehouse_items .form-control:focus {
+    border-color: #31ce36;
+    box-shadow: 0 0 0 0.2rem rgba(49, 206, 54, 0.2);
+}
+
+/* Buscador integrado de familias con icono interior sin solapar bordes */
+.remision-search-group {
+    position: relative;
+    width: 100%;
+}
+
+.remision-search-group .remision-search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #8c9097;
+    font-size: 0.95rem;
+    pointer-events: none;
+    z-index: 5;
+}
+
+#tbl_remision_warehouse_items .remision-search-group .remision-family-search {
+    padding-left: 38px !important;
+    border-radius: 6px !important;
+    border: 1px solid #dcdfe6 !important;
+}
+
+#tbl_remision_warehouse_items .remision-search-group .remision-family-search:focus {
+    border-color: #31ce36 !important;
+    box-shadow: 0 0 0 0.2rem rgba(49, 206, 54, 0.2) !important;
+}
+
+#tbl_remision_warehouse_items input[name="item_cantidad[]"] {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #1a2035;
+}
+
+#tbl_remision_warehouse_items input[name="item_referencia[]"],
+#tbl_remision_warehouse_items input[name="item_lote[]"] {
+    font-size: 0.95rem;
+}
+
+#tbl_remision_warehouse_items input[name="item_vencimiento[]"] {
+    font-size: 0.93rem;
+}
+
+/* Badge de producto seleccionado amplio y nítido */
 .remision-family-cell {
     position: relative;
 }
 
+.remision-family-selected:not(.d-none) {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 44px;
+}
+
+.remision-family-selected {
+    background-color: #eafaf1;
+    border: 1px solid #bbf7d0;
+    border-radius: 6px;
+    padding: 6px 12px;
+}
+
+.remision-family-selected .remision-family-label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #166534;
+}
+
+/* Botón de acción para eliminar fila */
+#tbl_remision_warehouse_items .btn-remove-warehouse-remision-line {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+}
+
+#tbl_remision_warehouse_items .btn-remove-warehouse-remision-line:hover {
+    transform: scale(1.1);
+    background-color: #dc3545;
+    color: #ffffff;
+    box-shadow: 0 4px 10px rgba(220, 53, 69, 0.3);
+}
+
+/* Menú desplegable de búsqueda autocompletada */
 .remision-family-dropdown {
     position: absolute;
     top: 100%;
@@ -391,14 +515,17 @@
     min-width: 100%;
     z-index: 1080 !important;
     background-color: #ffffff !important;
-    border: 1px solid #ebedf2 !important;
-    border-radius: 0.375rem !important;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
-    max-height: 250px;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.16) !important;
+    max-height: 280px;
     overflow-y: auto;
+    margin-top: 4px;
 }
 
 .remision-family-dropdown-item {
+    padding: 10px 14px !important;
+    font-size: 0.93rem;
     transition: background-color 0.15s ease-in-out;
     cursor: pointer;
 }
