@@ -25,6 +25,51 @@ $('#btn_open_remisiones').on('click', function () {
     showScreen(SCREENS.remisiones);
 });
 
+// Remisiones - Abrir pantalla de crear remisión (sin inline onclick)
+$('#btn_create_remision').on('click', function () {
+    $('#remisiones_list_view').addClass('d-none');
+    $('#remisiones_create_view').removeClass('d-none');
+});
+
+// Remisiones - Volver al listado de remisiones (sin inline onclick)
+$('#btn_back_to_remisiones_list').on('click', function () {
+    $('#remisiones_create_view').addClass('d-none');
+    $('#remisiones_list_view').removeClass('d-none');
+});
+
+// Remisiones - Limpiar formulario de creación (sin inline onclick)
+$('#btn_reset_remision_form').on('click', function () {
+    $('#form_remision_create')[0].reset();
+});
+
+// Recomendaciones - Guardar recomendación (sin inline onclick)
+$('#btn_save_recommendation').on('click', function () {
+    if (typeof saveRecommendation === 'function') {
+        saveRecommendation();
+    } else {
+        $('#modal_recommend_book').modal('hide');
+        swal("¡Gracias!", "Tu recomendación ha sido compartida con el equipo.", "success");
+    }
+});
+
+// Bodegas - Ver balance desde tabla principal (sin inline onclick)
+$(document).on('click', '.btn-view-warehouse-balance', function () {
+    const id = $(this).data('id');
+    if (id) {
+        viewWarehouseBalance(id);
+    }
+});
+
+// Documentos PDF - Ver PDF (sin inline onclick)
+$(document).on('click', '.btn-view-pdf-doc', function (e) {
+    e.preventDefault();
+    const path = $(this).data('path');
+    const name = $(this).data('name');
+    if (typeof viewPdf === 'function') {
+        viewPdf(path, name);
+    }
+});
+
 // Main - Abrir bodegas
 $('#btn_open_bodega').on('click', function () {
     showScreen(SCREENS.bodega);
@@ -198,7 +243,7 @@ $(document).on('click', '[data-selector="abrir"]', function () {
                 resp.documents.forEach((document, index) => {
                     documentos_html += `
                         <div class="col-6 col-md-4 text-center mb-3 position-relative">
-                            <a href="javascript:void(0)" class="text-danger text-decoration-none" onclick="viewPdf('${SITE_URL}${document.path}', '${document.name}')">
+                            <a href="javascript:void(0)" class="text-danger text-decoration-none btn-view-pdf-doc" data-path="${SITE_URL}${document.path}" data-name="${document.name}">
                                 <i class="fas fa-file-pdf fa-3x"></i>
                                 <p class="mt-2 mb-0 text-dark fw-bold" style="font-size:0.85rem; line-height: 1.2;">${document.name}</p>
                             </a>
@@ -833,21 +878,150 @@ $(document).on('click', function (e) {
     }
 });
 
-// Bodegas - Limpiar formulario y verificar permiso antes de abrir modal de agregar artículo
+// Bodegas - Preparar modal y verificar permiso antes de abrir modal de ingreso
 $('#modal_add_warehouse_item').on('show.bs.modal', function (e) {
     if (!currentWarehouseData || !currentWarehouseData.is_main) {
         e.preventDefault();
-        swal("No permitido", "Solo la bodega principal puede registrar nuevos artículos.", "warning");
+        swal("No permitido", "Solo la bodega principal puede registrar ingresos de inventario.", "warning");
         return false;
     }
     $('#in_item_warehouse_id').val(currentWarehouseId);
-    resetWarehouseItemAutocomplete();
+
+    // Si la tabla no tiene filas, añadir la primera fila lista
+    if ($('#remision_warehouse_items_body tr').length === 0) {
+        addWarehouseRemisionLine();
+    }
 });
 
-// Bodegas - Limpiar al cerrar modal de agregar artículo
+// Bodegas - Limpiar al cerrar modal de remisión de bodega
 $('#modal_add_warehouse_item').on('hidden.bs.modal', function () {
-    resetWarehouseItemAutocomplete();
     $('#form_add_warehouse_item')[0].reset();
+    $('#remision_warehouse_items_body').empty();
+});
+
+// Bodegas - Agregar otra línea en la remisión de entrada
+$('#btn_add_remision_warehouse_line').on('click', function () {
+    addWarehouseRemisionLine();
+});
+
+// Bodegas - Remover línea de remisión de entrada
+$(document).on('click', '.btn-remove-warehouse-remision-line', function () {
+    $(this).closest('tr').remove();
+    if ($('#remision_warehouse_items_body tr').length === 0) {
+        addWarehouseRemisionLine();
+    }
+});
+
+// Bodegas - Búsqueda de familias por línea con autocompletado dinámico
+let remisionSearchTimer = null;
+$(document).on('input', '.remision-family-search', function () {
+    const input = $(this);
+    const query = input.val().trim();
+    const cell = input.closest('.remision-family-cell');
+    const dropdown = cell.find('.remision-family-dropdown');
+    const hiddenId = cell.find('.remision-family-id');
+    const hiddenName = cell.find('.remision-family-name');
+
+    hiddenId.val('');
+    hiddenName.val('');
+
+    clearTimeout(remisionSearchTimer);
+
+    if (query.length < 1) {
+        dropdown.hide().empty();
+        cell.removeClass('is-searching');
+        cell.closest('tr').removeClass('is-searching').css('z-index', '');
+        return;
+    }
+
+    cell.addClass('is-searching');
+    cell.closest('tr').addClass('is-searching').css('z-index', '1050');
+
+    dropdown.html(`
+        <div class="p-2 text-center text-muted small">
+            <i class="fas fa-spinner fa-spin me-1 text-success"></i> Buscando familias...
+        </div>
+    `).show();
+
+    remisionSearchTimer = setTimeout(function () {
+        $.ajax({
+            url: SITE_URL + '/warehouse/search_families',
+            type: 'GET',
+            data: { q: query },
+            dataType: 'json',
+            success: function (resp) {
+                if (resp.status === 'success' && resp.data && resp.data.length > 0) {
+                    let itemsHtml = '';
+                    resp.data.forEach(item => {
+                        const escaped = $('<div>').text(item.keyword).html();
+                        const highlighted = highlightFamilyMatch(item.keyword, query);
+                        itemsHtml += `
+                            <a href="javascript:void(0);" class="dropdown-item remision-family-dropdown-item py-2 px-3 border-bottom text-decoration-none" data-id="${item.id}" data-keyword="${escaped}">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div class="me-2" style="white-space: normal; line-height: 1.35;">
+                                        <span class="fw-bold text-dark">${highlighted}</span>
+                                    </div>
+                                    <span class="badge badge-success badge-sm flex-shrink-0 ms-2">ID #${item.id}</span>
+                                </div>
+                            </a>
+                        `;
+                    });
+                    dropdown.html(itemsHtml).show();
+                } else {
+                    dropdown.html(`
+                        <div class="p-3 text-center text-muted small">
+                            <i class="fas fa-exclamation-circle text-warning me-1"></i> No se encontraron familias activas.
+                        </div>
+                    `).show();
+                }
+            },
+            error: function () {
+                dropdown.html(`
+                    <div class="p-2 text-center text-danger small">
+                        Error al consultar familias.
+                    </div>
+                `).show();
+            }
+        });
+    }, 250);
+});
+
+// Bodegas - Selección de familia en la línea de remisión
+$(document).on('click', '.remision-family-dropdown-item', function (e) {
+    e.preventDefault();
+    const item = $(this);
+    const famId = item.data('id');
+    const keyword = item.data('keyword');
+    const cell = item.closest('.remision-family-cell');
+
+    cell.find('.remision-family-id').val(famId);
+    cell.find('.remision-family-name').val(keyword);
+    cell.find('.remision-family-label').text(keyword);
+    cell.find('.remision-search-group').addClass('d-none');
+    cell.find('.remision-family-selected').removeClass('d-none');
+    cell.find('.remision-family-dropdown').hide().empty();
+    cell.removeClass('is-searching');
+    cell.closest('tr').removeClass('is-searching').css('z-index', '');
+});
+
+// Bodegas - Limpiar selección de familia para volver a buscar
+$(document).on('click', '.btn-clear-remision-family', function () {
+    const cell = $(this).closest('.remision-family-cell');
+    cell.find('.remision-family-id').val('');
+    cell.find('.remision-family-name').val('');
+    cell.find('.remision-family-label').text('');
+    cell.find('.remision-family-selected').addClass('d-none');
+    cell.find('.remision-search-group').removeClass('d-none');
+    cell.find('.remision-family-search').val('').focus();
+});
+
+// Cerrar desplegables de búsqueda al hacer clic fuera
+$(document).on('click', function (e) {
+    if (!$(e.target).closest('.remision-family-cell').length) {
+        $('.remision-family-dropdown').hide();
+        $('.remision-family-cell').removeClass('is-searching');
+        $('#tbl_remision_warehouse_items tbody tr').removeClass('is-searching').css('z-index', '');
+    }
 });
 
 // Bodegas - Guardar nueva bodega
@@ -887,58 +1061,82 @@ $('#btn_save_warehouse').on('click', function () {
     });
 });
 
-// Bodegas - Guardar nuevo item en balance de la bodega
+// Bodegas - Guardar Ingreso de Artículos a la Bodega (Genera remisión automáticamente en el backend)
 $('#btn_save_warehouse_item').on('click', function () {
     const form = $('#form_add_warehouse_item');
-    const familyId = $('#in_item_family_id').val();
-    const quantity = $('#in_item_quantity').val();
 
     if (!currentWarehouseData || !currentWarehouseData.is_main) {
-        swal("No permitido", "Solo se permite registrar artículos directamente en la bodega principal de la empresa.", "warning");
+        swal("No permitido", "Solo se permite registrar ingresos directamente en la bodega principal de la empresa.", "warning");
         $('#modal_add_warehouse_item').modal('hide');
         return;
     }
 
-    if (!familyId) {
-        swal("Atención", "Debe buscar y seleccionar un producto de la tabla de familias.", "warning");
-        $('#in_item_family_search').focus().addClass('is-invalid');
-        return;
-    }
+    // Validar líneas
+    let hasValidLines = false;
+    let hasErrors = false;
 
-    if (quantity === '' || parseInt(quantity) < 0) {
-        swal("Atención", "Por favor ingrese una cantidad válida.", "warning");
-        $('#in_item_quantity').focus();
+    $('#remision_warehouse_items_body tr').each(function (index) {
+        const row = $(this);
+        const famId = row.find('.remision-family-id').val();
+        const searchInput = row.find('.remision-family-search');
+        const rawName = searchInput.val() ? searchInput.val().trim() : '';
+        const qty = parseInt(row.find('input[name="item_cantidad[]"]').val() || 0);
+
+        if (!famId && !rawName) {
+            swal("Atención", `Debe seleccionar un producto de la tabla de familias en la línea #${index + 1}.`, "warning");
+            searchInput.focus();
+            hasErrors = true;
+            return false;
+        }
+
+        if (qty <= 0) {
+            swal("Atención", `La cantidad en la línea #${index + 1} debe ser mayor a 0.`, "warning");
+            row.find('input[name="item_cantidad[]"]').focus();
+            hasErrors = true;
+            return false;
+        }
+
+        hasValidLines = true;
+    });
+
+    if (hasErrors) return;
+
+    if (!hasValidLines) {
+        swal("Atención", "Debe agregar al menos una línea con producto y cantidad válida.", "warning");
         return;
     }
 
     $('#in_item_warehouse_id').val(currentWarehouseId);
 
     const btn = $(this);
-    btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Guardando...');
+    btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Guardando...');
 
     $.ajax({
-        url: SITE_URL + '/warehouse/save_item',
+        url: SITE_URL + '/warehouse/save_remision',
         type: 'POST',
         data: form.serialize(),
         dataType: 'json',
         success: function (resp) {
-            btn.prop('disabled', false).html('<i class="fas fa-plus"></i> Agregar Artículo');
+            btn.prop('disabled', false).html('<i class="fas fa-save me-1"></i> Guardar Ingreso');
             if (resp.status === 'success') {
                 $('#modal_add_warehouse_item').modal('hide');
                 form[0].reset();
-                resetWarehouseItemAutocomplete();
-                swal("¡Agregado!", resp.message, "success");
+                $('#remision_warehouse_items_body').empty();
+                swal("¡Ingreso Registrado!", resp.message, "success");
                 if (currentWarehouseId) {
                     viewWarehouseBalance(currentWarehouseId);
                 }
                 reloadBodegasTable();
+                if ($.fn.DataTable.isDataTable('#tbl_list_remisiones')) {
+                    $('#tbl_list_remisiones').DataTable().ajax.reload(null, false);
+                }
             } else {
-                swal("Error", resp.message || "No se pudo agregar el artículo.", "error");
+                swal("Error", resp.message || "No se pudo generar la remisión.", "error");
             }
         },
         error: function () {
-            btn.prop('disabled', false).html('<i class="fas fa-plus"></i> Agregar Artículo');
-            swal("Error", "Error al comunicarse con el servidor.", "error");
+            btn.prop('disabled', false).html('<i class="fas fa-save me-1"></i> Guardar Ingreso');
+            swal("Error", "Ocurrió un error al procesar el ingreso.", "error");
         }
     });
 });
@@ -1117,6 +1315,9 @@ $('#btn_submit_transfer').on('click', function () {
                     viewWarehouseBalance(currentWarehouseId);
                 }
                 reloadBodegasTable();
+                if ($.fn.DataTable.isDataTable('#tbl_list_remisiones')) {
+                    $('#tbl_list_remisiones').DataTable().ajax.reload(null, false);
+                }
             } else {
                 swal("Error en Transferencia", resp.message || "No se pudo completar la transferencia.", "error");
             }

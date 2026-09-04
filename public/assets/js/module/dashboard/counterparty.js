@@ -200,7 +200,7 @@ function initProveedoresTable() {
                 className: 'text-center',
                 render: function (data, type, row) {
                     return `
-                        <button class="btn btn-round btn-info btn-sm me-1" onclick="viewCounterpartyDetail(${row.id})"><i class="fas fa-eye"></i></button>
+                        <button class="btn btn-round btn-info btn-sm me-1 btn-view-counterparty" data-id="${row.id}"><i class="fas fa-eye"></i></button>
                     `;
                 }
             }
@@ -236,7 +236,7 @@ function initClientesTable() {
                 className: 'text-center',
                 render: function (data, type, row) {
                     return `
-                        <button class="btn btn-round btn-info btn-sm me-1" onclick="viewCounterpartyDetail(${row.id})"><i class="fas fa-eye"></i></button>
+                        <button class="btn btn-round btn-info btn-sm me-1 btn-view-counterparty" data-id="${row.id}"><i class="fas fa-eye"></i></button>
                     `;
                 }
             }
@@ -549,3 +549,11 @@ function getDatatablesLanguage() {
         }
     };
 }
+
+// Delegación de eventos para ver detalle de contraparte sin inline onclick
+$(document).on('click', '.btn-view-counterparty', function () {
+    const id = $(this).data('id');
+    if (id) {
+        viewCounterpartyDetail(id);
+    }
+});

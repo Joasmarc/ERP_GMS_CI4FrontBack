@@ -200,7 +200,7 @@ function initBodegasTable() {
                 orderable: false,
                 render: function (data, type, row) {
                     return `
-                        <button class="btn btn-primary btn-round btn-sm shadow-sm" onclick="viewWarehouseBalance(${row.id})">
+                        <button class="btn btn-primary btn-round btn-sm shadow-sm btn-view-warehouse-balance" data-id="${row.id}">
                             <i class="fas fa-boxes me-1"></i> Ver Balance
                         </button>
                     `;

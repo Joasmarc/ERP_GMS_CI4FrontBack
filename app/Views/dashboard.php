@@ -563,7 +563,7 @@
                   <h4 class="card-title mb-0">Remisiones</h4>
                   <div class="card-tools">
                     <?php if (isset($credentials[11]) && $credentials[11] === '1'): ?>
-                      <button class="btn btn-round btn-primary" onclick="$('#remisiones_list_view').addClass('d-none'); $('#remisiones_create_view').removeClass('d-none');">
+                      <button class="btn btn-round btn-primary" id="btn_create_remision">
                         <span class="btn-label">
                           <i class="fa fa-plus"></i>
                         </span>
@@ -601,7 +601,7 @@
                 <div class="card-header">
                   <div class="card-title d-flex justify-content-between align-items-center">
                     <span><i class="fas fa-file-invoice"></i> Crear Remisión</span>
-                    <button class="btn btn-sm btn-secondary btn-round" onclick="$('#remisiones_create_view').addClass('d-none'); $('#remisiones_list_view').removeClass('d-none');">
+                    <button class="btn btn-sm btn-secondary btn-round" id="btn_back_to_remisiones_list">
                       <i class="fas fa-arrow-left"></i> Volver
                     </button>
                   </div>
@@ -705,7 +705,7 @@
                   </form>
                 </div>
                 <div class="card-action text-end">
-                  <button class="btn btn-round btn-secondary" onclick="document.getElementById('form_remision_create').reset()">
+                  <button class="btn btn-round btn-secondary" id="btn_reset_remision_form">
                     <i class="fas fa-redo"></i> Limpiar
                   </button>
                   <button class="btn btn-round btn-success" id="btn_guardar_remision">
@@ -794,7 +794,7 @@
                       <span class="btn-label">
                         <i class="fa fa-plus"></i>
                       </span>
-                      Agregar Artículo
+                      Generar Ingreso
                     </button>
                   </div>
                 </div>
@@ -1041,7 +1041,7 @@
         </div>
         <div class="modal-footer border-0 bg-light">
           <button type="button" class="btn btn-secondary btn-round btn-border" data-bs-dismiss="modal">Cancelar</button>
-          <button type="button" class="btn btn-primary btn-round shadow-sm" onclick="saveRecommendation()">Compartir con el equipo</button>
+          <button type="button" class="btn btn-primary btn-round shadow-sm" id="btn_save_recommendation">Compartir con el equipo</button>
         </div>
       </div>
     </div>
@@ -1254,81 +1254,56 @@
     </div>
   </div>
 
-  <!-- Modal Agregar Artículo a Balance -->
+  <!-- Modal Ingreso de Artículos a Bodega -->
   <div class="modal fade" id="modal_add_warehouse_item" tabindex="-1" aria-labelledby="modalAddWarehouseItemLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
       <div class="modal-content border-0 shadow-lg">
         <div class="modal-header border-0 bg-success text-white">
-          <h5 class="modal-title fw-bold" id="modalAddWarehouseItemLabel"><i class="fas fa-box me-2"></i>Agregar Artículo a la Bodega</h5>
+          <h5 class="modal-title fw-bold" id="modalAddWarehouseItemLabel">
+            <i class="fas fa-boxes me-2"></i>Ingreso de Artículos a Bodega
+          </h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <div class="modal-body p-4">
+        <div class="modal-body p-4" style="min-height: 400px;">
           <form id="form_add_warehouse_item">
             <?= csrf_field() ?>
             <input type="hidden" id="in_item_warehouse_id" name="id_warehouse" value="">
-            <div class="form-group mb-3 position-relative">
-              <label for="in_item_family_search" class="form-label fw-bold">
-                <i class="fas fa-tags text-success me-1"></i>Producto / Familia *
-              </label>
-              <div class="input-group" id="group_family_search">
-                <span class="input-group-text bg-white border-end-0 text-muted">
-                  <i class="fas fa-search"></i>
-                </span>
-                <input
-                  type="text"
-                  class="form-control border-start-0"
-                  id="in_item_family_search"
-                  placeholder="Escriba para buscar en familias de productos..."
-                  autocomplete="off"
-                  required>
-                <button class="btn btn-outline-secondary border-start-0 d-none" type="button" id="btn_clear_family_search" title="Limpiar selección">
-                  <i class="fas fa-times"></i>
-                </button>
-              </div>
-              <!-- Campo oculto con id_family para el backend -->
-              <input type="hidden" id="in_item_family_id" name="id_family" value="" required>
 
-              <!-- Confirmación visual de producto seleccionado -->
-              <div id="family_selected_badge" class="mt-2 d-none">
-                <div class="alert alert-success d-flex align-items-center py-2 px-3 mb-0 border-0 shadow-none bg-success-light text-success" style="font-size: 0.88rem;">
-                  <i class="fas fa-check-circle me-2 fs-5 text-success"></i>
-                  <div class="flex-grow-1">
-                    <span class="text-muted small d-block">Producto seleccionado:</span>
-                    <strong id="family_selected_name" class="text-dark"></strong>
-                    <span class="badge bg-success ms-2" id="family_selected_id_badge"></span>
-                  </div>
-                </div>
+            <!-- Artículos dinámicos -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-list-check text-success me-2"></i>Líneas de Artículos</h6>
+                <small class="text-muted">Agregue los artículos e indique las cantidades para el ingreso a inventario.</small>
               </div>
+              <button type="button" class="btn btn-outline-success btn-sm btn-round" id="btn_add_remision_warehouse_line">
+                <i class="fas fa-plus me-1"></i> Agregar Línea
+              </button>
+            </div>
 
-              <!-- Menú desplegable dinámico de autocompletado -->
-              <div id="family_autocomplete_dropdown" class="dropdown-menu w-100 shadow-lg p-0 mt-1 border-0" style="max-height: 250px; overflow-y: auto; z-index: 1060; display: none;">
-              </div>
-              <small class="form-text text-muted">Solo se permiten productos registrados en el catálogo de familias.</small>
+            <div class="table-responsive" style="overflow: visible !important;">
+              <table class="table table-bordered table-hover align-middle mb-0" id="tbl_remision_warehouse_items">
+                <thead class="bg-light">
+                  <tr>
+                    <th style="min-width: 320px;">Producto / Familia *</th>
+                    <th style="width: 130px;">Referencia</th>
+                    <th style="width: 130px;">Lote</th>
+                    <th style="width: 150px;">F. Vencimiento</th>
+                    <th style="width: 100px;">Cantidad *</th>
+                    <th style="width: 50px;" class="text-center">Acción</th>
+                  </tr>
+                </thead>
+                <tbody id="remision_warehouse_items_body">
+                  <!-- Filas dinámicas -->
+                </tbody>
+              </table>
             </div>
-            <div class="form-group mb-3">
-              <label for="in_item_quantity" class="form-label fw-bold">Cantidad Inicial / Existencias *</label>
-              <input type="number" class="form-control" id="in_item_quantity" name="quantity" min="0" value="1" required>
-            </div>
-            <div class="row">
-              <div class="col-md-6 form-group mb-3">
-                <label for="in_item_lot" class="form-label fw-bold">
-                  <i class="fas fa-barcode text-secondary me-1"></i>Lote
-                </label>
-                <input type="text" class="form-control" id="in_item_lot" name="lot" maxlength="25" placeholder="Ej: LOT-2026-A1">
-              </div>
-              <div class="col-md-6 form-group mb-3">
-                <label for="in_item_expiration_date" class="form-label fw-bold">
-                  <i class="fas fa-calendar-alt text-secondary me-1"></i>Fecha de Expiración
-                </label>
-                <input type="date" class="form-control" id="in_item_expiration_date" name="expiration_date">
-              </div>
-            </div>
+
           </form>
         </div>
         <div class="modal-footer border-0 bg-light">
           <button type="button" class="btn btn-secondary btn-round btn-border" data-bs-dismiss="modal">Cancelar</button>
-          <button type="button" class="btn btn-success btn-round shadow-sm" id="btn_save_warehouse_item">
-            <i class="fas fa-plus"></i> Agregar Artículo
+          <button type="button" class="btn btn-success btn-round shadow-sm fw-bold" id="btn_save_warehouse_item">
+            <i class="fas fa-save me-1"></i> Guardar Ingreso
           </button>
         </div>
       </div>

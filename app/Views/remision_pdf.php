@@ -209,13 +209,18 @@
                     no constituye una factura de venta.</p>
                 <p>Formato Controlado - Grupo Monzant SAS - V1</p>
                 <div class="mt-2 text-center">
-                    <button class="px-4 py-2 bg-blue-600 text-white rounded print:hidden" onclick="window.print()">Imprimir Remisión</button>
+                    <button id="btn_print_remision" class="px-4 py-2 bg-blue-600 text-white rounded print:hidden">Imprimir Remisión</button>
                 </div>
             </div>
         </footer>
 
     </div>
 
+    <script>
+        document.getElementById('btn_print_remision')?.addEventListener('click', function () {
+            window.print();
+        });
+    </script>
 </body>
 
 </html>

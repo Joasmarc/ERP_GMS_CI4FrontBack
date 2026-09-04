@@ -7,6 +7,8 @@ use App\Models\WarehousesBalance;
 use App\Models\WarehousesTransferBase;
 use App\Models\WarehousesTransferItems;
 use App\Models\Families;
+use App\Models\DispatchAdvices;
+use App\Models\DispatchAdviceItems;
 
 class Warehouse extends BaseController
 {
@@ -346,6 +348,237 @@ class Warehouse extends BaseController
     }
 
     /**
+     * Generar remisión con consecutivo oficial y registrar artículos en el balance de la bodega
+     */
+    public function save_remision()
+    {
+        if (!$this->checkPermission()) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'No autorizado.'
+            ])->setStatusCode(403);
+        }
+
+        $idWarehouse = filter_var($this->request->getPost('id_warehouse'), FILTER_VALIDATE_INT);
+        $ciudad = filter_var($this->request->getPost('ciudad'), FILTER_VALIDATE_INT);
+        $cliente = trim($this->request->getPost('cliente') ?? '');
+        $nit = trim($this->request->getPost('nit') ?? '');
+        $adress = trim($this->request->getPost('adress') ?? '');
+        $dispatcher = trim($this->request->getPost('dispatcher') ?? '');
+        $observacion = trim($this->request->getPost('observacion') ?? '');
+
+        if (!$idWarehouse) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'No se especificó la bodega.'
+            ]);
+        }
+
+        $mainWarehouseId = $this->getMainWarehouseId();
+        if ($mainWarehouseId === null || (int)$idWarehouse !== $mainWarehouseId) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Solo se permite generar remisiones de entrada directamente en la bodega principal.'
+            ])->setStatusCode(400);
+        }
+
+        $warehouseModel = new WarehousesBase();
+        $warehouseDest = $warehouseModel->find($idWarehouse);
+        $destName = $warehouseDest ? $warehouseDest['name'] : 'Bodega Principal';
+        $destAdress = $warehouseDest ? $warehouseDest['adress'] : '';
+
+        // Datos fijos solicitados para cabecera de remisión de ingreso a bodega principal
+        $ciudad = 1;
+        $dispatcher = 'Proveedor';
+        $cliente = $destName;
+        $nit = '1';
+        $adress = $destAdress;
+        $observacion = 'Esta remision es automatica por el sistema para registrar los ingresos a bodega principal.';
+
+        $familyIds = $this->request->getPost('id_family');
+        $itemNames = $this->request->getPost('item_name');
+        $referencias = $this->request->getPost('item_referencia');
+        $lotes = $this->request->getPost('item_lote');
+        $vencimientos = $this->request->getPost('item_vencimiento');
+        $cantidades = $this->request->getPost('item_cantidad');
+
+        if (!is_array($cantidades) || empty($cantidades)) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Debe ingresar al menos una línea de artículo para la remisión.'
+            ]);
+        }
+
+        // Obtener último consecutivo para la ciudad fija (1)
+        $dispatchModel = new DispatchAdvices();
+        $lastDispatch = $dispatchModel->where('city', $ciudad)
+            ->orderBy('sequence', 'DESC')
+            ->first();
+        $nextSequence = ($lastDispatch && isset($lastDispatch['sequence'])) ? ((int)$lastDispatch['sequence'] + 1) : 1;
+
+        $timezone = new \DateTimeZone('America/Bogota');
+        $now = (new \DateTime('now', $timezone))->format('Y-m-d H:i:s');
+
+        $headerData = [
+            'client'        => $cliente,
+            'nit'           => $nit,
+            'adress'        => $adress,
+            'sequence'      => $nextSequence,
+            'city'          => $ciudad,
+            'transfer_code' => 'ING-BOD-' . $idWarehouse,
+            'observation'   => $observacion,
+            'dispatcher'    => $dispatcher,
+            'did_user'      => session('user_id'),
+            'created_at'    => $now,
+            'updated_at'    => $now
+        ];
+
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        $dispatchModel->insert($headerData);
+        $dispatchId = $dispatchModel->getInsertID();
+
+        if (!$dispatchId) {
+            $db->transRollback();
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Error al registrar la cabecera de la remisión.'
+            ]);
+        }
+
+        $itemsModel = new DispatchAdviceItems();
+        $balanceModel = new WarehousesBalance();
+        $familyModel = new Families();
+
+        $itemsCount = count($cantidades);
+        $processedCount = 0;
+
+        for ($i = 0; $i < $itemsCount; $i++) {
+            $qty = filter_var($cantidades[$i] ?? 0, FILTER_VALIDATE_INT);
+            $famId = filter_var($familyIds[$i] ?? null, FILTER_VALIDATE_INT);
+            $rawName = trim($itemNames[$i] ?? '');
+            $ref = trim($referencias[$i] ?? '');
+            $lotRaw = trim($lotes[$i] ?? '');
+            $lot = $lotRaw === '' ? null : substr($lotRaw, 0, 25);
+            $expDateRaw = trim($vencimientos[$i] ?? '');
+            $expDate = null;
+            if (!empty($expDateRaw)) {
+                $pDate = date_create($expDateRaw);
+                if ($pDate) {
+                    $expDate = $pDate->format('Y-m-d H:i:s');
+                }
+            }
+
+            if ($qty === false || $qty <= 0) {
+                continue;
+            }
+
+            // Buscar producto / familia
+            $family = null;
+            if ($famId) {
+                $family = $familyModel->where('id', $famId)
+                    ->where('state', 'ACTIVO')
+                    ->where('deleted_at IS NULL')
+                    ->first();
+            }
+
+            if (!$family && !empty($rawName)) {
+                $family = $familyModel->where('keyword', $rawName)
+                    ->where('state', 'ACTIVO')
+                    ->where('deleted_at IS NULL')
+                    ->first();
+                if ($family) {
+                    $famId = (int)$family['id'];
+                }
+            }
+
+            if (!$family) {
+                $db->transRollback();
+                $itemLabel = !empty($rawName) ? $rawName : ('Línea #' . ($i + 1));
+                return $this->response->setJSON([
+                    'status'  => 'error',
+                    'message' => "El producto '{$itemLabel}' no pertenece al catálogo de familias activas."
+                ]);
+            }
+
+            $description = $family['keyword'];
+
+            // 1. Guardar item de la remisión
+            $itemData = [
+                'id_base'         => $dispatchId,
+                'reference'       => $ref,
+                'description'     => $description,
+                'batch'           => $lot ?? '',
+                'expiration_date' => $expDate,
+                'quiantity'       => $qty,
+                'created_at'      => $now,
+                'updated_at'      => $now
+            ];
+            $itemsModel->insert($itemData);
+
+            // 2. Ingresar/actualizar existencias en warehouses_balance
+            $balQuery = $balanceModel->where('id_warehouse', $idWarehouse)
+                ->where('id_family', $famId)
+                ->where('deleted_at IS NULL');
+
+            if ($lot !== null) {
+                $balQuery->where('lot', $lot);
+            } else {
+                $balQuery->where('(lot IS NULL OR lot = "")');
+            }
+
+            $existing = $balQuery->first();
+            if ($existing) {
+                $newQty = (int)$existing['quantity'] + $qty;
+                $updateData = [
+                    'quantity'   => $newQty,
+                    'updated_at' => $now
+                ];
+                if ($expDate !== null) {
+                    $updateData['expiration_date'] = $expDate;
+                }
+                $balanceModel->update($existing['id'], $updateData);
+            } else {
+                $balanceModel->insert([
+                    'id_warehouse'    => $idWarehouse,
+                    'id_family'       => $famId,
+                    'quantity'        => $qty,
+                    'lot'             => $lot,
+                    'expiration_date' => $expDate,
+                    'created_at'      => $now,
+                    'updated_at'      => $now
+                ]);
+            }
+
+            $processedCount++;
+        }
+
+        if ($processedCount === 0) {
+            $db->transRollback();
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'No se ingresaron líneas válidas con cantidad superior a 0.'
+            ]);
+        }
+
+        $db->transComplete();
+        if ($db->transStatus() === false) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Error al guardar la remisión y el inventario en la base de datos.'
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'status'      => 'success',
+            'message'     => 'Remisión generada exitosamente (Consecutivo N° ' . $nextSequence . ') e inventario cargado a la bodega.',
+            'sequence'    => $nextSequence,
+            'dispatch_id' => $dispatchId
+        ]);
+    }
+
+    /**
      * Realizar transferencia transaccional segura entre bodegas
      */
     public function transfer()
@@ -388,10 +621,18 @@ class Warehouse extends BaseController
         $timezone = new \DateTimeZone('America/Bogota');
         $now = (new \DateTime('now', $timezone))->format('Y-m-d H:i:s');
 
+        $warehouseModel = new WarehousesBase();
+        $sendWarehouse = $warehouseModel->find($idWarehouseSend);
+        $receivesWarehouse = $warehouseModel->find($idWarehouseReceives);
+
+        $sendName = $sendWarehouse ? $sendWarehouse['name'] : ('Bodega #' . $idWarehouseSend);
+        $receivesName = $receivesWarehouse ? $receivesWarehouse['name'] : ('Bodega #' . $idWarehouseReceives);
+        $receivesAdress = $receivesWarehouse ? $receivesWarehouse['adress'] : '';
+
         $db = \Config\Database::connect();
         $db->transStart();
 
-        // 1.0 Crear registro cabecera de la transferencia
+        // 1.0 Crear registro cabecera de la transferencia interna
         $transferBaseModel = new WarehousesTransferBase();
         $transferData = [
             'id_warehouse_send'     => $idWarehouseSend,
@@ -412,8 +653,41 @@ class Warehouse extends BaseController
             ]);
         }
 
+        // 1.1 Crear remisión oficial automática por el traslado entre bodegas
+        $dispatchModel = new DispatchAdvices();
+        $lastDispatch = $dispatchModel->where('city', 1)
+            ->orderBy('sequence', 'DESC')
+            ->first();
+        $nextSequence = ($lastDispatch && isset($lastDispatch['sequence'])) ? ((int)$lastDispatch['sequence'] + 1) : 1;
+
+        $dispatchHeader = [
+            'client'        => $receivesName,
+            'nit'           => '1',
+            'adress'        => $receivesAdress,
+            'sequence'      => $nextSequence,
+            'city'          => 1,
+            'transfer_code' => 'TRAS-BOD-' . $idWarehouseSend . '-' . $idWarehouseReceives,
+            'observation'   => 'Esta remision es automatica por el sistema para registrar el traslado de ' . $sendName . ' a ' . $receivesName . '.',
+            'dispatcher'    => $sendName,
+            'did_user'      => session('user_id'),
+            'created_at'    => $now,
+            'updated_at'    => $now
+        ];
+
+        $dispatchModel->insert($dispatchHeader);
+        $dispatchId = $dispatchModel->getInsertID();
+
+        if (!$dispatchId) {
+            $db->transRollback();
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Error al generar la remisión de la transferencia.'
+            ]);
+        }
+
         $balanceModel = new WarehousesBalance();
         $transferItemsModel = new WarehousesTransferItems();
+        $dispatchItemsModel = new DispatchAdviceItems();
         $familyModel = new Families();
 
         $processedCount = 0;
@@ -532,6 +806,24 @@ class Warehouse extends BaseController
                 'quantity'              => $qty
             ]);
 
+            // 5.1 Registrar línea correspondiente en la remisión de traslado
+            $family = $familyModel->find($originBalance['id_family']);
+            $familyName = $family ? $family['keyword'] : (!empty($rawName) ? $rawName : ('Producto #' . $originBalance['id_family']));
+            $displayName = ($itemLot !== null && $itemLot !== '')
+                ? $familyName . ' [Lote: ' . $itemLot . ']'
+                : $familyName;
+
+            $dispatchItemsModel->insert([
+                'id_base'         => $dispatchId,
+                'reference'       => 'TR-' . $originBalance['id_family'],
+                'description'     => $displayName,
+                'batch'           => $itemLot ?? '',
+                'expiration_date' => $originBalance['expiration_date'] ?? null,
+                'quiantity'       => $qty,
+                'created_at'      => $now,
+                'updated_at'      => $now
+            ]);
+
             $processedCount++;
         }
 
@@ -554,8 +846,10 @@ class Warehouse extends BaseController
 
         return $this->response->setJSON([
             'status'      => 'success',
-            'message'     => 'Transferencia realizada y saldos ajustados correctamente.',
-            'transfer_id' => $transferId
+            'message'     => 'Transferencia realizada y Remisión N° ' . $nextSequence . ' generada correctamente.',
+            'transfer_id' => $transferId,
+            'dispatch_id' => $dispatchId,
+            'sequence'    => $nextSequence
         ]);
     }
 }

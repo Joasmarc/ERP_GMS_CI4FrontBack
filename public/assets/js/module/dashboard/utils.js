@@ -263,7 +263,7 @@ function reloadDocuments(familyId) {
                 resp.documents.forEach(function (doc) {
                     html += `
                         <div class="col-6 col-md-4 text-center mb-3 position-relative">
-                            <a href="javascript:void(0)" class="text-danger text-decoration-none" onclick="viewPdf('${SITE_URL}${doc.path}', '${doc.name}')">
+                            <a href="javascript:void(0)" class="text-danger text-decoration-none btn-view-pdf-doc" data-path="${SITE_URL}${doc.path}" data-name="${doc.name}">
                                 <i class="fas fa-file-pdf fa-3x"></i>
                                 <p class="mt-2 mb-0 text-dark fw-bold" style="font-size:0.85rem; line-height: 1.2;">${doc.name}</p>
                             </a>
@@ -351,6 +351,52 @@ function reloadVideos(familyId) {
 /* ======================================================== */
 /*   BODEGAS (WAREHOUSE) UTILS                              */
 /* ======================================================== */
+
+/**
+ * Agregar una nueva fila de artículo a la tabla de remisión de bodega
+ */
+function addWarehouseRemisionLine() {
+    const rowId = 'rem_row_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+    const rowHtml = `
+        <tr id="${rowId}">
+            <td>
+                <div class="position-relative remision-family-cell">
+                    <div class="input-group input-group-sm remision-search-group">
+                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="fas fa-search"></i></span>
+                        <input type="text" class="form-control border-start-0 remision-family-search" placeholder="Buscar familia o producto..." autocomplete="off" required>
+                    </div>
+                    <input type="hidden" name="id_family[]" class="remision-family-id" value="" required>
+                    <input type="hidden" name="item_name[]" class="remision-family-name" value="">
+                    <div class="remision-family-selected d-none mt-1">
+                        <span class="badge badge-success fs-6 py-1 px-2 remision-family-label"></span>
+                        <button type="button" class="btn btn-xs btn-link text-danger p-0 ms-1 btn-clear-remision-family" title="Cambiar producto">
+                            <i class="fas fa-times-circle"></i>
+                        </button>
+                    </div>
+                    <div class="dropdown-menu w-100 shadow-lg p-0 mt-1 border-0 remision-family-dropdown" style="max-height: 250px; overflow-y: auto; z-index: 1080; display: none;"></div>
+                </div>
+            </td>
+            <td>
+                <input type="text" class="form-control form-control-sm" name="item_referencia[]" placeholder="Ej: REF-01">
+            </td>
+            <td>
+                <input type="text" class="form-control form-control-sm" name="item_lote[]" placeholder="Ej: L-01" maxlength="25">
+            </td>
+            <td>
+                <input type="date" class="form-control form-control-sm" name="item_vencimiento[]">
+            </td>
+            <td>
+                <input type="number" class="form-control form-control-sm text-center" name="item_cantidad[]" min="1" value="1" required>
+            </td>
+            <td class="text-center">
+                <button type="button" class="btn btn-danger btn-sm btn-round btn-remove-warehouse-remision-line" title="Quitar fila">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `;
+    $('#remision_warehouse_items_body').append(rowHtml);
+}
 
 /**
  * Agregar una nueva fila de artículo a la tabla del modal de transferencia
