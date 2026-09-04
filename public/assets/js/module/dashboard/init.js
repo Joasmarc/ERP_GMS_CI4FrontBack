@@ -117,6 +117,7 @@ $(function () {
             }
         ],
         rowId: "id",
+        order: [[0, 'desc']],
         processing: true,
         serverSide: false,
         pageLength: 10,

@@ -1172,9 +1172,14 @@
   <div class="modal fade" id="modal_view_remision" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
       <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Vista de Remisión</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="modal-header d-flex align-items-center justify-content-between">
+          <h5 class="modal-title mb-0"><i class="fas fa-file-invoice text-primary me-2"></i>Vista de Remisión</h5>
+          <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-sm btn-primary" id="btn_modal_print_remision">
+              <i class="fas fa-print me-1"></i> Imprimir Remisión
+            </button>
+            <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
         </div>
         <div class="modal-body p-0" style="background-color: #525659;">
           <iframe id="remision_pdf_iframe" src="" style="width: 100%; height: 85vh; border: none; display: block;"></iframe>

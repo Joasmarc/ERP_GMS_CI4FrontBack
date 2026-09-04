@@ -493,6 +493,15 @@ $(document).on('click', '[data-selector="ver_remision_pdf"]', function () {
     $('#modal_view_remision').modal('show');
 });
 
+// Tabla_G05 - Imprimir Remisión desde encabezado del modal
+$(document).on('click', '#btn_modal_print_remision', function () {
+    const iframe = document.getElementById('remision_pdf_iframe');
+    if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+    }
+});
+
 // Formulario_G05 - Agregar Línea de Remisión
 $('#btn_agregar_linea_remision').on('click', function () {
     /* ----------------- MACRO-BLOQUE ----------------- */
