@@ -139,3 +139,74 @@ $(function () {
     });
 
 });
+
+/**
+ * Inicializar la tabla de listado de bodegas (warehouses_base)
+ */
+function initBodegasTable() {
+    if (dtBodegas !== null) {
+        dtBodegas.ajax.reload(null, false);
+        return;
+    }
+
+    dtBodegas = $("#tbl_list_bodegas").DataTable({
+        ajax: {
+            url: SITE_URL + '/warehouse/listing',
+            dataSrc: 'data'
+        },
+        columns: [
+            { data: 'id' },
+            { 
+                data: 'name',
+                render: function (data) {
+                    return `<strong><i class="fas fa-warehouse text-primary me-2"></i>${$('<div>').text(data || '').html()}</strong>`;
+                }
+            },
+            { 
+                data: 'adress',
+                render: function (data) {
+                    return $('<div>').text(data || '').html();
+                }
+            },
+            { 
+                data: 'state',
+                render: function (data) {
+                    if (data === 'ACTIVE') {
+                        return '<span class="badge badge-success"><i class="fas fa-check-circle me-1"></i> Activo</span>';
+                    }
+                    return '<span class="badge badge-danger"><i class="fas fa-times-circle me-1"></i> Inactivo</span>';
+                }
+            },
+            { 
+                data: 'total_items',
+                className: 'text-center',
+                render: function (data) {
+                    return `<span class="badge badge-info">${data || 0} artículos</span>`;
+                }
+            },
+            {
+                data: 'created_at',
+                render: function (data) {
+                    return data ? data.split(' ')[0] : '';
+                }
+            },
+            {
+                data: null,
+                className: 'text-center',
+                orderable: false,
+                render: function (data, type, row) {
+                    return `
+                        <button class="btn btn-primary btn-round btn-sm shadow-sm" onclick="viewWarehouseBalance(${row.id})">
+                            <i class="fas fa-boxes me-1"></i> Ver Balance
+                        </button>
+                    `;
+                }
+            }
+        ],
+        rowId: 'id',
+        processing: true,
+        serverSide: false,
+        pageLength: 10,
+        language: getDatatablesLanguageBodegas()
+    });
+}

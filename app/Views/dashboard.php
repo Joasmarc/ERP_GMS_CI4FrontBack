@@ -170,6 +170,14 @@
                 </a>
               </li>
             <?php endif; ?>
+            <?php if (isset($credentials[13]) && $credentials[13] === '1'): ?>
+              <li class="nav-item" style="background: transparent !important;">
+                <a href="#" id="btn_open_bodega">
+                  <i class="fas fa-warehouse"></i>
+                  <p>Bodega</p>
+                </a>
+              </li>
+            <?php endif; ?>
             <li class="nav-section">
               <span class="sidebar-mini-icon">
                 <i class="fa fa-ellipsis-h"></i>
@@ -712,6 +720,133 @@
           <!-- End Remisiones Screen -->
 
           <!-- ======================================================== -->
+          <!--   BODEGA SCREENS                                         -->
+          <!-- ======================================================== -->
+
+          <!-- Ini Bodega Screen -->
+          <div id="cont_bodega" class="row d-none">
+
+            <!-- Ini Lista de Bodegas Sub-Screen -->
+            <div class="col-md-12" id="bodega_list_view">
+              <div class="card card-round">
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+                  <div>
+                    <h4 class="card-title mb-0"><i class="fas fa-warehouse text-primary me-2"></i>Gestión de Bodegas</h4>
+                    <p class="text-muted small mb-0">Listado de centros de almacenamiento y sus existencias</p>
+                  </div>
+                  <div class="card-tools">
+                    <button class="btn btn-round btn-primary" data-bs-toggle="modal" data-bs-target="#modal_create_warehouse">
+                      <span class="btn-label">
+                        <i class="fa fa-plus"></i>
+                      </span>
+                      Nueva Bodega
+                    </button>
+                  </div>
+                </div>
+                <div class="card-body">
+                  <div class="table-responsive">
+                    <table id="tbl_list_bodegas" class="display table table-striped table-hover w-100">
+                      <thead>
+                        <tr>
+                          <th style="width: 50px;">ID</th>
+                          <th>Bodega</th>
+                          <th>Dirección</th>
+                          <th>Estado</th>
+                          <th class="text-center">Artículos</th>
+                          <th>Fecha Registro</th>
+                          <th class="text-center" style="width: 140px;">Acción</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- End Lista de Bodegas Sub-Screen -->
+
+            <!-- Ini Detalle / Balance de Bodega Sub-Screen -->
+            <div class="col-md-12 d-none" id="bodega_detail_view">
+              <div class="card card-round">
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+                  <div class="d-flex align-items-center">
+                    <button class="btn btn-sm btn-secondary btn-round me-3" id="btn_back_to_bodegas">
+                      <i class="fas fa-arrow-left me-1"></i> Volver a Bodegas
+                    </button>
+                    <div>
+                      <h4 class="card-title mb-0 d-flex align-items-center">
+                        <i class="fas fa-boxes text-info me-2"></i>
+                        <span id="bodega_detail_title">Inventario de Bodega</span>
+                        <span id="bodega_detail_status" class="ms-2"></span>
+                      </h4>
+                      <p class="text-muted small mb-0" id="bodega_detail_adress"></p>
+                    </div>
+                  </div>
+                  <div class="card-tools mt-2 mt-sm-0">
+                    <button class="btn btn-round btn-warning btn-sm me-2" id="btn_open_transfer_modal">
+                      <span class="btn-label">
+                        <i class="fas fa-exchange-alt"></i>
+                      </span>
+                      Transferir Stock
+                    </button>
+                    <button class="btn btn-round btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modal_add_warehouse_item">
+                      <span class="btn-label">
+                        <i class="fa fa-plus"></i>
+                      </span>
+                      Agregar Artículo
+                    </button>
+                  </div>
+                </div>
+                <div class="card-body">
+                  <!-- Tarjetas de resumen del balance -->
+                  <div class="row mb-4">
+                    <div class="col-md-12">
+                      <div class="card card-stats card-round bg-primary text-white shadow-sm mb-0">
+                        <div class="card-body py-3">
+                          <div class="row align-items-center">
+                            <div class="col-icon">
+                              <div class="icon-big text-center icon-primary bubble-shadow-small bg-white text-primary">
+                                <i class="fas fa-cubes"></i>
+                              </div>
+                            </div>
+                            <div class="col col-stats ms-3 ms-sm-0">
+                              <div class="numbers">
+                                <p class="card-category text-white-50 mb-0">Total Artículos Registrados en esta Bodega</p>
+                                <h4 class="card-title text-white fw-bold mb-0" id="stat_bodega_items">0</h4>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Tabla de existencias/balance -->
+                  <div class="table-responsive">
+                    <table id="tbl_list_bodega_balance" class="display table table-striped table-hover w-100">
+                      <thead>
+                        <tr>
+                          <th style="width: 50px;">ID</th>
+                          <th>Artículo / Insumo</th>
+                          <th class="text-center" style="width: 140px;">Cantidad</th>
+                          <th>Fecha Registro</th>
+                          <th>Última Actualización</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- End Detalle / Balance de Bodega Sub-Screen -->
+
+          </div>
+          <!-- End Bodega Screen -->
+
+          <!-- ======================================================== -->
           <!--   PROVEEDORES Y CLIENTES (CONTRAPARTE) SCREENS           -->
           <!-- ======================================================== -->
 
@@ -769,7 +904,7 @@
                   <form id="form_share_counterparty">
                     <?= csrf_field() ?>
                     <input type="hidden" id="share_contraparte_type" name="contraparte_type" value="proveedor">
-                    
+
                     <div class="form-group mb-3">
                       <label class="form-label fw-bold">Tipo de Persona</label>
                       <div class="btn-group w-100" role="group">
@@ -824,7 +959,7 @@
                 <div class="modal-body p-4">
                   <form id="form_upload_policy" enctype="multipart/form-data">
                     <?= csrf_field() ?>
-                    
+
                     <div class="form-group mb-3">
                       <label class="form-label fw-bold text-dark">Seleccionar Archivo PDF *</label>
                       <input type="file" class="form-control" id="policy_file" name="policy_file" accept=".pdf" required style="border: 1px solid #ced4da;">
@@ -1080,6 +1215,144 @@
     </div>
   </div>
 
+  <!-- Modal Crear Bodega -->
+  <div class="modal fade" id="modal_create_warehouse" tabindex="-1" aria-labelledby="modalCreateWarehouseLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header border-0 bg-primary text-white">
+          <h5 class="modal-title fw-bold" id="modalCreateWarehouseLabel"><i class="fas fa-warehouse me-2"></i>Registrar Nueva Bodega</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <form id="form_create_warehouse">
+            <?= csrf_field() ?>
+            <div class="form-group mb-3">
+              <label for="in_warehouse_name" class="form-label fw-bold">Nombre de la Bodega *</label>
+              <input type="text" class="form-control" id="in_warehouse_name" name="name" maxlength="55" placeholder="Ej: Bodega Principal Norte" required>
+            </div>
+            <div class="form-group mb-3">
+              <label for="in_warehouse_adress" class="form-label fw-bold">Dirección *</label>
+              <input type="text" class="form-control" id="in_warehouse_adress" name="adress" maxlength="55" placeholder="Ej: Calle 45 # 12-34" required>
+            </div>
+            <div class="form-group mb-3">
+              <label for="in_warehouse_state" class="form-label fw-bold">Estado</label>
+              <select class="form-select" id="in_warehouse_state" name="state">
+                <option value="ACTIVE" selected>Activo</option>
+                <option value="INACTIVE">Inactivo</option>
+              </select>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer border-0 bg-light">
+          <button type="button" class="btn btn-secondary btn-round btn-border" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary btn-round shadow-sm" id="btn_save_warehouse">
+            <i class="fas fa-save"></i> Guardar Bodega
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Agregar Artículo a Balance -->
+  <div class="modal fade" id="modal_add_warehouse_item" tabindex="-1" aria-labelledby="modalAddWarehouseItemLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header border-0 bg-success text-white">
+          <h5 class="modal-title fw-bold" id="modalAddWarehouseItemLabel"><i class="fas fa-box me-2"></i>Agregar Artículo a la Bodega</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <form id="form_add_warehouse_item">
+            <?= csrf_field() ?>
+            <input type="hidden" id="in_item_warehouse_id" name="id_warehouse" value="">
+            <div class="form-group mb-3">
+              <label for="in_item_name" class="form-label fw-bold">Nombre del Artículo / Insumo *</label>
+              <input type="text" class="form-control" id="in_item_name" name="name_item" maxlength="85" placeholder="Ej: Jeringa 5ml estéril" required>
+            </div>
+            <div class="form-group mb-3">
+              <label for="in_item_quantity" class="form-label fw-bold">Cantidad Inicial / Existencias *</label>
+              <input type="number" class="form-control" id="in_item_quantity" name="quantity" min="0" value="1" required>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer border-0 bg-light">
+          <button type="button" class="btn btn-secondary btn-round btn-border" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-success btn-round shadow-sm" id="btn_save_warehouse_item">
+            <i class="fas fa-plus"></i> Agregar Artículo
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Transferencia entre Bodegas -->
+  <div class="modal fade" id="modal_transfer_warehouse" tabindex="-1" aria-labelledby="modalTransferWarehouseLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header border-0 bg-warning text-dark">
+          <h5 class="modal-title fw-bold" id="modalTransferWarehouseLabel"><i class="fas fa-exchange-alt me-2"></i>Transferencia de Stock entre Bodegas</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <form id="form_transfer_warehouse">
+            <?= csrf_field() ?>
+            <input type="hidden" id="transfer_origin_warehouse_id" name="id_warehouse_send" value="">
+
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label class="form-label fw-bold">Bodega Origen</label>
+                <div class="p-2 border rounded bg-light d-flex align-items-center">
+                  <i class="fas fa-warehouse text-primary me-2 fa-lg"></i>
+                  <span id="transfer_origin_warehouse_name" class="fw-bold text-dark">Cargando...</span>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label for="transfer_dest_warehouse" class="form-label fw-bold">Bodega Destino *</label>
+                <select class="form-select" id="transfer_dest_warehouse" name="id_warehouse_receives" required>
+                  <option value="">Seleccione bodega destino...</option>
+                </select>
+              </div>
+            </div>
+
+            <hr class="my-3">
+
+            <div class="mb-3">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <label class="form-label fw-bold mb-0"><i class="fas fa-boxes text-secondary me-1"></i> Artículos a Transferir</label>
+                <button type="button" class="btn btn-outline-primary btn-sm btn-round" id="btn_add_transfer_line">
+                  <i class="fas fa-plus me-1"></i> Agregar Línea
+                </button>
+              </div>
+
+              <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle mb-0" id="tbl_transfer_lines">
+                  <thead class="bg-light">
+                    <tr>
+                      <th>Artículo Disponible</th>
+                      <th style="width: 140px;" class="text-center">Stock Disp.</th>
+                      <th style="width: 150px;" class="text-center">Cantidad a Enviar</th>
+                      <th style="width: 50px;" class="text-center">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody id="transfer_lines_tbody">
+                    <!-- Filas dinámicas -->
+                  </tbody>
+                </table>
+              </div>
+              <small class="text-muted mt-1 d-block"><i class="fas fa-info-circle me-1"></i> Solo se pueden transferir artículos con saldo disponible en la bodega origen.</small>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer border-0 bg-light">
+          <button type="button" class="btn btn-secondary btn-round btn-border" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-warning btn-round shadow-sm fw-bold text-dark" id="btn_submit_transfer">
+            <i class="fas fa-exchange-alt me-1"></i> Confirmar Transferencia
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ======================================================== -->
   <!--   SCRIPTS                                               -->
   <!-- ======================================================== -->
@@ -1130,8 +1403,6 @@
   <script src="<?= base_url('public/assets/js/module/dashboard/events.js') ?>?v=<?= filemtime(ROOTPATH . 'public/assets/js/module/dashboard/events.js') ?>"></script>
   <script src="<?= base_url('public/assets/js/module/dashboard/utils.js') ?>?v=<?= filemtime(ROOTPATH . 'public/assets/js/module/dashboard/utils.js') ?>"></script>
   <script src="<?= base_url('public/assets/js/module/dashboard/counterparty.js') ?>?v=<?= filemtime(ROOTPATH . 'public/assets/js/module/dashboard/counterparty.js') ?>"></script>
-
-
 </body>
 
 </html>

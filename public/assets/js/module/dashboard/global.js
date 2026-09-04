@@ -10,6 +10,7 @@ const SCREENS = {
     remisiones: ['cont_remisiones', 'Remisiones'],
     proveedor: ['cont_proveedor', 'Proveedores'],
     cliente: ['cont_cliente', 'Clientes'],
+    bodega: ['cont_bodega', 'Bodegas'],
 }
 
 /* ======================================================== */
@@ -18,3 +19,11 @@ const SCREENS = {
 
 let GLOBAL_PRODUCTS_DATA = [];
 const CAN_DELETE = window.userCredentials && window.userCredentials[8] === '1';
+
+// Bodegas States
+let dtBodegas = null;
+let dtBodegaBalance = null;
+let currentWarehouseId = null;
+let currentWarehouseData = null;
+let currentWarehouseItems = [];
+

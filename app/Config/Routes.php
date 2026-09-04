@@ -45,6 +45,17 @@ $routes->group('dispatch', ['filter' => 'cors'], static function ($routes) {
     $routes->get('view_pdf/(:num)', 'Dispatch::view_pdf/$1');
 });
 
+// Warehouses (Bodegas)
+$routes->group('warehouse', ['filter' => 'cors'], static function ($routes) {
+    $routes->get('listing', 'Warehouse::listing');
+    $routes->get('active_list', 'Warehouse::active_list');
+    $routes->get('active_list/(:num)', 'Warehouse::active_list/$1');
+    $routes->get('balance/(:num)', 'Warehouse::balance/$1');
+    $routes->post('save', 'Warehouse::save');
+    $routes->post('save_item', 'Warehouse::save_item');
+    $routes->post('transfer', 'Warehouse::transfer');
+});
+
 // Products
 $routes->group('product', ['filter' => 'cors'], static function ($routes) {
     // $routes->options('(.*)', 'Home::cors');

@@ -25,6 +25,12 @@ $('#btn_open_remisiones').on('click', function () {
     showScreen(SCREENS.remisiones);
 });
 
+// Main - Abrir bodegas
+$('#btn_open_bodega').on('click', function () {
+    showScreen(SCREENS.bodega);
+    initBodegasTable();
+});
+
 // Tabla_G03 - Búsqueda en catálogo
 $('#search_products').on('input', function () {
     let searchVal = $(this).val().toLowerCase();
@@ -620,3 +626,270 @@ $(document).on('click', '.btn-delete-file', function (e) {
         }
     });
 });
+
+/* ======================================================== */
+/*   BODEGAS (WAREHOUSE) EVENTS                             */
+/* ======================================================== */
+
+// Bodegas - Volver a la lista de bodegas desde la sub-pantalla de detalle
+$('#btn_back_to_bodegas').on('click', function () {
+    switchSubScreen('bodega_detail_view', 'bodega_list_view');
+});
+
+// Bodegas - Guardar nueva bodega
+$('#btn_save_warehouse').on('click', function () {
+    const form = $('#form_create_warehouse');
+    const name = $('#in_warehouse_name').val().trim();
+    const adress = $('#in_warehouse_adress').val().trim();
+
+    if (!name || !adress) {
+        swal("Atención", "Por favor complete todos los campos obligatorios.", "warning");
+        return;
+    }
+
+    const btn = $(this);
+    btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Guardando...');
+
+    $.ajax({
+        url: SITE_URL + '/warehouse/save',
+        type: 'POST',
+        data: form.serialize(),
+        dataType: 'json',
+        success: function (resp) {
+            btn.prop('disabled', false).html('<i class="fas fa-save"></i> Guardar Bodega');
+            if (resp.status === 'success') {
+                $('#modal_create_warehouse').modal('hide');
+                form[0].reset();
+                swal("¡Éxito!", resp.message, "success");
+                reloadBodegasTable();
+            } else {
+                swal("Error", resp.message || "No se pudo crear la bodega.", "error");
+            }
+        },
+        error: function () {
+            btn.prop('disabled', false).html('<i class="fas fa-save"></i> Guardar Bodega');
+            swal("Error", "Ocurrió un error al comunicarse con el servidor.", "error");
+        }
+    });
+});
+
+// Bodegas - Guardar nuevo item en balance de la bodega
+$('#btn_save_warehouse_item').on('click', function () {
+    const form = $('#form_add_warehouse_item');
+    const nameItem = $('#in_item_name').val().trim();
+    const quantity = $('#in_item_quantity').val();
+
+    if (!nameItem || quantity === '' || parseInt(quantity) < 0) {
+        swal("Atención", "Por favor ingrese el nombre del artículo y una cantidad válida.", "warning");
+        return;
+    }
+
+    $('#in_item_warehouse_id').val(currentWarehouseId);
+
+    const btn = $(this);
+    btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Guardando...');
+
+    $.ajax({
+        url: SITE_URL + '/warehouse/save_item',
+        type: 'POST',
+        data: form.serialize(),
+        dataType: 'json',
+        success: function (resp) {
+            btn.prop('disabled', false).html('<i class="fas fa-plus"></i> Agregar Artículo');
+            if (resp.status === 'success') {
+                $('#modal_add_warehouse_item').modal('hide');
+                form[0].reset();
+                swal("¡Agregado!", resp.message, "success");
+                if (currentWarehouseId) {
+                    viewWarehouseBalance(currentWarehouseId);
+                }
+                reloadBodegasTable();
+            } else {
+                swal("Error", resp.message || "No se pudo agregar el artículo.", "error");
+            }
+        },
+        error: function () {
+            btn.prop('disabled', false).html('<i class="fas fa-plus"></i> Agregar Artículo');
+            swal("Error", "Error al comunicarse con el servidor.", "error");
+        }
+    });
+});
+
+// Bodegas - Abrir modal de transferencia entre bodegas
+$('#btn_open_transfer_modal').on('click', function () {
+    if (!currentWarehouseId || !currentWarehouseData) {
+        swal("Atención", "No hay una bodega activa seleccionada.", "warning");
+        return;
+    }
+
+    if (currentWarehouseItems.length === 0) {
+        swal("Atención", "Esta bodega no tiene artículos disponibles con saldo para transferir.", "info");
+        return;
+    }
+
+    $('#transfer_origin_warehouse_id').val(currentWarehouseId);
+    $('#transfer_origin_warehouse_name').text(currentWarehouseData.name || 'Bodega');
+
+    // Cargar lista de bodegas destino disponibles
+    const selectDest = $('#transfer_dest_warehouse');
+    selectDest.html('<option value="">Cargando bodegas...</option>');
+
+    $.ajax({
+        url: SITE_URL + '/warehouse/active_list/' + currentWarehouseId,
+        type: 'GET',
+        dataType: 'json',
+        success: function (resp) {
+            if (resp.status === 'success') {
+                selectDest.empty();
+                selectDest.append('<option value="">Seleccione bodega destino...</option>');
+                const list = resp.data || [];
+                if (list.length === 0) {
+                    selectDest.html('<option value="">No hay otras bodegas activas disponibles</option>');
+                } else {
+                    list.forEach(w => {
+                        selectDest.append(`<option value="${w.id}">${$('<div>').text(w.name).html()} (${$('<div>').text(w.adress).html()})</option>`);
+                    });
+                }
+            } else {
+                selectDest.html('<option value="">Error al cargar bodegas</option>');
+            }
+        },
+        error: function () {
+            selectDest.html('<option value="">Error de conexión</option>');
+        }
+    });
+
+    // Limpiar filas de artículos e insertar la primera fila
+    $('#transfer_lines_tbody').empty();
+    addTransferLine();
+
+    $('#modal_transfer_warehouse').modal('show');
+});
+
+// Bodegas - Agregar otra línea de transferencia
+$('#btn_add_transfer_line').on('click', function () {
+    addTransferLine();
+});
+
+// Bodegas - Quitar línea de transferencia
+$(document).on('click', '.btn-remove-transfer-line', function () {
+    $(this).closest('tr').remove();
+    if ($('#transfer_lines_tbody tr').length === 0) {
+        addTransferLine();
+    }
+});
+
+// Bodegas - Cambio en selector de artículo en la línea de transferencia
+$(document).on('change', '.transfer-item-select', function () {
+    const select = $(this);
+    const row = select.closest('tr');
+    const selectedName = select.val();
+    const badge = row.find('.transfer-avail-badge');
+    const inputQty = row.find('.transfer-qty-input');
+
+    if (!selectedName) {
+        badge.text('0').removeClass('badge-success badge-warning').addClass('badge-secondary');
+        inputQty.val('0').prop('disabled', true).attr('max', 0);
+        return;
+    }
+
+    const found = currentWarehouseItems.find(i => i.name_item === selectedName);
+    const available = found ? parseInt(found.quantity || 0) : 0;
+
+    badge.text(available.toLocaleString());
+    if (available > 10) {
+        badge.removeClass('badge-secondary badge-warning').addClass('badge-success');
+    } else {
+        badge.removeClass('badge-secondary badge-success').addClass('badge-warning');
+    }
+
+    inputQty.prop('disabled', false).attr('max', available).attr('min', 1).val(1);
+});
+
+// Bodegas - Validación en tiempo real de cantidad a transferir
+$(document).on('input change', '.transfer-qty-input', function () {
+    const input = $(this);
+    const max = parseInt(input.attr('max') || 0);
+    let val = parseInt(input.val() || 0);
+
+    if (val > max) {
+        input.val(max);
+        swal("Atención", `La cantidad máxima disponible para transferir es de ${max} unidades.`, "warning");
+    } else if (val < 1 && max > 0) {
+        input.val(1);
+    }
+});
+
+// Bodegas - Confirmar y enviar transferencia
+$('#btn_submit_transfer').on('click', function () {
+    const destWarehouse = $('#transfer_dest_warehouse').val();
+    if (!destWarehouse) {
+        swal("Atención", "Debe seleccionar una bodega de destino.", "warning");
+        return;
+    }
+
+    // Validar que haya al menos una línea con producto y cantidad
+    let hasValidItems = false;
+    let hasErrors = false;
+    const selectedProducts = new Set();
+
+    $('#transfer_lines_tbody tr').each(function () {
+        const select = $(this).find('.transfer-item-select');
+        const input = $(this).find('.transfer-qty-input');
+        const itemName = select.val();
+        const qty = parseInt(input.val() || 0);
+        const max = parseInt(input.attr('max') || 0);
+
+        if (itemName) {
+            if (selectedProducts.has(itemName)) {
+                swal("Atención", `El artículo "${itemName}" está duplicado en varias líneas. Por favor consolídelo en una sola línea.`, "warning");
+                hasErrors = true;
+                return false;
+            }
+            selectedProducts.add(itemName);
+
+            if (qty <= 0 || qty > max) {
+                swal("Atención", `Verifique la cantidad a transferir para "${itemName}".`, "warning");
+                hasErrors = true;
+                return false;
+            }
+            hasValidItems = true;
+        }
+    });
+
+    if (hasErrors) return;
+
+    if (!hasValidItems) {
+        swal("Atención", "Debe seleccionar al menos un artículo para transferir.", "warning");
+        return;
+    }
+
+    const btn = $(this);
+    btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Procesando...');
+
+    $.ajax({
+        url: SITE_URL + '/warehouse/transfer',
+        type: 'POST',
+        data: $('#form_transfer_warehouse').serialize(),
+        dataType: 'json',
+        success: function (resp) {
+            btn.prop('disabled', false).html('<i class="fas fa-exchange-alt me-1"></i> Confirmar Transferencia');
+            if (resp.status === 'success') {
+                $('#modal_transfer_warehouse').modal('hide');
+                swal("¡Transferencia Exitosa!", resp.message, "success");
+                // Recargar datos de la bodega actual y de la lista principal
+                if (currentWarehouseId) {
+                    viewWarehouseBalance(currentWarehouseId);
+                }
+                reloadBodegasTable();
+            } else {
+                swal("Error en Transferencia", resp.message || "No se pudo completar la transferencia.", "error");
+            }
+        },
+        error: function () {
+            btn.prop('disabled', false).html('<i class="fas fa-exchange-alt me-1"></i> Confirmar Transferencia');
+            swal("Error", "Ocurrió un error al comunicarse con el servidor.", "error");
+        }
+    });
+});
+

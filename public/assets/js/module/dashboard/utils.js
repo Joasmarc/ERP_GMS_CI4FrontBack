@@ -38,6 +38,8 @@ function showScreen(screenId) {
     $('#proveedor_list_view').removeClass('d-none');
     $('#cliente_list_view').removeClass('d-none');
     $('#counterparty_create_view').addClass('d-none');
+    $('#bodega_list_view').removeClass('d-none');
+    $('#bodega_detail_view').addClass('d-none');
 
     // 1.1 Mostrar loader
     toggleLoader(true)
@@ -344,3 +346,170 @@ function reloadVideos(familyId) {
         }
     });
 }
+
+/* ======================================================== */
+/*   BODEGAS (WAREHOUSE) UTILS                              */
+/* ======================================================== */
+
+/**
+ * Agregar una nueva fila de artículo a la tabla del modal de transferencia
+ */
+function addTransferLine() {
+    let optionsHtml = '<option value="">Seleccione un artículo...</option>';
+    currentWarehouseItems.forEach(item => {
+        optionsHtml += `<option value="${$('<div>').text(item.name_item).html()}">${$('<div>').text(item.name_item).html()} [Disp: ${parseInt(item.quantity).toLocaleString()}]</option>`;
+    });
+
+    const rowHtml = `
+        <tr>
+            <td>
+                <select name="item_name[]" class="form-select transfer-item-select" required>
+                    ${optionsHtml}
+                </select>
+            </td>
+            <td class="text-center">
+                <span class="badge badge-secondary fs-6 transfer-avail-badge">0</span>
+            </td>
+            <td>
+                <input type="number" name="item_quantity[]" class="form-control text-center transfer-qty-input" min="1" max="0" value="1" required disabled>
+            </td>
+            <td class="text-center">
+                <button type="button" class="btn btn-danger btn-sm btn-round btn-remove-transfer-line" title="Quitar línea">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `;
+
+    $('#transfer_lines_tbody').append(rowHtml);
+}
+
+/**
+ * Cargar y mostrar la sub-pantalla con el balance/inventario de una bodega (warehouses_balance)
+ */
+function viewWarehouseBalance(warehouseId) {
+    if (!warehouseId) return;
+    currentWarehouseId = warehouseId;
+
+    toggleLoader(true);
+
+    $.ajax({
+        url: SITE_URL + '/warehouse/balance/' + warehouseId,
+        type: 'GET',
+        dataType: 'json',
+        success: function (resp) {
+            toggleLoader(false);
+            if (resp.status === 'success') {
+                const warehouse = resp.warehouse;
+                const items = resp.data || [];
+
+                currentWarehouseData = warehouse;
+                // Guardar artículos con saldo disponible > 0 para transferencias
+                currentWarehouseItems = items.filter(i => parseInt(i.quantity || 0) > 0);
+
+                // Actualizar títulos e información de cabecera
+                $('#bodega_detail_title').text(warehouse.name || 'Bodega');
+                $('#bodega_detail_adress').text(warehouse.adress || '');
+                
+                const statusBadge = warehouse.state === 'ACTIVE' 
+                    ? '<span class="badge badge-success"><i class="fas fa-check-circle me-1"></i> Activo</span>'
+                    : '<span class="badge badge-danger"><i class="fas fa-times-circle me-1"></i> Inactivo</span>';
+                $('#bodega_detail_status').html(statusBadge);
+
+                // Actualizar total de artículos
+                $('#stat_bodega_items').text(items.length);
+
+                // Actualizar o inicializar DataTable del balance
+                renderBalanceTable(items);
+
+                // Cambiar sub-pantalla
+                switchSubScreen('bodega_list_view', 'bodega_detail_view');
+            } else {
+                swal("Error", resp.message || "No se pudo cargar la información de la bodega.", "error");
+            }
+        },
+        error: function () {
+            toggleLoader(false);
+            swal("Error", "Error al consultar los datos del servidor.", "error");
+        }
+    });
+}
+
+/**
+ * Renderizar la tabla de balance de items para la bodega seleccionada
+ */
+function renderBalanceTable(items) {
+    if ($.fn.DataTable.isDataTable('#tbl_list_bodega_balance')) {
+        $('#tbl_list_bodega_balance').DataTable().destroy();
+    }
+
+    dtBodegaBalance = $("#tbl_list_bodega_balance").DataTable({
+        data: items,
+        columns: [
+            { data: 'id' },
+            { 
+                data: 'name_item',
+                render: function (data) {
+                    return `<strong><i class="fas fa-box text-secondary me-2"></i>${$('<div>').text(data || '').html()}</strong>`;
+                }
+            },
+            { 
+                data: 'quantity',
+                className: 'text-center',
+                render: function (data) {
+                    let qty = parseInt(data || 0);
+                    let badgeClass = qty > 10 ? 'badge-success' : (qty > 0 ? 'badge-warning' : 'badge-danger');
+                    return `<span class="badge ${badgeClass} fs-6 fw-bold">${qty.toLocaleString()}</span>`;
+                }
+            },
+            {
+                data: 'created_at',
+                render: function (data) {
+                    return data ? data : '-';
+                }
+            },
+            {
+                data: 'updated_at',
+                render: function (data) {
+                    return data ? data : '-';
+                }
+            }
+        ],
+        rowId: 'id',
+        processing: true,
+        pageLength: 10,
+        language: getDatatablesLanguageBodegas()
+    });
+}
+
+/**
+ * Recargar la tabla de bodegas
+ */
+function reloadBodegasTable() {
+    if (dtBodegas) {
+        dtBodegas.ajax.reload(null, false);
+    }
+}
+
+/**
+ * Configuración de idioma español para DataTables de Bodegas
+ */
+function getDatatablesLanguageBodegas() {
+    return {
+        processing: 'Procesando...',
+        lengthMenu: 'Mostrar _MENU_ registros',
+        zeroRecords: 'No se encontraron registros',
+        emptyTable: 'No hay datos disponibles en esta tabla',
+        info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
+        infoEmpty: 'Mostrando 0 a 0 de 0 registros',
+        infoFiltered: '(filtrado de _MAX_ registros totales)',
+        search: 'Buscar:',
+        paginate: {
+            first: 'Primero',
+            last: 'Último',
+            next: 'Siguiente',
+            previous: 'Anterior'
+        }
+    };
+}
+
