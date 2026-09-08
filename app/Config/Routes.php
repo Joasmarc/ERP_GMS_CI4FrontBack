@@ -57,6 +57,8 @@ $routes->group('warehouse', ['filter' => 'cors'], static function ($routes) {
     $routes->post('save_remision', 'Warehouse::save_remision');
     $routes->post('transfer', 'Warehouse::transfer');
     $routes->post('adjust', 'Warehouse::adjust');
+    $routes->get('download_batch_template', 'Warehouse::download_batch_template');
+    $routes->post('import_batch_items', 'Warehouse::import_batch_items');
 });
 
 // Products

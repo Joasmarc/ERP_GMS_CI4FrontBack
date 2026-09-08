@@ -689,6 +689,7 @@ $(document).on('click', '.btn-delete-file', function (e) {
 $('#btn_back_to_bodegas').on('click', function () {
     switchSubScreen('bodega_detail_view', 'bodega_list_view');
     $('#btn_add_warehouse_item').addClass('d-none');
+    $('#btn_open_mass_upload_modal').addClass('d-none');
     currentWarehouseData = null;
     currentWarehouseId = null;
 });
@@ -1546,4 +1547,191 @@ $('#btn_save_adjust_stock').on('click', function () {
         }
     });
 });
+
+/* ======================================================== */
+/*   BODEGAS - CARGUE MASIVO (EXCEL)                        */
+/* ======================================================== */
+
+let selectedMassUploadFile = null;
+
+// Función para reiniciar el estado de la modal de cargue masivo
+function resetMassUploadModal() {
+    selectedMassUploadFile = null;
+    $('#in_mass_upload_file').val('');
+    $('#mass_upload_prompt').removeClass('d-none');
+    $('#mass_upload_preview').addClass('d-none').removeClass('d-flex');
+    $('#mass_upload_file_name').text('');
+    $('#mass_upload_file_size').text('');
+    $('#mass_upload_loading').addClass('d-none');
+    $('#mass_upload_dropzone').removeClass('d-none border-success bg-light');
+    $('#btn_process_mass_upload').prop('disabled', true).html('<i class="fas fa-upload me-1"></i> Procesar Cargue Masivo');
+}
+
+// Al abrir o cerrar la modal, reiniciar estado
+$('#modal_mass_upload_warehouse').on('show.bs.modal', function () {
+    resetMassUploadModal();
+});
+$('#modal_mass_upload_warehouse').on('hidden.bs.modal', function () {
+    resetMassUploadModal();
+});
+
+// Nota: #mass_upload_dropzone es un <label for="in_mass_upload_file"> nativo,
+// por lo cual el navegador abre directamente el explorador de archivos sin necesidad de eventos JS.
+
+// Eventos de arrastrar y soltar (Drag & Drop)
+$('#mass_upload_dropzone').on('dragover dragenter', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    $(this).addClass('border-success bg-light');
+});
+
+$('#mass_upload_dropzone').on('dragleave drop', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    $(this).removeClass('border-success bg-light');
+});
+
+$('#mass_upload_dropzone').on('drop', function (e) {
+    const files = e.originalEvent.dataTransfer.files;
+    if (files && files.length > 0) {
+        handleMassUploadFile(files[0]);
+    }
+});
+
+// Selección de archivo mediante el input file
+$('#in_mass_upload_file').on('change', function () {
+    if (this.files && this.files.length > 0) {
+        handleMassUploadFile(this.files[0]);
+    }
+});
+
+// Validar y previsualizar archivo seleccionado
+function handleMassUploadFile(file) {
+    if (!file) return;
+
+    const validExtensions = ['xlsx', 'xls', 'csv'];
+    const fileName = file.name || '';
+    const fileExt = fileName.split('.').pop().toLowerCase();
+
+    if (!validExtensions.includes(fileExt)) {
+        swal("Formato no compatible", "Por favor seleccione un archivo con formato Excel (.xlsx, .xls) o CSV (.csv).", "warning");
+        resetMassUploadModal();
+        return;
+    }
+
+    const maxSizeMb = 10;
+    if (file.size > maxSizeMb * 1024 * 1024) {
+        swal("Archivo muy pesado", "El archivo supera el límite máximo de 10 MB.", "warning");
+        resetMassUploadModal();
+        return;
+    }
+
+    selectedMassUploadFile = file;
+
+    // Formatear tamaño del archivo
+    let formattedSize = (file.size / 1024).toFixed(1) + ' KB';
+    if (file.size > 1024 * 1024) {
+        formattedSize = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+
+    $('#mass_upload_file_name').text(fileName);
+    $('#mass_upload_file_size').text(formattedSize);
+    $('#mass_upload_prompt').addClass('d-none');
+    $('#mass_upload_preview').removeClass('d-none').addClass('d-flex');
+    $('#btn_process_mass_upload').prop('disabled', false);
+}
+
+// Botón para quitar el archivo seleccionado
+$(document).on('click', '#btn_remove_mass_upload_file', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    resetMassUploadModal();
+});
+
+// Procesar cargue masivo
+$('#btn_process_mass_upload').on('click', function () {
+    if (!selectedMassUploadFile) {
+        swal("Atención", "Debe seleccionar un archivo Excel o CSV para procesar.", "warning");
+        return;
+    }
+
+    if (!currentWarehouseData || !currentWarehouseData.is_main) {
+        swal("No permitido", "El cargue masivo solo se puede realizar en la Bodega Principal.", "warning");
+        return;
+    }
+
+    const btn = $(this);
+    btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Procesando...');
+    $('#mass_upload_dropzone').addClass('d-none');
+    $('#mass_upload_loading').removeClass('d-none');
+
+    const formData = new FormData();
+    formData.append('excel_file', selectedMassUploadFile);
+    formData.append('id_warehouse', currentWarehouseId);
+
+    $.ajax({
+        url: SITE_URL + '/warehouse/import_batch_items',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        dataType: 'json',
+        success: function (resp) {
+            btn.prop('disabled', false).html('<i class="fas fa-upload me-1"></i> Procesar Cargue Masivo');
+            $('#mass_upload_loading').addClass('d-none');
+            $('#mass_upload_dropzone').removeClass('d-none');
+
+            if (resp.status === 'success') {
+                $('#modal_mass_upload_warehouse').modal('hide');
+                resetMassUploadModal();
+
+                swal({
+                    title: "¡Cargue Masivo Exitoso!",
+                    text: resp.message,
+                    icon: "success",
+                    button: "Entendido"
+                });
+
+                // Actualizar balance de la bodega
+                if (currentWarehouseId) {
+                    viewWarehouseBalance(currentWarehouseId);
+                }
+                reloadBodegasTable();
+
+                if ($.fn.DataTable.isDataTable('#tbl_list_remisiones')) {
+                    $('#tbl_list_remisiones').DataTable().ajax.reload(null, false);
+                }
+            } else {
+                // Si el mensaje contiene saltos de línea HTML (<br>), creamos un elemento para swal
+                const msg = resp.message || "No se pudo procesar el archivo.";
+                if (msg.includes('<br>')) {
+                    const span = document.createElement("span");
+                    span.innerHTML = msg;
+                    swal({
+                        title: "Inconsistencia en el archivo",
+                        content: span,
+                        icon: "error",
+                        button: "Cerrar"
+                    });
+                } else {
+                    swal("Error", msg, "error");
+                }
+            }
+        },
+        error: function (xhr) {
+            btn.prop('disabled', false).html('<i class="fas fa-upload me-1"></i> Procesar Cargue Masivo');
+            $('#mass_upload_loading').addClass('d-none');
+            $('#mass_upload_dropzone').removeClass('d-none');
+
+            let errorMsg = "Ocurrió un error inesperado al procesar el archivo en el servidor.";
+            try {
+                const json = JSON.parse(xhr.responseText);
+                if (json.message) errorMsg = json.message;
+            } catch (e) {}
+
+            swal("Error en el servidor", errorMsg, "error");
+        }
+    });
+});
+
 

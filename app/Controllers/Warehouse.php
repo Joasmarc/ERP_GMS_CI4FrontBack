@@ -9,6 +9,7 @@ use App\Models\WarehousesTransferItems;
 use App\Models\Families;
 use App\Models\DispatchAdvices;
 use App\Models\DispatchAdviceItems;
+use App\Libraries\ExcelHelper;
 
 class Warehouse extends BaseController
 {
@@ -1038,6 +1039,385 @@ class Warehouse extends BaseController
             'message'     => 'Ajuste registrado exitosamente (Documento N° ' . $nextSequence . ') e inventario actualizado.',
             'sequence'    => $nextSequence,
             'dispatch_id' => $dispatchId
+        ]);
+    }
+
+    /**
+     * Descargar plantilla Excel para cargue masivo de productos a la bodega principal
+     */
+    public function download_batch_template()
+    {
+        if (!$this->checkPermission()) {
+            return $this->response->setStatusCode(403)->setBody('No autorizado.');
+        }
+
+        $familyModel = new Families();
+        $families = $familyModel->select('id, keyword')
+            ->where('state', 'ACTIVO')
+            ->where('deleted_at IS NULL')
+            ->orderBy('keyword', 'ASC')
+            ->findAll();
+
+        $headers = [
+            'ID_PRODUCTO',
+            'NOMBRE_PRODUCTO',
+            'CANTIDAD',
+            'LOTE',
+            'REFERENCIA',
+            'FECHA_VENCIMIENTO'
+        ];
+
+        $rows = [];
+        foreach ($families as $f) {
+            $rows[] = [
+                (int)$f['id'],
+                $f['keyword'],
+                '', // Cantidad vacía
+                '', // Lote vacío
+                '', // Referencia vacía
+                ''  // Fecha de vencimiento vacía
+            ];
+        }
+
+        $xlsxContent = ExcelHelper::generateXlsx($headers, $rows);
+        $filename = 'plantilla_cargue_masivo_bodega_principal.xlsx';
+
+        return $this->response
+            ->setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->setHeader('Cache-Control', 'max-age=0, no-cache, must-revalidate')
+            ->setBody($xlsxContent);
+    }
+
+    /**
+     * Procesar cargue masivo de productos desde archivo Excel/CSV e ingresarlos a la bodega principal
+     * Generando remisión con tipo INGRESO
+     */
+    public function import_batch_items()
+    {
+        if (!$this->checkPermission()) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'No autorizado para acceder a este módulo.'
+            ])->setStatusCode(403);
+        }
+
+        $mainWarehouseId = $this->getMainWarehouseId();
+        if ($mainWarehouseId === null) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'No se encontró la bodega principal configurada en el sistema.'
+            ])->setStatusCode(400);
+        }
+
+        $file = $this->request->getFile('excel_file');
+        if (!$file || !$file->isValid()) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Debe seleccionar un archivo válido para procesar el cargue masivo.'
+            ]);
+        }
+
+        $ext = strtolower($file->getClientExtension());
+        $allowedExtensions = ['xlsx', 'xls', 'csv'];
+        if (!in_array($ext, $allowedExtensions, true)) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Formato no permitido. Solo se aceptan archivos Excel (.xlsx, .xls) o CSV (.csv).'
+            ]);
+        }
+
+        // Límite de tamaño: 10MB
+        if ($file->getSizeByUnit('mb') > 10) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'El archivo supera el tamaño máximo permitido de 10 MB.'
+            ]);
+        }
+
+        $tempPath = $file->getTempName();
+        $originalName = $file->getClientName();
+
+        try {
+            $parsedRows = ExcelHelper::parseFile($tempPath, $originalName);
+        } catch (\Throwable $e) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Error al leer el archivo Excel: ' . $e->getMessage()
+            ]);
+        }
+
+        if (empty($parsedRows)) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'El archivo subido está vacío.'
+            ]);
+        }
+
+        // Primera fila puede ser encabezado
+        $headerCandidate = $parsedRows[0];
+        $isHeader = false;
+        if (isset($headerCandidate[0]) && (
+            stripos((string)$headerCandidate[0], 'id') !== false ||
+            stripos((string)$headerCandidate[0], 'producto') !== false ||
+            stripos((string)($headerCandidate[1] ?? ''), 'nombre') !== false ||
+            stripos((string)($headerCandidate[1] ?? ''), 'producto') !== false
+        )) {
+            $isHeader = true;
+        }
+
+        $dataRows = $isHeader ? array_slice($parsedRows, 1) : $parsedRows;
+
+        // Cargar catálogo de familias activas para indexación rápida por ID y por keyword
+        $familyModel = new Families();
+        $allFamilies = $familyModel->where('state', 'ACTIVO')
+            ->where('deleted_at IS NULL')
+            ->findAll();
+
+        $familiesById = [];
+        $familiesByKeyword = [];
+        foreach ($allFamilies as $fam) {
+            $familiesById[(int)$fam['id']] = $fam;
+            $familiesByKeyword[mb_strtolower(trim($fam['keyword']), 'UTF-8')] = $fam;
+        }
+
+        // Procesar y validar filas
+        $validItems = [];
+        $skippedCount = 0;
+        $invalidRows = [];
+        $totalQuantity = 0;
+
+        foreach ($dataRows as $index => $row) {
+            $rowNumber = $isHeader ? ($index + 2) : ($index + 1);
+
+            $idRaw = trim($row[0] ?? '');
+            $nameRaw = trim($row[1] ?? '');
+            $qtyRaw = trim($row[2] ?? '');
+            $lotRaw = trim($row[3] ?? '');
+            $refRaw = trim($row[4] ?? '');
+            $expDateRaw = trim($row[5] ?? '');
+
+            // Si la cantidad está vacía o es 0, ignorar silenciosamente la fila
+            if ($qtyRaw === '' || $qtyRaw === null) {
+                $skippedCount++;
+                continue;
+            }
+
+            // Validar que la cantidad sea numérica y positiva
+            if (!is_numeric($qtyRaw) || (int)$qtyRaw <= 0) {
+                // Si la fila no tiene ningún dato más, omitir
+                if ($idRaw === '' && $nameRaw === '' && $lotRaw === '') {
+                    $skippedCount++;
+                    continue;
+                }
+                // Si tiene datos pero cantidad no válida, reportar
+                if ((int)$qtyRaw < 0) {
+                    $invalidRows[] = "Fila {$rowNumber}: la cantidad no puede ser negativa ({$qtyRaw}).";
+                    continue;
+                }
+                $skippedCount++;
+                continue;
+            }
+
+            $qty = (int)$qtyRaw;
+
+            // Identificar producto por ID o por Nombre
+            $family = null;
+            $famId = filter_var($idRaw, FILTER_VALIDATE_INT);
+            if ($famId && isset($familiesById[$famId])) {
+                $family = $familiesById[$famId];
+            } elseif (!empty($nameRaw)) {
+                $key = mb_strtolower($nameRaw, 'UTF-8');
+                if (isset($familiesByKeyword[$key])) {
+                    $family = $familiesByKeyword[$key];
+                    $famId = (int)$family['id'];
+                }
+            }
+
+            if (!$family) {
+                $itemLabel = !empty($nameRaw) ? $nameRaw : (!empty($idRaw) ? "ID #{$idRaw}" : "Fila {$rowNumber}");
+                $invalidRows[] = "Fila {$rowNumber}: el producto '{$itemLabel}' no existe o no se encuentra activo en el catálogo.";
+                continue;
+            }
+
+            // Normalizar lote (máx 25 para warehouse balance, máx 10 para dispatch item batch)
+            $lot = ($lotRaw === '') ? null : substr($lotRaw, 0, 25);
+            $batchForDispatch = ($lot !== null) ? substr($lot, 0, 10) : '';
+
+            // Normalizar referencia
+            $ref = ($refRaw === '') ? '' : substr($refRaw, 0, 75);
+
+            // Normalizar fecha de vencimiento
+            $expDate = null;
+            if (!empty($expDateRaw)) {
+                $parsedDate = null;
+                if (is_numeric($expDateRaw) && (float)$expDateRaw > 30000 && (float)$expDateRaw < 60000) {
+                    // Serial date de Excel
+                    $unixTimestamp = ((float)$expDateRaw - 25569) * 86400;
+                    $parsedDate = date_create('@' . (int)$unixTimestamp);
+                } else {
+                    $parsedDate = date_create($expDateRaw);
+                }
+
+                if ($parsedDate) {
+                    $expDate = $parsedDate->format('Y-m-d H:i:s');
+                }
+            }
+
+            $validItems[] = [
+                'id_family'         => (int)$family['id'],
+                'name'              => $family['keyword'],
+                'quantity'          => $qty,
+                'lot'               => $lot,
+                'batch_dispatch'    => $batchForDispatch,
+                'reference'         => $ref,
+                'expiration_date'   => $expDate,
+                'row_number'        => $rowNumber
+            ];
+
+            $totalQuantity += $qty;
+        }
+
+        if (!empty($invalidRows)) {
+            $errorPreview = implode('<br>', array_slice($invalidRows, 0, 5));
+            if (count($invalidRows) > 5) {
+                $errorPreview .= '<br>... y ' . (count($invalidRows) - 5) . ' error(es) más.';
+            }
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Se encontraron inconsistencias en los datos del archivo:<br><br>' . $errorPreview
+            ]);
+        }
+
+        if (empty($validItems)) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'No se encontraron filas con cantidades mayores a 0 para ingresar a la bodega principal.'
+            ]);
+        }
+
+        // Obtener datos de la bodega principal
+        $warehouseModel = new WarehousesBase();
+        $warehouseDest = $warehouseModel->find($mainWarehouseId);
+        $destName = $warehouseDest ? $warehouseDest['name'] : 'Bodega Principal';
+        $destAdress = $warehouseDest ? $warehouseDest['adress'] : '';
+
+        // Datos oficiales para remisión de tipo INGRESO
+        $ciudad = 1;
+        $dispatcher = 'Proveedor';
+        $cliente = $destName;
+        $nit = '1';
+        $adress = $destAdress;
+        $observacion = 'Cargue masivo automático a bodega principal desde archivo Excel (' . substr($originalName, 0, 50) . ').';
+
+        // Obtener último consecutivo para la ciudad fija (1)
+        $dispatchModel = new DispatchAdvices();
+        $lastDispatch = $dispatchModel->where('city', $ciudad)
+            ->orderBy('sequence', 'DESC')
+            ->first();
+        $nextSequence = ($lastDispatch && isset($lastDispatch['sequence'])) ? ((int)$lastDispatch['sequence'] + 1) : 1;
+
+        $timezone = new \DateTimeZone('America/Bogota');
+        $now = (new \DateTime('now', $timezone))->format('Y-m-d H:i:s');
+
+        $headerData = [
+            'client'        => $cliente,
+            'nit'           => $nit,
+            'adress'        => $adress,
+            'sequence'      => $nextSequence,
+            'city'          => $ciudad,
+            'type'          => 'INGRESO',
+            'transfer_code' => 'ING-BOD-' . $mainWarehouseId,
+            'observation'   => $observacion,
+            'dispatcher'    => $dispatcher,
+            'did_user'      => session('user_id'),
+            'created_at'    => $now,
+            'updated_at'    => $now
+        ];
+
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        $dispatchModel->insert($headerData);
+        $dispatchId = $dispatchModel->getInsertID();
+
+        if (!$dispatchId) {
+            $db->transRollback();
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Error al registrar la cabecera de la remisión de ingreso.'
+            ]);
+        }
+
+        $itemsModel = new DispatchAdviceItems();
+        $balanceModel = new WarehousesBalance();
+
+        foreach ($validItems as $item) {
+            // 1. Registrar item de la remisión
+            $itemData = [
+                'id_base'         => $dispatchId,
+                'reference'       => $item['reference'],
+                'description'     => $item['name'],
+                'batch'           => $item['batch_dispatch'],
+                'expiration_date' => $item['expiration_date'],
+                'quiantity'       => $item['quantity'],
+                'created_at'      => $now,
+                'updated_at'      => $now
+            ];
+            $itemsModel->insert($itemData);
+
+            // 2. Actualizar existencias en warehouses_balance
+            $balQuery = $balanceModel->where('id_warehouse', $mainWarehouseId)
+                ->where('id_family', $item['id_family'])
+                ->where('deleted_at IS NULL');
+
+            if ($item['lot'] !== null) {
+                $balQuery->where('lot', $item['lot']);
+            } else {
+                $balQuery->where('(lot IS NULL OR lot = "")');
+            }
+
+            $existing = $balQuery->first();
+            if ($existing) {
+                $newQty = (int)$existing['quantity'] + $item['quantity'];
+                $updateData = [
+                    'quantity'   => $newQty,
+                    'updated_at' => $now
+                ];
+                if ($item['expiration_date'] !== null) {
+                    $updateData['expiration_date'] = $item['expiration_date'];
+                }
+                $balanceModel->update($existing['id'], $updateData);
+            } else {
+                $balanceModel->insert([
+                    'id_warehouse'    => $mainWarehouseId,
+                    'id_family'       => $item['id_family'],
+                    'quantity'        => $item['quantity'],
+                    'lot'             => $item['lot'],
+                    'expiration_date' => $item['expiration_date'],
+                    'created_at'      => $now,
+                    'updated_at'      => $now
+                ]);
+            }
+        }
+
+        $db->transComplete();
+        if ($db->transStatus() === false) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Ocurrió un error transaccional al guardar la remisión y el inventario en la base de datos.'
+            ]);
+        }
+
+        $totalItemsCount = count($validItems);
+
+        return $this->response->setJSON([
+            'status'         => 'success',
+            'message'        => "Cargue masivo procesado exitosamente. Se generó la remisión N° {$nextSequence} de tipo INGRESO con {$totalItemsCount} producto(s) y un total de {$totalQuantity} unidades.",
+            'sequence'       => $nextSequence,
+            'dispatch_id'    => $dispatchId,
+            'total_items'    => $totalItemsCount,
+            'total_quantity' => $totalQuantity
         ]);
     }
 }

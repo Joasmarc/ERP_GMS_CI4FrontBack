@@ -797,6 +797,12 @@
                       </span>
                       Transferir Stock
                     </button>
+                    <button class="btn btn-round btn-outline-success btn-sm me-2 d-none" id="btn_open_mass_upload_modal" data-bs-toggle="modal" data-bs-target="#modal_mass_upload_warehouse">
+                      <span class="btn-label">
+                        <i class="fas fa-file-excel"></i>
+                      </span>
+                      Cargue Masivo
+                    </button>
                     <button class="btn btn-round btn-success btn-sm d-none" id="btn_add_warehouse_item" data-bs-toggle="modal" data-bs-target="#modal_add_warehouse_item">
                       <span class="btn-label">
                         <i class="fa fa-plus"></i>
@@ -1316,6 +1322,98 @@
           <button type="button" class="btn btn-secondary btn-round btn-border" data-bs-dismiss="modal">Cancelar</button>
           <button type="button" class="btn btn-success btn-round shadow-sm fw-bold" id="btn_save_warehouse_item">
             <i class="fas fa-save me-1"></i> Guardar Ingreso
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Cargue Masivo de Productos a Bodega Principal -->
+  <div class="modal fade" id="modal_mass_upload_warehouse" tabindex="-1" aria-labelledby="modalMassUploadWarehouseLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header border-0 bg-success text-white py-3">
+          <h5 class="modal-title fw-bold d-flex align-items-center" id="modalMassUploadWarehouseLabel">
+            <i class="fas fa-file-excel me-2"></i>Cargue Masivo de Productos a Bodega Principal
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <!-- Panel Paso 1: Descargar Plantilla -->
+          <div class="card border border-success-subtle bg-light rounded-3 mb-4 shadow-none">
+            <div class="card-body p-3">
+              <div class="d-flex align-items-center mb-2">
+                <span class="badge bg-success me-2 px-2 py-1">Paso 1</span>
+                <h6 class="fw-bold mb-0 text-dark">Descargar Plantilla con Catálogo de Productos</h6>
+              </div>
+              <p class="text-muted small mb-3">
+                Descargue el formato en Excel que contiene el catálogo completo con el ID y Nombre de todos los productos activos en el sistema. Diligencie las casillas de <strong>Cantidad</strong>, <strong>Lote</strong>, <strong>Referencia</strong> y <strong>Fecha de Vencimiento</strong> para los artículos a ingresar.
+              </p>
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <a href="<?= base_url('warehouse/download_batch_template') ?>" class="btn btn-sm btn-outline-success btn-round fw-bold px-3 shadow-sm" id="btn_download_batch_template">
+                  <i class="fas fa-file-excel text-success me-1"></i> Descargar Plantilla Excel (.xlsx)
+                </a>
+                <span class="text-muted small">
+                  <i class="fas fa-info-circle text-info me-1"></i> Deje en blanco los productos que no ingresarán.
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Panel Paso 2: Subir Archivo Diligenciado -->
+          <div class="card border border-primary-subtle bg-light rounded-3 shadow-none mb-0">
+            <div class="card-body p-3">
+              <div class="d-flex align-items-center mb-2">
+                <span class="badge bg-primary me-2 px-2 py-1">Paso 2</span>
+                <h6 class="fw-bold mb-0 text-dark">Cargar Archivo Diligenciado</h6>
+              </div>
+              <p class="text-muted small mb-3">
+                Suba el archivo con los datos diligenciados. El sistema registrará automáticamente las existencias en la <strong>Bodega Principal</strong> y generará la respectiva <strong>Remisión de tipo INGRESO</strong> con consecutivo oficial.
+              </p>
+
+              <!-- Zona Drag & Drop como label interactivo nativo -->
+              <label for="in_mass_upload_file" id="mass_upload_dropzone" class="border border-2 border-secondary border-opacity-25 rounded-3 p-4 text-center bg-white d-block mb-0" style="cursor: pointer; transition: all 0.2s ease;">
+                <input type="file" id="in_mass_upload_file" accept=".xlsx, .xls, .csv" class="d-none">
+                
+                <div id="mass_upload_prompt">
+                  <i class="fas fa-cloud-upload-alt fa-3x text-success mb-2"></i>
+                  <p class="fw-bold text-dark mb-1">Arrastre su archivo Excel aquí o haga clic para seleccionarlo</p>
+                  <span class="btn btn-sm btn-outline-success btn-round my-2 px-3 fw-bold">
+                    <i class="fas fa-folder-open me-1"></i> Explorar Archivo
+                  </span>
+                  <div class="text-muted small">Formatos permitidos: .xlsx, .xls, .csv (Máx. 10 MB)</div>
+                </div>
+
+                <div id="mass_upload_preview" class="d-none align-items-center justify-content-between p-3 bg-light rounded-3 border">
+                  <div class="d-flex align-items-center text-start">
+                    <i class="fas fa-file-excel text-success fa-2x me-3"></i>
+                    <div>
+                      <h6 class="fw-bold text-dark mb-0 text-truncate" id="mass_upload_file_name" style="max-width: 380px;">archivo.xlsx</h6>
+                      <span class="text-muted small" id="mass_upload_file_size">0 KB</span>
+                    </div>
+                  </div>
+                  <button type="button" class="btn btn-sm btn-outline-danger btn-round ms-2" id="btn_remove_mass_upload_file" title="Quitar archivo">
+                    <i class="fas fa-times me-1"></i> Quitar
+                  </button>
+                </div>
+              </label>
+
+              <!-- Estado de procesamiento -->
+              <div id="mass_upload_loading" class="d-none text-center py-3">
+                <div class="spinner-border text-success mb-2" role="status">
+                  <span class="visually-hidden">Procesando...</span>
+                </div>
+                <p class="fw-bold text-dark mb-0">Procesando archivo e ingresando productos a bodega principal...</p>
+                <small class="text-muted">Esto puede tardar unos segundos según la cantidad de registros.</small>
+              </div>
+
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 bg-light">
+          <button type="button" class="btn btn-secondary btn-round btn-border" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-success btn-round shadow-sm fw-bold px-4" id="btn_process_mass_upload" disabled>
+            <i class="fas fa-upload me-1"></i> Procesar Cargue Masivo
           </button>
         </div>
       </div>

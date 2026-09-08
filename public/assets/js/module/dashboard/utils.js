@@ -41,6 +41,7 @@ function showScreen(screenId) {
     $('#bodega_list_view').removeClass('d-none');
     $('#bodega_detail_view').addClass('d-none');
     $('#btn_add_warehouse_item').addClass('d-none');
+    $('#btn_open_mass_upload_modal').addClass('d-none');
 
     // 1.1 Mostrar loader
     toggleLoader(true)
@@ -533,11 +534,13 @@ function viewWarehouseBalance(warehouseId) {
                 }
                 $('#bodega_detail_status').html(statusBadge);
 
-                // Mostrar botón "Agregar Artículo" únicamente si es la bodega principal
+                // Mostrar botón "Agregar Artículo" y "Cargue Masivo" únicamente si es la bodega principal
                 if (isMainWarehouse) {
                     $('#btn_add_warehouse_item').removeClass('d-none');
+                    $('#btn_open_mass_upload_modal').removeClass('d-none');
                 } else {
                     $('#btn_add_warehouse_item').addClass('d-none');
+                    $('#btn_open_mass_upload_modal').addClass('d-none');
                 }
 
                 // Actualizar total de artículos con saldo disponible
