@@ -579,6 +579,7 @@
                         <tr>
                           <th>ID</th>
                           <th>Consecutivo</th>
+                          <th>Tipo</th>
                           <th>Cliente</th>
                           <th>NIT</th>
                           <th>Ciudad</th>
@@ -784,6 +785,12 @@
                     </div>
                   </div>
                   <div class="card-tools mt-2 mt-sm-0">
+                    <button class="btn btn-round btn-dark btn-sm me-2 text-white" id="btn_open_adjust_modal">
+                      <span class="btn-label">
+                        <i class="fas fa-sliders-h"></i>
+                      </span>
+                      Ajustar
+                    </button>
                     <button class="btn btn-round btn-warning btn-sm me-2" id="btn_open_transfer_modal">
                       <span class="btn-label">
                         <i class="fas fa-exchange-alt"></i>
@@ -1377,6 +1384,80 @@
           <button type="button" class="btn btn-secondary btn-round btn-border" data-bs-dismiss="modal">Cancelar</button>
           <button type="button" class="btn btn-warning btn-round shadow-sm fw-bold text-dark" id="btn_submit_transfer">
             <i class="fas fa-exchange-alt me-1"></i> Confirmar Transferencia
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Ajuste de Inventario en Bodega -->
+  <div class="modal fade" id="modal_adjust_warehouse_stock" tabindex="-1" aria-labelledby="modalAdjustWarehouseStockLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header border-0 bg-dark text-white">
+          <h5 class="modal-title fw-bold" id="modalAdjustWarehouseStockLabel">
+            <i class="fas fa-sliders-h me-2"></i>Ajuste de Inventario en Bodega
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4" style="min-height: 420px;">
+          <form id="form_adjust_warehouse_stock">
+            <?= csrf_field() ?>
+            <input type="hidden" id="adjust_warehouse_id" name="id_warehouse" value="">
+
+            <!-- Info de bodega y descripción obligatoria -->
+            <div class="row mb-3">
+              <div class="col-md-5">
+                <label class="form-label fw-bold"><i class="fas fa-warehouse text-primary me-1"></i> Bodega a Ajustar</label>
+                <div class="p-2 border rounded bg-light d-flex align-items-center">
+                  <i class="fas fa-warehouse text-primary me-2 fa-lg"></i>
+                  <span id="adjust_warehouse_name" class="fw-bold text-dark">Cargando...</span>
+                </div>
+              </div>
+              <div class="col-md-7">
+                <label for="adjust_observation" class="form-label fw-bold">
+                  <i class="fas fa-comment-alt text-warning me-1"></i> Descripción / Justificación del Ajuste *
+                </label>
+                <input type="text" class="form-control" id="adjust_observation" name="observacion" placeholder="Indique el motivo o justificación del ajuste de inventario..." required maxlength="250">
+              </div>
+            </div>
+
+            <hr class="my-3">
+
+            <!-- Artículos dinámicos para ajustar saldos -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-list-check text-primary me-2"></i>Artículos para Ajuste</h6>
+                <small class="text-muted">Seleccione los artículos existentes en la bodega. Ingrese un valor positivo para <strong>aumentar</strong> (ej: <code>5</code>) o negativo para <strong>disminuir</strong> (ej: <code>-3</code>).</small>
+              </div>
+              <button type="button" class="btn btn-outline-dark btn-round px-3 fw-bold" id="btn_add_adjust_warehouse_line">
+                <i class="fas fa-plus me-1"></i> Agregar Línea
+              </button>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table table-bordered table-hover align-middle mb-0" id="tbl_adjust_warehouse_items">
+                <thead class="bg-light">
+                  <tr>
+                    <th><i class="fas fa-box text-primary me-1"></i> Artículo / Lote en Bodega *</th>
+                    <th style="width: 140px;" class="text-center"><i class="fas fa-cubes text-muted me-1"></i> Saldo Actual</th>
+                    <th style="width: 180px;" class="text-center"><i class="fas fa-exchange-alt text-muted me-1"></i> Cantidad (+ / -) *</th>
+                    <th style="width: 140px;" class="text-center"><i class="fas fa-calculator text-muted me-1"></i> Nuevo Saldo</th>
+                    <th style="width: 60px;" class="text-center"><i class="fas fa-cog text-muted"></i></th>
+                  </tr>
+                </thead>
+                <tbody id="adjust_warehouse_items_body">
+                  <!-- Filas dinámicas -->
+                </tbody>
+              </table>
+            </div>
+
+          </form>
+        </div>
+        <div class="modal-footer border-0 bg-light">
+          <button type="button" class="btn btn-secondary btn-round btn-border" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-dark btn-round shadow-sm fw-bold text-white" id="btn_save_adjust_stock">
+            <i class="fas fa-save me-1"></i> Guardar Ajuste
           </button>
         </div>
       </div>

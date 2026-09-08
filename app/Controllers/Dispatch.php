@@ -17,6 +17,8 @@ class Dispatch extends BaseController
 
         // 2.0 Recibir datos POST
         $ciudad = $this->request->getPost('ciudad');
+        // Las remisiones creadas desde este formulario siempre son de tipo 'REMISION'
+        $type = 'REMISION';
         $cliente = $this->request->getPost('cliente');
         $nit = $this->request->getPost('nit');
         $adress = $this->request->getPost('adress');
@@ -55,6 +57,7 @@ class Dispatch extends BaseController
             'adress'        => $adress,
             'sequence'      => $nextSequence,
             'city'          => $ciudad,
+            'type'          => $type,
             'transfer_code' => $transferCode,
             'observation'   => $observacion,
             'dispatcher'    => $dispatcher,
@@ -113,7 +116,7 @@ class Dispatch extends BaseController
 
         // Hacemos JOIN con cities para obtener el nombre de la ciudad
         $builder = $db->table('dispatch_advice da');
-        $builder->select('da.id, da.client, da.nit, da.adress, da.sequence, da.transfer_code, da.created_at, c.name as city_name, c.code as city_code');
+        $builder->select('da.id, da.type, da.client, da.nit, da.adress, da.sequence, da.transfer_code, da.created_at, c.name as city_name, c.code as city_code');
         $builder->join('cities c', 'c.id = da.city', 'left');
         $builder->orderBy('da.id', 'DESC');
 

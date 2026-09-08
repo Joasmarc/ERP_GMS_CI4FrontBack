@@ -425,6 +425,7 @@ class Warehouse extends BaseController
             'adress'        => $adress,
             'sequence'      => $nextSequence,
             'city'          => $ciudad,
+            'type'          => 'INGRESO',
             'transfer_code' => 'ING-BOD-' . $idWarehouse,
             'observation'   => $observacion,
             'dispatcher'    => $dispatcher,
@@ -666,6 +667,7 @@ class Warehouse extends BaseController
             'adress'        => $receivesAdress,
             'sequence'      => $nextSequence,
             'city'          => 1,
+            'type'          => 'INTERNO',
             'transfer_code' => 'TRAS-BOD-' . $idWarehouseSend . '-' . $idWarehouseReceives,
             'observation'   => 'Esta remision es automatica por el sistema para registrar el traslado de ' . $sendName . ' a ' . $receivesName . '.',
             'dispatcher'    => $sendName,
@@ -850,6 +852,192 @@ class Warehouse extends BaseController
             'transfer_id' => $transferId,
             'dispatch_id' => $dispatchId,
             'sequence'    => $nextSequence
+        ]);
+    }
+
+    /**
+     * Realizar ajuste de inventario en una bodega (aumentar/ingresar saldos) y generar documento tipo AJUSTE
+     */
+    public function adjust()
+    {
+        if (!$this->checkPermission()) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'No autorizado.'
+            ])->setStatusCode(403);
+        }
+
+        $idWarehouse = filter_var($this->request->getPost('id_warehouse'), FILTER_VALIDATE_INT);
+        $observacion = trim($this->request->getPost('observacion') ?? '');
+
+        if (!$idWarehouse) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'No se especificó la bodega a ajustar.'
+            ]);
+        }
+
+        if (empty($observacion)) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Debe ingresar una descripción o motivo para el ajuste.'
+            ]);
+        }
+
+        $warehouseModel = new WarehousesBase();
+        $warehouse = $warehouseModel->find($idWarehouse);
+        if (!$warehouse) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'La bodega especificada no existe.'
+            ]);
+        }
+
+        $balanceIds = $this->request->getPost('balance_id');
+        $cantidades = $this->request->getPost('item_cantidad');
+
+        if (!is_array($cantidades) || empty($cantidades) || !is_array($balanceIds) || empty($balanceIds)) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Debe ingresar al menos una línea de artículo para el ajuste.'
+            ]);
+        }
+
+        $ciudad = 1;
+        $dispatchModel = new DispatchAdvices();
+        $lastDispatch = $dispatchModel->where('city', $ciudad)
+            ->orderBy('sequence', 'DESC')
+            ->first();
+        $nextSequence = ($lastDispatch && isset($lastDispatch['sequence'])) ? ((int)$lastDispatch['sequence'] + 1) : 1;
+
+        $timezone = new \DateTimeZone('America/Bogota');
+        $now = (new \DateTime('now', $timezone))->format('Y-m-d H:i:s');
+
+        $destName = $warehouse['name'];
+        $destAdress = $warehouse['adress'] ?? '';
+        $dispatcher = session('user_name') ?? 'Ajuste de Sistema';
+
+        $headerData = [
+            'client'        => 'Ajuste - ' . $destName,
+            'nit'           => '1',
+            'adress'        => $destAdress,
+            'sequence'      => $nextSequence,
+            'city'          => $ciudad,
+            'type'          => 'AJUSTE',
+            'transfer_code' => 'AJUSTE-BOD-' . $idWarehouse,
+            'observation'   => $observacion,
+            'dispatcher'    => $dispatcher,
+            'did_user'      => session('user_id'),
+            'created_at'    => $now,
+            'updated_at'    => $now
+        ];
+
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        $dispatchModel->insert($headerData);
+        $dispatchId = $dispatchModel->getInsertID();
+
+        if (!$dispatchId) {
+            $db->transRollback();
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Error al registrar la cabecera del documento de ajuste.'
+            ]);
+        }
+
+        $itemsModel = new DispatchAdviceItems();
+        $balanceModel = new WarehousesBalance();
+        $familyModel = new Families();
+
+        $itemsCount = count($cantidades);
+        $processedCount = 0;
+
+        for ($i = 0; $i < $itemsCount; $i++) {
+            $balId = filter_var($balanceIds[$i] ?? null, FILTER_VALIDATE_INT);
+            $qty = filter_var($cantidades[$i] ?? 0, FILTER_VALIDATE_INT);
+
+            if (!$balId || $qty === false || $qty === 0) {
+                continue;
+            }
+
+            // Buscar registro existente en el inventario de esta bodega
+            $existing = $balanceModel->where('id_warehouse', $idWarehouse)
+                ->where('id', $balId)
+                ->where('deleted_at IS NULL')
+                ->first();
+
+            if (!$existing) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'status'  => 'error',
+                    'message' => "El artículo de la línea #" . ($i + 1) . " no existe en el inventario de esta bodega."
+                ]);
+            }
+
+            $currentQty = (int)($existing['quantity'] ?? 0);
+            $newQty = $currentQty + $qty;
+
+            if ($newQty < 0) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'status'  => 'error',
+                    'message' => "La cantidad a descontar en la línea #" . ($i + 1) . " ({$qty}) supera el saldo actual ({$currentQty}). El saldo no puede ser negativo."
+                ]);
+            }
+
+            // Obtener datos de la familia para descripción y referencia
+            $famId = !empty($existing['id_family']) ? (int)$existing['id_family'] : null;
+            $family = null;
+            if ($famId) {
+                $family = $familyModel->where('id', $famId)->first();
+            }
+            $description = $family ? ($family['keyword'] ?? ('Producto #' . $famId)) : ('Producto #' . $balId);
+            $ref = $family['reference'] ?? '';
+
+            // 1. Guardar item del ajuste (dispatch_advice_items) para auditoría y remisión
+            $itemData = [
+                'id_base'         => $dispatchId,
+                'reference'       => $ref,
+                'description'     => $description,
+                'batch'           => $existing['lot'] ?? '',
+                'expiration_date' => $existing['expiration_date'] ?? null,
+                'quiantity'       => $qty,
+                'created_at'      => $now,
+                'updated_at'      => $now
+            ];
+            $itemsModel->insert($itemData);
+
+            // 2. Actualizar existencias en warehouses_balance
+            $balanceModel->update($existing['id'], [
+                'quantity'   => $newQty,
+                'updated_at' => $now
+            ]);
+
+            $processedCount++;
+        }
+
+        if ($processedCount === 0) {
+            $db->transRollback();
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'No se ingresaron líneas válidas con cantidad diferente de 0.'
+            ]);
+        }
+
+        $db->transComplete();
+        if ($db->transStatus() === false) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Error al guardar el ajuste y las existencias en la base de datos.'
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'status'      => 'success',
+            'message'     => 'Ajuste registrado exitosamente (Documento N° ' . $nextSequence . ') e inventario actualizado.',
+            'sequence'    => $nextSequence,
+            'dispatch_id' => $dispatchId
         ]);
     }
 }

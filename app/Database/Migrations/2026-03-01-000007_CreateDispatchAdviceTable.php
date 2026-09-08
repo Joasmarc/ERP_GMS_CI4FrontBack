@@ -35,6 +35,12 @@ class CreateDispatchAdviceTable extends Migration
                 'constraint' => 11,
                 'null'       => false,
             ],
+            'type' => [
+                'type'       => 'ENUM',
+                'constraint' => ['INTERNO', 'INGRESO', 'AJUSTE', 'REMISION'],
+                'default'    => 'INTERNO',
+                'null'       => false,
+            ],
             'city' => [
                 'type'       => 'INT',
                 'constraint' => 11,

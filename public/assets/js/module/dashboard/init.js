@@ -96,6 +96,33 @@ $(function () {
                     return `${pre}-${seq}`;
                 }
             },
+            {
+                data: 'type',
+                render: function (data) {
+                    const typeUpper = (data || 'INTERNO').toUpperCase();
+                    let badgeClass = 'bg-secondary';
+                    let label = typeUpper;
+                    switch (typeUpper) {
+                        case 'REMISION':
+                            badgeClass = 'bg-primary';
+                            label = 'Remisión';
+                            break;
+                        case 'INGRESO':
+                            badgeClass = 'bg-success';
+                            label = 'Ingreso';
+                            break;
+                        case 'INTERNO':
+                            badgeClass = 'bg-info text-white';
+                            label = 'Interno';
+                            break;
+                        case 'AJUSTE':
+                            badgeClass = 'bg-warning text-dark';
+                            label = 'Ajuste';
+                            break;
+                    }
+                    return `<span class="badge ${badgeClass} px-2 py-1">${label}</span>`;
+                }
+            },
             { data: 'client' },
             { data: 'nit' },
             { data: 'city_name' },
@@ -109,7 +136,7 @@ $(function () {
         ],
         columnDefs: [
             {
-                targets: 6,
+                targets: 7,
                 className: 'text-center',
                 render: function (data, type, row, meta) {
                     return `<button class="btn btn-round btn-info btn-sm" data-selector="ver_remision_pdf" data-id="${row.id}"><i class="fas fa-file-pdf"></i> Ver</button>`;

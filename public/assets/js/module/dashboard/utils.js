@@ -402,6 +402,56 @@ function addWarehouseRemisionLine() {
 }
 
 /**
+ * Agregar una nueva fila de artículo a la tabla del modal de ajuste de bodega
+ */
+function addWarehouseAdjustLine() {
+    let optionsHtml = '<option value="">Seleccione un artículo / lote...</option>';
+    if (typeof currentWarehouseItems !== 'undefined' && currentWarehouseItems && currentWarehouseItems.length > 0) {
+        currentWarehouseItems.forEach(item => {
+            const itemName = item.family_name || item.name_item || ('Producto #' + (item.id_family || item.id));
+            const lotInfo = (item.lot && item.lot.trim() !== '') ? ` [Lote: ${item.lot.trim()}]` : ' [Sin Lote]';
+            let expInfo = '';
+            if (item.expiration_date && item.expiration_date !== '0000-00-00' && item.expiration_date.trim() !== '') {
+                const expOnly = item.expiration_date.split(' ')[0];
+                expInfo = ` - Vence: ${expOnly}`;
+            }
+            const safeItemName = $('<div>').text(itemName).html();
+            const safeLotInfo = $('<div>').text(lotInfo).html();
+            const safeExpInfo = $('<div>').text(expInfo).html();
+            const currentQty = parseInt(item.quantity || 0);
+            optionsHtml += `<option value="${item.id}" data-quantity="${currentQty}">${safeItemName}${safeLotInfo}${safeExpInfo} (Saldo: ${currentQty})</option>`;
+        });
+    } else {
+        optionsHtml = '<option value="">No hay artículos registrados con saldo en esta bodega</option>';
+    }
+
+    const rowHtml = `
+        <tr>
+            <td>
+                <select name="balance_id[]" class="form-select adjust-item-select" required>
+                    ${optionsHtml}
+                </select>
+            </td>
+            <td class="text-center">
+                <span class="badge badge-secondary fs-6 adjust-current-badge">0</span>
+            </td>
+            <td>
+                <input type="number" class="form-control text-center fw-bold adjust-qty-input" name="item_cantidad[]" step="1" placeholder="Ej: 5 o -5" required disabled>
+            </td>
+            <td class="text-center">
+                <span class="badge badge-light border fs-6 adjust-new-badge">-</span>
+            </td>
+            <td class="text-center">
+                <button type="button" class="btn btn-outline-danger btn-round btn-remove-warehouse-adjust-line" title="Quitar fila">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </td>
+        </tr>
+    `;
+    $('#adjust_warehouse_items_body').append(rowHtml);
+}
+
+/**
  * Agregar una nueva fila de artículo a la tabla del modal de transferencia
  */
 function addTransferLine() {

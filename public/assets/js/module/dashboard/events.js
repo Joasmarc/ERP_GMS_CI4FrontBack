@@ -1358,3 +1358,192 @@ $('#btn_submit_transfer').on('click', function () {
     });
 });
 
+// ========================================================
+// BODEGAS - AJUSTE DE INVENTARIO
+// ========================================================
+
+// Abrir modal de ajuste de inventario
+$('#btn_open_adjust_modal').on('click', function () {
+    if (!currentWarehouseId || !currentWarehouseData) {
+        swal("Atención", "Seleccione una bodega válida para realizar el ajuste.", "warning");
+        return;
+    }
+    $('#adjust_warehouse_id').val(currentWarehouseId);
+    $('#adjust_warehouse_name').text(currentWarehouseData.name || 'Bodega #' + currentWarehouseId);
+    $('#form_adjust_warehouse_stock')[0].reset();
+    $('#adjust_warehouse_items_body').empty();
+    addWarehouseAdjustLine();
+    $('#modal_adjust_warehouse_stock').modal('show');
+});
+
+// Limpiar modal al cerrarse
+$('#modal_adjust_warehouse_stock').on('hidden.bs.modal', function () {
+    $('#form_adjust_warehouse_stock')[0].reset();
+    $('#adjust_warehouse_items_body').empty();
+});
+
+// Agregar línea en tabla de ajuste
+$('#btn_add_adjust_warehouse_line').on('click', function () {
+    addWarehouseAdjustLine();
+});
+
+// Remover línea en tabla de ajuste
+$(document).on('click', '.btn-remove-warehouse-adjust-line', function () {
+    $(this).closest('tr').remove();
+    if ($('#adjust_warehouse_items_body tr').length === 0) {
+        addWarehouseAdjustLine();
+    }
+});
+
+// Búsqueda y selección de artículo existente en bodega
+$(document).on('change', '.adjust-item-select', function () {
+    const select = $(this);
+    const row = select.closest('tr');
+    const selectedOpt = select.find('option:selected');
+    const badgeCurrent = row.find('.adjust-current-badge');
+    const inputQty = row.find('.adjust-qty-input');
+    const badgeNew = row.find('.adjust-new-badge');
+    const val = select.val();
+
+    if (!val) {
+        badgeCurrent.text('0').removeClass('badge-success badge-warning').addClass('badge-secondary');
+        inputQty.val('').prop('disabled', true);
+        badgeNew.text('-').removeClass('badge-success badge-warning badge-danger').addClass('badge-light text-dark');
+        return;
+    }
+
+    const currentQty = parseInt(selectedOpt.data('quantity') || 0);
+    badgeCurrent.text(currentQty.toLocaleString());
+    if (currentQty > 0) {
+        badgeCurrent.removeClass('badge-secondary badge-warning').addClass('badge-success');
+    } else {
+        badgeCurrent.removeClass('badge-secondary badge-success').addClass('badge-warning');
+    }
+
+    inputQty.prop('disabled', false).val('').focus();
+    badgeNew.text(currentQty.toLocaleString()).removeClass('badge-secondary badge-danger badge-warning').addClass('badge-light text-dark');
+});
+
+// Cálculo dinámico del nuevo saldo al modificar la cantidad (+ o -)
+$(document).on('input', '.adjust-qty-input', function () {
+    const input = $(this);
+    const row = input.closest('tr');
+    const selectedOpt = row.find('.adjust-item-select option:selected');
+    const badgeNew = row.find('.adjust-new-badge');
+    const currentQty = parseInt(selectedOpt.data('quantity') || 0);
+    const rawVal = input.val().trim();
+
+    if (rawVal === '' || isNaN(parseInt(rawVal))) {
+        badgeNew.text(currentQty.toLocaleString()).removeClass('badge-danger badge-success').addClass('badge-light text-dark');
+        return;
+    }
+
+    const delta = parseInt(rawVal);
+    const newQty = currentQty + delta;
+
+    badgeNew.text(newQty.toLocaleString());
+    if (newQty < 0) {
+        badgeNew.removeClass('badge-light text-dark badge-success').addClass('badge-danger');
+    } else if (newQty > currentQty) {
+        badgeNew.removeClass('badge-light text-dark badge-danger').addClass('badge-success');
+    } else {
+        badgeNew.removeClass('badge-danger badge-success').addClass('badge-light text-dark');
+    }
+});
+
+// Guardar ajuste de inventario
+$('#btn_save_adjust_stock').on('click', function () {
+    const form = $('#form_adjust_warehouse_stock');
+    const obs = $('#adjust_observation').val().trim();
+
+    if (!obs) {
+        swal("Atención", "Debe ingresar una descripción o motivo para el ajuste.", "warning");
+        $('#adjust_observation').focus();
+        return;
+    }
+
+    let hasErrors = false;
+    let hasValidLines = false;
+    const selectedBalances = [];
+
+    $('#adjust_warehouse_items_body tr').each(function (index) {
+        const row = $(this);
+        const balId = row.find('.adjust-item-select').val();
+        const rawQty = row.find('.adjust-qty-input').val();
+        const qty = parseInt(rawQty) || 0;
+        const currentQty = parseInt(row.find('.adjust-item-select option:selected').data('quantity') || 0);
+
+        if (!balId) {
+            swal("Atención", `Debe seleccionar un artículo en la línea #${index + 1}.`, "warning");
+            row.find('.adjust-item-select').focus();
+            hasErrors = true;
+            return false;
+        }
+
+        if (selectedBalances.includes(balId)) {
+            swal("Atención", `El artículo de la línea #${index + 1} ya fue seleccionado en otra línea. Por favor concentre el ajuste en una sola fila.`, "warning");
+            row.find('.adjust-item-select').focus();
+            hasErrors = true;
+            return false;
+        }
+        selectedBalances.push(balId);
+
+        if (rawQty === '' || qty === 0) {
+            swal("Atención", `La cantidad en la línea #${index + 1} no puede ser 0 ni estar vacía. Ingrese un valor positivo para aumentar o negativo para descontar.`, "warning");
+            row.find('.adjust-qty-input').focus();
+            hasErrors = true;
+            return false;
+        }
+
+        if (currentQty + qty < 0) {
+            swal("Atención", `En la línea #${index + 1}, el descuento (${qty}) supera el saldo actual (${currentQty}). El nuevo saldo no puede ser negativo.`, "warning");
+            row.find('.adjust-qty-input').focus();
+            hasErrors = true;
+            return false;
+        }
+
+        hasValidLines = true;
+    });
+
+    if (hasErrors) return;
+
+    if (!hasValidLines) {
+        swal("Atención", "Debe agregar al menos una línea con producto y cantidad válida.", "warning");
+        return;
+    }
+
+    $('#adjust_warehouse_id').val(currentWarehouseId);
+
+    const btn = $(this);
+    btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Guardando Ajuste...');
+
+    $.ajax({
+        url: SITE_URL + '/warehouse/adjust',
+        type: 'POST',
+        data: form.serialize(),
+        dataType: 'json',
+        success: function (resp) {
+            btn.prop('disabled', false).html('<i class="fas fa-save me-1"></i> Guardar Ajuste');
+            if (resp.status === 'success') {
+                $('#modal_adjust_warehouse_stock').modal('hide');
+                form[0].reset();
+                $('#adjust_warehouse_items_body').empty();
+                swal("¡Ajuste Realizado!", resp.message, "success");
+                if (currentWarehouseId) {
+                    viewWarehouseBalance(currentWarehouseId);
+                }
+                reloadBodegasTable();
+                if ($.fn.DataTable.isDataTable('#tbl_list_remisiones')) {
+                    $('#tbl_list_remisiones').DataTable().ajax.reload(null, false);
+                }
+            } else {
+                swal("Error", resp.message || "No se pudo registrar el ajuste.", "error");
+            }
+        },
+        error: function () {
+            btn.prop('disabled', false).html('<i class="fas fa-save me-1"></i> Guardar Ajuste');
+            swal("Error", "Ocurrió un error al procesar el ajuste de inventario.", "error");
+        }
+    });
+});
+

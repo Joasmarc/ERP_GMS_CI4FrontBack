@@ -1,6 +1,14 @@
 <?php
 $dispatch = (isset($dispatch) && is_array($dispatch)) ? $dispatch : [];
 $items = (isset($items) && is_array($items)) ? $items : [];
+$rawType = strtoupper(trim($dispatch['type'] ?? 'REMISION'));
+$typeTitles = [
+    'REMISION' => 'REMISIÓN',
+    'INTERNO'  => 'TRASLADO INTERNO',
+    'INGRESO'  => 'INGRESO A BODEGA',
+    'AJUSTE'   => 'AJUSTE DE INVENTARIO'
+];
+$docTitle = $typeTitles[$rawType] ?? 'REMISIÓN';
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -8,7 +16,7 @@ $items = (isset($items) && is_array($items)) ? $items : [];
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Formato de Remisión - Grupo Monzant SAS</title>
+    <title><?= esc($docTitle) ?> - Grupo Monzant SAS</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
 
@@ -448,7 +456,7 @@ $items = (isset($items) && is_array($items)) ? $items : [];
     <!-- BARRA SUPERIOR PARA VISUALIZACIÓN E IMPRESIÓN (OCULTA AL IMPRIMIR) -->
     <div class="print-toolbar no-print">
         <div class="doc-info">
-            <span>📄 Remisión N° <?= esc(!empty($dispatch['city_code']) ? $dispatch['city_code'] : (!empty($dispatch['city_name']) ? substr($dispatch['city_name'], 0, 3) : 'GM')) ?>-<?= str_pad(esc($dispatch['sequence'] ?? '1'), 3, '0', STR_PAD_LEFT) ?></span>
+            <span>📄 <?= esc($docTitle) ?> N° <?= esc(!empty($dispatch['city_code']) ? $dispatch['city_code'] : (!empty($dispatch['city_name']) ? substr($dispatch['city_name'], 0, 3) : 'GM')) ?>-<?= str_pad(esc($dispatch['sequence'] ?? '1'), 3, '0', STR_PAD_LEFT) ?></span>
         </div>
         <button id="btn_print_remision" class="btn-print-action" type="button">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -456,7 +464,7 @@ $items = (isset($items) && is_array($items)) ? $items : [];
                 <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
                 <rect x="6" y="14" width="12" height="8"></rect>
             </svg>
-            Imprimir Remisión
+            Imprimir <?= esc($docTitle) ?>
         </button>
     </div>
 
@@ -484,7 +492,7 @@ $items = (isset($items) && is_array($items)) ? $items : [];
             <div class="header-badge-col">
                 <div class="badge-remision">
                     <div class="badge-remision-title">
-                        REMISIÓN
+                        <?= esc($docTitle) ?>
                     </div>
                     <div class="badge-remision-number">
                         N° <?= esc(!empty($dispatch['city_code']) ? $dispatch['city_code'] : (!empty($dispatch['city_name']) ? substr($dispatch['city_name'], 0, 3) : 'GM')) ?>-<?= str_pad(esc($dispatch['sequence'] ?? '1'), 3, '0', STR_PAD_LEFT) ?>
@@ -572,7 +580,7 @@ $items = (isset($items) && is_array($items)) ? $items : [];
                             <td class="col-desc"><?= $hasData ? esc($desc) : '' ?></td>
                             <td class="col-lote"><?= $hasData ? esc($batch) : '' ?></td>
                             <td class="col-venc"><?= $hasData ? esc($fVenc) : '' ?></td>
-                            <td class="col-cant" style="font-weight: 500;"><?= ($hasData && $qty > 0) ? esc($qty) : '' ?></td>
+                            <td class="col-cant" style="font-weight: 500;"><?= ($hasData && $qty !== 0) ? esc($qty) : '' ?></td>
                         </tr>
                     <?php endfor; ?>
                     
@@ -582,7 +590,7 @@ $items = (isset($items) && is_array($items)) ? $items : [];
                             TOTAL CANTIDAD DE INSUMOS:
                         </td>
                         <td class="col-cant" style="font-size: 13px;">
-                            <?= $totalCantidad > 0 ? esc($totalCantidad) : '0' ?>
+                            <?= esc((string)$totalCantidad) ?>
                         </td>
                     </tr>
                 </tbody>
