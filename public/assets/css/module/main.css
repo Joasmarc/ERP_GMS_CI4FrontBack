@@ -91,12 +91,6 @@
         max-width: 50%;
     }
 
-    /* Remisiones create: stack columns */
-    #remisiones_create_view .col-md-3,
-    #remisiones_create_view .col-md-6 {
-        flex: 0 0 100%;
-        max-width: 100%;
-    }
 
     /* Modal PDF viewers: reduce height */
     #pdf_viewer_iframe,

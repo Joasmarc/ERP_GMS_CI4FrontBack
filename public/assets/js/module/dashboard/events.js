@@ -25,22 +25,6 @@ $('#btn_open_remisiones').on('click', function () {
     showScreen(SCREENS.remisiones);
 });
 
-// Remisiones - Abrir pantalla de crear remisión (sin inline onclick)
-$('#btn_create_remision').on('click', function () {
-    $('#remisiones_list_view').addClass('d-none');
-    $('#remisiones_create_view').removeClass('d-none');
-});
-
-// Remisiones - Volver al listado de remisiones (sin inline onclick)
-$('#btn_back_to_remisiones_list').on('click', function () {
-    $('#remisiones_create_view').addClass('d-none');
-    $('#remisiones_list_view').removeClass('d-none');
-});
-
-// Remisiones - Limpiar formulario de creación (sin inline onclick)
-$('#btn_reset_remision_form').on('click', function () {
-    $('#form_remision_create')[0].reset();
-});
 
 // Recomendaciones - Guardar recomendación (sin inline onclick)
 $('#btn_save_recommendation').on('click', function () {
@@ -502,109 +486,6 @@ $(document).on('click', '#btn_modal_print_remision', function () {
     }
 });
 
-// Formulario_G05 - Agregar Línea de Remisión
-$('#btn_agregar_linea_remision').on('click', function () {
-    /* ----------------- MACRO-BLOQUE ----------------- */
-
-    // 0.0 Variables Macro
-    const MACRO_ADD_LINE = {
-        tbody: document.getElementById('remision_items_body'),
-        tr: document.createElement('tr')
-    };
-
-    // 1.0 Crear estructura de la línea - Construir HTML
-    MACRO_ADD_LINE.tr.innerHTML = `
-        <td>
-            <input type="text" class="form-control" name="item_referencia[]" placeholder="Ej: REF-01">
-        </td>
-        <td>
-            <input type="text" class="form-control" name="item_descripcion[]" placeholder="Descripción del item">
-        </td>
-        <td>
-            <input type="text" class="form-control" name="item_lote[]" placeholder="Ej: L-01">
-        </td>
-        <td>
-            <input type="date" class="form-control" name="item_vencimiento[]">
-        </td>
-        <td>
-            <input type="number" class="form-control" name="item_cantidad[]" min="0" value="1">
-        </td>
-        <td class="text-center">
-            <button type="button" class="btn btn-danger btn-sm btn-round btn-remove-item" data-selector="remover_linea_remision"><i class="fas fa-trash"></i></button>
-        </td>
-    `;
-    // 1.1 Adjuntar línea al cuerpo de la tabla
-    MACRO_ADD_LINE.tbody.appendChild(MACRO_ADD_LINE.tr);
-});
-
-// Formulario_G05 - Remover Línea de Remisión
-$(document).on('click', '[data-selector="remover_linea_remision"]', function () {
-    /* ----------------- MACRO-BLOQUE ----------------- */
-
-    // 1.0 Remover línea de remisión - Identificar fila y verificar total
-    const tr = $(this).closest('tr');
-    if (document.querySelectorAll('#remision_items_body tr').length > 1) {
-        tr.remove();
-    } else {
-        swal('Atención', 'Debe haber al menos una línea en la remisión.', 'warning');
-    }
-});
-
-// Formulario_G05 - Guardar Remisión
-$('#btn_guardar_remision').on('click', function () {
-    /* ----------------- MACRO-BLOQUE ----------------- */
-
-    // 0.0 Variables Macro
-    const MACRO_SAVE = {
-        ciudad: document.getElementById('remision_ciudad').value,
-        form: document.getElementById('form_remision_create'),
-        btn: document.querySelector('#remisiones_create_view .btn-success'),
-        originalText: ''
-    };
-
-    // 1.0 Validar datos iniciales - Validar ciudad
-    if (!MACRO_SAVE.ciudad) {
-        swal('Validación', 'Por favor seleccione una ciudad para generar el consecutivo', 'warning');
-        return;
-    }
-
-    // 2.0 Preparar y enviar petición - Cambiar estado del botón
-    MACRO_SAVE.originalText = MACRO_SAVE.btn.innerHTML;
-    MACRO_SAVE.btn.disabled = true;
-    MACRO_SAVE.btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
-    // 2.1 Enviar AJAX
-    $.ajax({
-        url: SITE_URL + '/dispatch/save',
-        type: 'POST',
-        data: new FormData(MACRO_SAVE.form),
-        processData: false,
-        contentType: false,
-        success: function (resp) {
-            if (typeof resp === 'string') {
-                try { resp = JSON.parse(resp); } catch (e) { }
-            }
-            if (resp.status === 'success') {
-                swal('Éxito', resp.message, 'success').then(() => {
-                    MACRO_SAVE.form.reset();
-                    $('#remisiones_create_view').addClass('d-none');
-                    $('#remisiones_list_view').removeClass('d-none');
-                    if ($.fn.DataTable.isDataTable('#tbl_list_remisiones')) {
-                        $('#tbl_list_remisiones').DataTable().ajax.reload(null, false);
-                    }
-                });
-            } else {
-                swal('Error', resp.message || 'Error al guardar la remisión', 'error');
-            }
-        },
-        error: function () {
-            swal('Error', 'Hubo un problema de conexión con el servidor', 'error');
-        },
-        complete: function () {
-            MACRO_SAVE.btn.disabled = false;
-            MACRO_SAVE.btn.innerHTML = MACRO_SAVE.originalText;
-        }
-    });
-});
 
 // Archivo_G03 - Eliminación lógica de archivos (documentos, imágenes, videos)
 $(document).on('click', '.btn-delete-file', function (e) {
