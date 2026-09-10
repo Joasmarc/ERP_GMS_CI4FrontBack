@@ -601,11 +601,14 @@ function viewWarehouseBalance(warehouseId) {
                     $('#btn_open_mass_upload_modal').addClass('d-none');
                 }
 
-                // Actualizar total de artículos con saldo disponible
-                $('#stat_bodega_items').text(items.length);
+                // Agrupar balance de inventario por familias y referencias
+                const groupedItems = groupWarehouseBalanceByFamily(items);
+
+                // Actualizar total de tipos de referencia con saldo disponible (no total de lotes)
+                $('#stat_bodega_items').text(groupedItems.length);
 
                 // Actualizar o inicializar DataTable del balance
-                renderBalanceTable(items);
+                renderBalanceTable(items, groupedItems);
 
                 // Cambiar sub-pantalla
                 switchSubScreen('bodega_list_view', 'bodega_detail_view');
@@ -759,13 +762,14 @@ function syncSublineColumns() {
 /**
  * Renderizar la tabla de balance agrupada por familia y referencia con sub-líneas para variación de lotes
  */
-function renderBalanceTable(items) {
+function renderBalanceTable(items, precomputedGroupedData = null) {
     if ($.fn.DataTable.isDataTable('#tbl_list_bodega_balance')) {
         $('#tbl_list_bodega_balance').DataTable().destroy();
         $('#tbl_list_bodega_balance tbody').off();
     }
 
-    const groupedData = groupWarehouseBalanceByFamily(items);
+    const groupedData = precomputedGroupedData || groupWarehouseBalanceByFamily(items);
+    $('#stat_bodega_items').text(groupedData.length);
 
     dtBodegaBalance = $("#tbl_list_bodega_balance").DataTable({
         data: groupedData,

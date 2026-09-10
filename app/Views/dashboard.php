@@ -828,20 +828,11 @@
                   <!-- Tarjetas de resumen del balance -->
                   <div class="row mb-4">
                     <div class="col-md-12">
-                      <div class="card card-stats card-round bg-primary text-white shadow-sm mb-0">
+                      <div class="card card-round bg-primary text-white shadow-sm mb-0">
                         <div class="card-body py-3">
-                          <div class="row align-items-center">
-                            <div class="col-icon">
-                              <div class="icon-big text-center icon-primary bubble-shadow-small bg-white text-primary">
-                                <i class="fas fa-cubes"></i>
-                              </div>
-                            </div>
-                            <div class="col col-stats ms-3 ms-sm-0">
-                              <div class="numbers">
-                                <p class="card-category text-white-50 mb-0">Total Artículos Registrados en esta Bodega</p>
-                                <h4 class="card-title text-white fw-bold mb-0" id="stat_bodega_items">0</h4>
-                              </div>
-                            </div>
+                          <div class="numbers">
+                            <p class="card-category text-white-50 mb-0">Total Referencias Registradas en esta Bodega</p>
+                            <h4 class="card-title text-white fw-bold mb-0" id="stat_bodega_items">0</h4>
                           </div>
                         </div>
                       </div>
