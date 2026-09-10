@@ -95,11 +95,19 @@ class Auth extends BaseController
             'credentials' => null,
             'isLoggedIn' => true
         ];
-        // 4.1 Integrar Token de Siigo si está disponible
-        $token = $this->getSiigoToken();
+        // 4.1 Integrar Token de Siigo si está disponible y sincronizar catálogo
+        $siigoService = new \App\Libraries\SiigoService();
+        $token = $siigoService->getAuthToken();
         if ($token) {
-            $sesion['siigo_token'] = $token['access_token'];
-            $sesion['siigo_token_expires'] = time() + $token['expires_in'];
+            $sesion['siigo_token'] = $token;
+            $sesion['siigo_token_expires'] = time() + 86400;
+
+            // 4.1.1 Sincronizar familias y referencias de Siigo al iniciar sesión en el sistema
+            try {
+                $siigoService->syncFamiliesAndReferences();
+            } catch (\Throwable $e) {
+                log_message('error', 'Error sincronizando Siigo al iniciar sesión: ' . $e->getMessage());
+            }
         }
         // 4.2 Formatear credenciales usando helper
         $sesion['credentials'] = pad_right_zeros((string) $sesion['credentials_raw']);
@@ -113,44 +121,15 @@ class Auth extends BaseController
     // Obtener token de la API de Siigo
     private function getSiigoToken()
     {
-        // 0.1 Retornar token simulado si la simulación está activa en local
-        if (env('SIIGO_SIMULATE') === true || env('SIIGO_SIMULATE') === 'true') {
+        $siigoService = new \App\Libraries\SiigoService();
+        $token = $siigoService->getAuthToken();
+        if ($token) {
             return [
-                'access_token' => 'simulated_siigo_token_12345',
+                'access_token' => $token,
                 'expires_in'   => 86400
             ];
         }
-
-        // 1.0 Inicializar interfaz y cliente HTTP - Iniciar variable de interfaz
-        $API = [];
-        // 1.1 Iniciar cliente HTTP
-        $httpClient = \Config\Services::curlrequest();
-
-        // 2.0 Realizar petición a la API y manejar respuesta - Ejecutar petición
-        try {
-            $response = $httpClient->post(env('SIIGO_AUTH_URL'), [
-                'headers' => [
-                    'Partner-Id'   => env('SIIGO_PARTNER_ID'),
-                    'Content-Type' => 'application/json',
-                ],
-                'json' => [
-                    'username'   => env('SIIGO_USERNAME'),
-                    'access_key' => env('SIIGO_ACCESS_KEY'),
-                ],
-                'http_errors' => false
-            ]);
-            // 2.1 Verificar respuesta exitosa
-            if ($response->getStatusCode() === 200) {
-                return json_decode($response->getBody(), true);
-            }
-            // 2.2 Manejar error de autenticación
-            log_message('error', 'Error al autenticar en Siigo: ' . $response->getBody() . ' | Username: ' . env('SIIGO_USERNAME') . ' | Partner-Id: ' . env('SIIGO_PARTNER_ID') . ' | Auth URL: ' . env('SIIGO_AUTH_URL'));
-            return null;
-        } catch (\Exception $e) {
-            // 2.3 Manejar excepción de conexión
-            log_message('error', 'Excepción al conectar con Siigo: ' . $e->getMessage());
-            return null;
-        }
+        return null;
     }
 
     // Cerrar sesión

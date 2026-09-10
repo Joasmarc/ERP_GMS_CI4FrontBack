@@ -1157,7 +1157,14 @@ class Warehouse extends BaseController
                 $family = $familyModel->where('id', $famId)->first();
             }
             $description = $family ? ($family['keyword'] ?? ('Producto #' . $famId)) : ('Producto #' . $balId);
-            $ref = $family['reference'] ?? '';
+
+            // Obtener referencia desde families_reference asociada a la familia
+            $ref = '';
+            if ($famId) {
+                $famRefModel = new \App\Models\FamiliesReference();
+                $famRef = $famRefModel->where('id_family', $famId)->where('status', 'ACTIVE')->first();
+                $ref = $famRef['reference'] ?? ($family['reference'] ?? '');
+            }
 
             // 1. Guardar item del ajuste (dispatch_advice_items) para auditoría y remisión
             $itemData = [
@@ -1243,53 +1250,44 @@ class Warehouse extends BaseController
      */
     private function getCatalogItemsForTemplate(): array
     {
+        $refModel = new \App\Models\FamiliesReference();
         $familyModel = new Families();
-        $families = $familyModel->select('id, keyword')
+
+        // Asegurar que families y families_reference estén sincronizadas
+        $siigoService = new \App\Libraries\SiigoService();
+        try {
+            $siigoService->ensureSynced();
+        } catch (\Throwable $t) {
+            log_message('error', 'Error en ensureSynced para plantilla: ' . $t->getMessage());
+        }
+
+        // Consultar referencias activas directamente desde families_reference con families
+        $activeReferences = $refModel->getAllActiveWithFamilies();
+
+        $rows = [];
+        $coveredFamilyIds = [];
+
+        if (!empty($activeReferences)) {
+            foreach ($activeReferences as $item) {
+                $famId = (int)$item['id_family'];
+                $rows[] = [
+                    'id_family'   => $famId,
+                    'family_name' => $item['family_name'],
+                    'reference'   => $item['reference'],
+                ];
+                $coveredFamilyIds[$famId] = true;
+            }
+        }
+
+        // Si alguna familia activa no tiene referencias en families_reference,
+        // incluirla para que el usuario pueda ingresar productos de esa familia
+        $allActiveFamilies = $familyModel->select('id, keyword')
             ->where('state', 'ACTIVO')
             ->where('deleted_at IS NULL')
             ->orderBy('keyword', 'ASC')
             ->findAll();
 
-        $familiesByNormalizedName = [];
-        $familiesById = [];
-        foreach ($families as $f) {
-            $norm = mb_strtolower(trim($f['keyword']), 'UTF-8');
-            $familiesByNormalizedName[$norm] = $f;
-            $familiesById[(int)$f['id']] = $f;
-        }
-
-        // Obtener productos de Siigo (desde caché o API)
-        $siigoProducts = $this->getSiigoCatalogProducts();
-
-        $rows = [];
-        $coveredFamilyIds = [];
-
-        if (!empty($siigoProducts)) {
-            foreach ($siigoProducts as $prod) {
-                $pName = trim($prod['name'] ?? '');
-                $normName = mb_strtolower($pName, 'UTF-8');
-
-                if (isset($familiesByNormalizedName[$normName])) {
-                    $family = $familiesByNormalizedName[$normName];
-                    $famId = (int)$family['id'];
-                    $ref = trim($prod['code'] ?? '');
-                    if ($ref === '' && !empty($prod['reference'])) {
-                        $ref = trim($prod['reference']);
-                    }
-
-                    $rows[] = [
-                        'id_family'   => $famId,
-                        'family_name' => $family['keyword'],
-                        'reference'   => $ref,
-                    ];
-                    $coveredFamilyIds[$famId] = true;
-                }
-            }
-        }
-
-        // Si alguna familia activa no tiene referencias en Siigo o Siigo no respondió,
-        // incluirla para que el usuario pueda ingresar productos de esa familia
-        foreach ($families as $f) {
+        foreach ($allActiveFamilies as $f) {
             $famId = (int)$f['id'];
             if (!isset($coveredFamilyIds[$famId])) {
                 $rows[] = [
@@ -1326,133 +1324,21 @@ class Warehouse extends BaseController
     }
 
     /**
-     * Obtener el catálogo de productos de Siigo usando caché si está disponible
+     * Obtener el catálogo de productos de Siigo usando SiigoService
      */
     private function getSiigoCatalogProducts(): array
     {
-        // 1. Revisar caché de CodeIgniter (duración 30 minutos)
-        $cache = \Config\Services::cache();
-        $cached = $cache->get('siigo_products_catalog');
-        if (is_array($cached) && !empty($cached)) {
-            return $cached;
-        }
-
-        // 2. Verificar modo simulación
-        if (env('SIIGO_SIMULATE') === true || env('SIIGO_SIMULATE') === 'true') {
-            return [
-                ['id' => 'siigo-1', 'code' => 'MOCK-001', 'name' => 'Producto Simulado 1 (Siigo)', 'reference' => 'MOCK-001'],
-                ['id' => 'siigo-2', 'code' => 'MOCK-002', 'name' => 'Producto Simulado 2 (Siigo)', 'reference' => 'MOCK-002'],
-                ['id' => 'siigo-3', 'code' => 'MOCK-003', 'name' => 'Producto Simulado 3 (Siigo)', 'reference' => 'MOCK-003'],
-            ];
-        }
-
-        // 3. Obtener token de Siigo
-        $token = $this->getSiigoToken();
-        if (!$token) {
-            return [];
-        }
-
-        // 4. Consultar API de Siigo paginada
-        $client = \Config\Services::curlrequest();
-        $url = 'https://api.siigo.com/v1/products?page_size=100';
-        $products = [];
-
-        try {
-            while ($url) {
-                $response = $client->get($url, [
-                    'headers' => [
-                        'Partner-Id'    => env('SIIGO_PARTNER_ID', 'gsmerp'),
-                        'Authorization' => 'Bearer ' . $token,
-                    ],
-                    'http_errors' => false
-                ]);
-
-                if ($response->getStatusCode() === 200) {
-                    $data = json_decode($response->getBody(), true);
-                    foreach ($data['results'] ?? [] as $p) {
-                        $products[] = [
-                            'id'          => $p['id'] ?? '',
-                            'code'        => $p['code'] ?? '',
-                            'reference'   => $p['reference'] ?? '',
-                            'name'        => $p['name'] ?? '',
-                            'description' => $p['description'] ?? '',
-                        ];
-                    }
-                    $url = $data['_links']['next']['href'] ?? null;
-                } else {
-                    log_message('error', 'Error consultando productos de Siigo para plantilla: ' . $response->getBody());
-                    break;
-                }
-            }
-        } catch (\Throwable $e) {
-            log_message('error', 'Excepción consultando productos de Siigo para plantilla: ' . $e->getMessage());
-        }
-
-        if (!empty($products)) {
-            // Guardar en caché por 30 minutos (1800 seg)
-            $cache->save('siigo_products_catalog', $products, 1800);
-        }
-
-        return $products;
+        $siigoService = new \App\Libraries\SiigoService();
+        return $siigoService->fetchProducts();
     }
 
     /**
-     * Obtener o renovar el token de autenticación de Siigo
+     * Obtener o renovar el token de autenticación de Siigo usando SiigoService
      */
     private function getSiigoToken(): ?string
     {
-        // 1. Revisar si hay un token válido en la sesión actual
-        $sessionToken = session()->get('siigo_token');
-        $sessionExpires = session()->get('siigo_token_expires');
-        if (!empty($sessionToken) && !empty($sessionExpires) && $sessionExpires > time()) {
-            return $sessionToken;
-        }
-
-        // 2. Si es simulado
-        if (env('SIIGO_SIMULATE') === true || env('SIIGO_SIMULATE') === 'true') {
-            return 'simulated_siigo_token_12345';
-        }
-
-        // 3. Autenticar contra Siigo API
-        $authUrl = env('SIIGO_AUTH_URL', 'https://api.siigo.com/auth');
-        $partnerId = env('SIIGO_PARTNER_ID', 'gsmerp');
-        $username = env('SIIGO_USERNAME');
-        $accessKey = env('SIIGO_ACCESS_KEY');
-
-        if (empty($username) || empty($accessKey)) {
-            return null;
-        }
-
-        $client = \Config\Services::curlrequest();
-        try {
-            $response = $client->post($authUrl, [
-                'headers' => [
-                    'Partner-Id'   => $partnerId,
-                    'Content-Type' => 'application/json',
-                ],
-                'json' => [
-                    'username'   => $username,
-                    'access_key' => $accessKey,
-                ],
-                'http_errors' => false
-            ]);
-
-            if ($response->getStatusCode() === 200) {
-                $data = json_decode($response->getBody(), true);
-                $accessToken = $data['access_token'] ?? null;
-                $expiresIn = $data['expires_in'] ?? 86400;
-
-                if ($accessToken) {
-                    session()->set('siigo_token', $accessToken);
-                    session()->set('siigo_token_expires', time() + $expiresIn);
-                    return $accessToken;
-                }
-            }
-        } catch (\Throwable $e) {
-            log_message('error', 'Error obteniendo token Siigo en Warehouse: ' . $e->getMessage());
-        }
-
-        return null;
+        $siigoService = new \App\Libraries\SiigoService();
+        return $siigoService->getAuthToken();
     }
 
     /**

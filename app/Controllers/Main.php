@@ -48,6 +48,14 @@ class Main extends BaseController
             }
         }
 
+        // 1.5 Asegurar sincronización de Siigo (familias y referencias) al iniciar o entrar al sistema
+        $siigoService = new \App\Libraries\SiigoService();
+        try {
+            $siigoService->ensureSynced();
+        } catch (\Throwable $e) {
+            log_message('error', 'Error en ensureSynced de Siigo en dashboard: ' . $e->getMessage());
+        }
+
         // 2.0 Preparar datos de la vista - Obtener datos de sesión
         $userData = [
             'user_id'        => session('user_id'),

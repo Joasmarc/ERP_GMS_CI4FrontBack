@@ -46,173 +46,78 @@ class Product extends BaseController
     // Tabla_G03
     public function listing_siigo()
     {
-        // 1.0 Inicializar interfaz y verificar sesión - Obtener token de Siigo
-        $SIIGO = [];
-        $SIIGO['token'] = session()->get('siigo_token');
+        // 1.0 Inicializar interfaz y servicio Siigo
+        $siigoService = new \App\Libraries\SiigoService();
+        $token = $siigoService->getAuthToken();
+
         // 1.1 Verificar existencia del token
-        if (!$SIIGO['token']) {
+        if (!$token) {
             exit(json_encode([
-                "draw" => 1,
-                "recordsTotal" => 0,
+                "draw"            => 1,
+                "recordsTotal"    => 0,
                 "recordsFiltered" => 0,
-                "data" => [],
-                "error" => "No hay sesión de Siigo activa"
+                "data"            => [],
+                "error"           => "No hay sesión de Siigo activa ni credenciales válidas"
             ]));
         }
 
-        // 2.0 Preparar cliente y solicitar productos - Inicializar variables y estado
-        $SIIGO['mapped_data'] = [];
-        $SIIGO['total_results'] = 0;
+        // 2.0 Sincronizar familias y families_reference automáticamente
+        try {
+            $siigoService->syncFamiliesAndReferences();
+        } catch (\Throwable $e) {
+            log_message('error', 'Error en syncFamiliesAndReferences desde listing_siigo: ' . $e->getMessage());
+        }
 
-        // 2.0.1 Usar simulación si está activa en local
-        if (env('SIIGO_SIMULATE') === true || env('SIIGO_SIMULATE') === 'true' || $SIIGO['token'] === 'simulated_siigo_token_12345') {
-            $siigo_data = [
-                'results' => [
-                    [
-                        'id' => 'siigo-prod-1',
-                        'name' => 'Producto Simulado 1 (Siigo)',
-                        'account_group' => ['name' => 'Categoría Simbólica A'],
-                        'unit_label' => 'Caja',
-                        'code' => 'MOCK-001',
-                        'description' => 'Descripción de producto simulado 1 para pruebas locales.'
-                    ],
-                    [
-                        'id' => 'siigo-prod-2',
-                        'name' => 'Producto Simulado 2 (Siigo)',
-                        'account_group' => ['name' => 'Categoría Simbólica B'],
-                        'unit_label' => 'Unidad',
-                        'code' => 'MOCK-002',
-                        'description' => 'Descripción de producto simulado 2 para pruebas locales.'
-                    ],
-                    [
-                        'id' => 'siigo-prod-3',
-                        'name' => 'Producto Simulado 3 (Siigo)',
-                        'account_group' => ['name' => 'Categoría Simbólica C'],
-                        'unit_label' => 'Paquete',
-                        'code' => 'MOCK-003',
-                        'description' => 'Descripción de producto simulado 3 para pruebas locales.'
-                    ]
-                ]
+        // 3.0 Obtener productos de Siigo (desde caché o API)
+        $rawProducts = $siigoService->fetchProducts($token);
+
+        // 3.1 Mapear familias existentes con imágenes y estados
+        $familiesModel = new \App\Models\Families();
+        $familiesData = $familiesModel->where('deleted_at IS NULL')->findAll();
+        $existingFamilies = [];
+        foreach ($familiesData as $family) {
+            $key = mb_strtolower(trim($family['keyword']), 'UTF-8');
+            $existingFamilies[$key] = $family;
+        }
+
+        // 3.2 Formatear datos para la interfaz y DataTables
+        $finalData = [];
+        foreach ($rawProducts as $product) {
+            $rawName = trim($product['name'] ?? '');
+            $normKey = mb_strtolower($rawName, 'UTF-8');
+            $family = $existingFamilies[$normKey] ?? null;
+
+            if ($family && $family['state'] === 'INACTIVO') {
+                continue;
+            }
+
+            // Extraer referencia comercial limpia (sin nombre completo)
+            $cleanRef = $siigoService->extractCleanReference($product, $rawName);
+            $ref = $cleanRef !== null ? $cleanRef : (!empty($product['reference']) ? trim($product['reference']) : trim($product['code'] ?? ''));
+
+            $finalData[] = [
+                'id'           => $product['id'] ?? '',
+                'nombre'       => $rawName,
+                'id_categoria' => $product['account_group']['name'] ?? '',
+                'presentacion' => $product['unit_label'] ?? '',
+                'id_marca'     => $product['code'] ?? '',
+                'reference'    => $ref,
+                'observacion'  => $product['description'] ?? '',
+                'img'          => $family['img_path'] ?? null,
+                'family_id'    => $family['id'] ?? null
             ];
-            foreach ($siigo_data['results'] as $product) {
-                $SIIGO['mapped_data'][] = [
-                    'id'           => $product['id'],
-                    'nombre'       => $product['name'],
-                    'id_categoria' => $product['account_group']['name'] ?? '',
-                    'presentacion' => $product['unit_label'] ?? '',
-                    'id_marca'     => $product['code'] ?? '',
-                    'observacion'  => $product['description'] ?? '',
-                    'img'          => null
-                ];
-            }
-            $SIIGO['total_results'] = count($SIIGO['mapped_data']);
-        } else {
-            $client = \Config\Services::curlrequest();
-            $url = 'https://api.siigo.com/v1/products';
-            // 2.1 Bucle para obtener todas las páginas
-            try {
-                while ($url) {
-                    $response = $client->get($url, [
-                        'headers' => [
-                            'Partner-Id'    => env('SIIGO_PARTNER_ID', 'gsmerp'),
-                            'Authorization' => 'Bearer ' . $SIIGO['token'],
-                        ],
-                        'http_errors' => false
-                    ]);
-                    // 2.2 Verificar respuesta exitosa
-                    if ($response->getStatusCode() === 200) {
-                        $siigo_data = json_decode($response->getBody(), true);
-                        // 2.3 Mapear datos al formato de DataTables
-                        foreach ($siigo_data['results'] as $product) {
-                            $SIIGO['mapped_data'][] = [
-                                'id'           => $product['id'],
-                                'nombre'       => $product['name'],
-                                'id_categoria' => $product['account_group']['name'] ?? '',
-                                'presentacion' => $product['unit_label'] ?? '',
-                                'id_marca'     => $product['code'] ?? '',
-                                'observacion'  => $product['description'] ?? '',
-                                'img'          => null
-                            ];
-                        }
-                        // 2.4 Obtener total de resultados
-                        $SIIGO['total_results'] = $siigo_data['pagination']['total_results'] ?? count($SIIGO['mapped_data']);
-                        // 2.5 Obtener URL de la siguiente página
-                        $url = $siigo_data['_links']['next']['href'] ?? null;
-                    } else {
-                        // 2.6 Registrar error si la petición falla y salir del bucle
-                        log_message('error', 'Error listando productos Siigo en URL ' . $url . ': ' . $response->getBody());
-                        break;
-                    }
-                }
-            } catch (\Exception $e) {
-                // 2.7 Manejar excepción
-                log_message('error', 'Excepción listando productos Siigo: ' . $e->getMessage());
-            }
         }
 
-        // 3.0 Sincronizar familias y fusionar datos - Instanciar modelo y obtener familias
-        $families_model = new \App\Models\Families();
-        $families_data = $families_model->findAll();
-        // 3.1 Mapear familias existentes para búsqueda rápida
-        $existing_families = [];
-        foreach ($families_data as $family) {
-            $existing_families[$family['keyword']] = $family;
-        }
-        // 3.2 Preparar listas para evaluación
-        $SIIGO['final_data'] = [];
-        $new_families = [];
-        // 3.3 Iterar sobre datos mapeados de Siigo
-        foreach ($SIIGO['mapped_data'] as $item) {
-            $keyword = trim($item['nombre']);
-            // 3.4 Validar existencia, estado inactivo y asignar imagen
-            if (!isset($existing_families[$keyword])) {
-                if (!isset($new_families[$keyword])) {
-                    $new_families[$keyword] = [
-                        'keyword'  => $keyword,
-                        'state'    => 'ACTIVO',
-                        'img_path' => null
-                    ];
-                }
-                $item['img'] = null;
-            } else {
-                if ($existing_families[$keyword]['state'] === 'INACTIVO') {
-                    continue;
-                }
-                $item['img'] = $existing_families[$keyword]['img_path'];
-            }
-            // 3.5 Agregar a la lista final
-            $SIIGO['final_data'][] = $item;
-        }
-        // 3.6 Insertar familias nuevas en bloque
-        if (!empty($new_families)) {
-            $families_model->insertBatch(array_values($new_families));
-            // Actualizar arreglo de familias existentes con las nuevas IDs
-            $families_data = $families_model->findAll();
-            $existing_families = [];
-            foreach ($families_data as $family) {
-                $existing_families[$family['keyword']] = $family;
-            }
-        }
-
-        // 3.7 Asignar family_id a los datos finales
-        foreach ($SIIGO['final_data'] as &$final_item) {
-            $keyword = trim($final_item['nombre']);
-            if (isset($existing_families[$keyword])) {
-                $final_item['family_id'] = $existing_families[$keyword]['id'];
-            } else {
-                $final_item['family_id'] = null;
-            }
-        }
-
-        // 4.0 Finalizar solicitud y enviar respuesta - Construir arreglo
-        $response_data = [
-            "draw" => 1,
-            "recordsTotal" => $SIIGO['total_results'] ?: count($SIIGO['final_data']),
-            "recordsFiltered" => $SIIGO['total_results'] ?: count($SIIGO['final_data']),
-            "data" => $SIIGO['final_data'],
+        // 4.0 Finalizar solicitud y enviar respuesta JSON
+        $total = count($finalData);
+        $responseData = [
+            "draw"            => 1,
+            "recordsTotal"    => $total,
+            "recordsFiltered" => $total,
+            "data"            => $finalData,
         ];
-        // 4.1 Enviar JSON al cliente
-        exit(json_encode($response_data));
+
+        exit(json_encode($responseData));
     }
 
     // Documentos_G03
