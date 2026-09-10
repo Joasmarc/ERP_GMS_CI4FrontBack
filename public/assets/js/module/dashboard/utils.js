@@ -405,13 +405,15 @@ function addWarehouseRemisionLine() {
  * Agregar una nueva fila de artículo a la tabla del modal de ajuste de bodega
  */
 function addWarehouseAdjustLine() {
-    let optionsHtml = '<option value="">Seleccione una referencia / lote...</option>';
+    let optionsHtml = '<option value="">Seleccione una referencia / lote / estado...</option>';
     if (typeof currentWarehouseItems !== 'undefined' && currentWarehouseItems && currentWarehouseItems.length > 0) {
         currentWarehouseItems.forEach(item => {
             const refCode = item.reference || ('Ref #' + (item.id_reference || item.id));
             const famName = item.family_name || item.name_item || '';
             const itemName = famName ? `${refCode} - ${famName}` : refCode;
             const lotInfo = (item.lot && item.lot.trim() !== '') ? ` [Lote: ${item.lot.trim()}]` : ' [Sin Lote]';
+            const statusVal = item.status ? item.status : 'DISPONIBLE';
+            const statusInfo = ` [Estado: ${statusVal}]`;
             let expInfo = '';
             if (item.expiration_date && item.expiration_date !== '0000-00-00' && item.expiration_date.trim() !== '') {
                 const expOnly = item.expiration_date.split(' ')[0];
@@ -419,9 +421,10 @@ function addWarehouseAdjustLine() {
             }
             const safeItemName = $('<div>').text(itemName).html();
             const safeLotInfo = $('<div>').text(lotInfo).html();
+            const safeStatusInfo = $('<div>').text(statusInfo).html();
             const safeExpInfo = $('<div>').text(expInfo).html();
             const currentQty = parseInt(item.quantity || 0);
-            optionsHtml += `<option value="${item.id}" data-quantity="${currentQty}">${safeItemName}${safeLotInfo}${safeExpInfo} (Saldo: ${currentQty})</option>`;
+            optionsHtml += `<option value="${item.id}" data-quantity="${currentQty}">${safeItemName}${safeLotInfo}${safeStatusInfo}${safeExpInfo} (Saldo: ${currentQty})</option>`;
         });
     } else {
         optionsHtml = '<option value="">No hay referencias registradas con saldo en esta bodega</option>';
@@ -457,12 +460,14 @@ function addWarehouseAdjustLine() {
  * Agregar una nueva fila de artículo a la tabla del modal de transferencia
  */
 function addTransferLine() {
-    let optionsHtml = '<option value="">Seleccione una referencia / lote...</option>';
+    let optionsHtml = '<option value="">Seleccione una referencia / lote / estado...</option>';
     (currentWarehouseItems || []).forEach(item => {
         const refCode = item.reference || ('Ref #' + (item.id_reference || item.id));
         const famName = item.family_name || item.name_item || '';
         const itemName = famName ? `${refCode} - ${famName}` : refCode;
         const lotInfo = (item.lot && item.lot.trim() !== '') ? ` [Lote: ${item.lot.trim()}]` : ' [Sin Lote]';
+        const statusVal = item.status ? item.status : 'DISPONIBLE';
+        const statusInfo = ` [Estado: ${statusVal}]`;
         let expInfo = '';
         if (item.expiration_date && item.expiration_date !== '0000-00-00' && item.expiration_date.trim() !== '') {
             const expOnly = item.expiration_date.split(' ')[0];
@@ -470,9 +475,10 @@ function addTransferLine() {
         }
         const safeItemName = $('<div>').text(itemName).html();
         const safeLotInfo = $('<div>').text(lotInfo).html();
+        const safeStatusInfo = $('<div>').text(statusInfo).html();
         const safeExpInfo = $('<div>').text(expInfo).html();
         const currentQty = parseInt(item.quantity || 0);
-        optionsHtml += `<option value="${item.id}" data-name="${safeItemName}" data-quantity="${currentQty}">${safeItemName}${safeLotInfo}${safeExpInfo} (Disp: ${currentQty})</option>`;
+        optionsHtml += `<option value="${item.id}" data-name="${safeItemName}" data-quantity="${currentQty}">${safeItemName}${safeLotInfo}${safeStatusInfo}${safeExpInfo} (Disp: ${currentQty})</option>`;
     });
 
     const rowHtml = `
@@ -482,6 +488,19 @@ function addTransferLine() {
                     ${optionsHtml}
                 </select>
                 <input type="hidden" name="item_name[]" class="transfer-item-name" value="">
+                <div class="transfer-selected-details mt-1 d-none">
+                    <span class="badge badge-secondary me-1 transfer-badge-lot"><i class="fas fa-barcode me-1"></i><span class="lot-text"></span></span>
+                    <span class="small text-muted me-1">Origen: <span class="badge transfer-badge-status"><span class="status-text"></span></span></span>
+                    <span class="small text-muted transfer-text-exp d-none"><i class="fas fa-calendar-alt me-1"></i><span class="exp-text"></span></span>
+                </div>
+            </td>
+            <td class="text-center">
+                <select name="target_status[]" class="form-select form-select-sm transfer-target-status-select" required disabled>
+                    <option value="DISPONIBLE" selected>DISPONIBLE</option>
+                    <option value="MUESTRA">MUESTRA</option>
+                    <option value="PRUEBA">PRUEBA</option>
+                    <option value="VENTA">VENTA</option>
+                </select>
             </td>
             <td class="text-center">
                 <span class="badge badge-secondary fs-6 transfer-avail-badge">0</span>
@@ -698,6 +717,14 @@ function formatFamilySubLines(rowData) {
         const safeLot = (v.lot && v.lot.trim() !== '') 
             ? `<span class="badge badge-secondary"><i class="fas fa-barcode me-1"></i>${$('<div>').text(v.lot.trim()).html()}</span>` 
             : '<span class="badge badge-light border text-muted small">Sin lote</span>';
+        
+        const status = v.status || 'DISPONIBLE';
+        let statusBadgeClass = 'badge-success';
+        if (status === 'MUESTRA') statusBadgeClass = 'badge-info';
+        else if (status === 'PRUEBA') statusBadgeClass = 'badge-warning text-dark';
+        else if (status === 'VENTA') statusBadgeClass = 'badge-primary';
+        const safeStatus = `<span class="badge ${statusBadgeClass} ms-1" style="font-size:0.75rem;">${$('<div>').text(status).html()}</span>`;
+
         const safeExp = (v.expiration_date && v.expiration_date !== '0000-00-00' && v.expiration_date.trim() !== '') 
             ? `<span class="small text-muted"><i class="fas fa-calendar-alt me-1 text-secondary"></i>${$('<div>').text(v.expiration_date.split(' ')[0]).html()}</span>` 
             : '<span class="text-muted small">-</span>';
@@ -710,9 +737,9 @@ function formatFamilySubLines(rowData) {
                 <td class="border-top-0 text-center"></td>
                 <td class="border-top-0 ps-3 text-muted">
                     <i class="fas fa-level-up-alt fa-rotate-90 text-muted opacity-50 me-2"></i>
-                    <span class="small text-secondary fw-semibold">Lote específico</span>
+                    <span class="small text-secondary fw-semibold">Lote / Estado</span>
                 </td>
-                <td class="border-top-0">${safeLot}</td>
+                <td class="border-top-0">${safeLot} ${safeStatus}</td>
                 <td class="border-top-0">${safeExp}</td>
                 <td class="text-center border-top-0">
                     <span class="badge ${badgeClass} fs-6 fw-bold">${qty.toLocaleString()}</span>
@@ -811,14 +838,22 @@ function renderBalanceTable(items, precomputedGroupedData = null) {
             },
             {
                 data: 'variations',
-                width: '120px',
+                width: '140px',
                 render: function (variations) {
                     if (!variations || variations.length === 0) return '<span class="text-muted small">-</span>';
                     if (variations.length === 1) {
                         const lot = variations[0].lot;
-                        return (lot && lot.trim() !== '') ? `<span class="badge badge-secondary"><i class="fas fa-barcode me-1"></i>${$('<div>').text(lot.trim()).html()}</span>` : '<span class="badge badge-light border text-muted small">Sin lote</span>';
+                        const status = variations[0].status || 'DISPONIBLE';
+                        let statusBadgeClass = 'badge-success';
+                        if (status === 'MUESTRA') statusBadgeClass = 'badge-info';
+                        else if (status === 'PRUEBA') statusBadgeClass = 'badge-warning text-dark';
+                        else if (status === 'VENTA') statusBadgeClass = 'badge-primary';
+                        
+                        const lotBadge = (lot && lot.trim() !== '') ? `<span class="badge badge-secondary"><i class="fas fa-barcode me-1"></i>${$('<div>').text(lot.trim()).html()}</span>` : '<span class="badge badge-light border text-muted small">Sin lote</span>';
+                        const statusBadge = `<span class="badge ${statusBadgeClass} ms-1" style="font-size:0.75rem;">${$('<div>').text(status).html()}</span>`;
+                        return `${lotBadge} ${statusBadge}`;
                     }
-                    return `<span class="badge badge-secondary"><i class="fas fa-layer-group me-1"></i>${variations.length} lotes</span>`;
+                    return `<span class="badge badge-secondary"><i class="fas fa-layer-group me-1"></i>${variations.length} variaciones</span>`;
                 }
             },
             {

@@ -1274,10 +1274,15 @@ $(document).on('change', '.transfer-item-select', function () {
     const inputQty = row.find('.transfer-qty-input');
     const hiddenName = row.find('.transfer-item-name');
 
+    const detailsContainer = row.find('.transfer-selected-details');
+    const targetStatusSelect = row.find('.transfer-target-status-select');
+
     if (!selectedVal) {
         badge.text('0').removeClass('badge-success badge-warning').addClass('badge-secondary');
         inputQty.val('').prop('disabled', true).attr('max', 0).attr('placeholder', 'Cant.');
         hiddenName.val('');
+        detailsContainer.addClass('d-none');
+        targetStatusSelect.prop('disabled', true);
         return;
     }
 
@@ -1295,6 +1300,33 @@ $(document).on('change', '.transfer-item-select', function () {
         badge.removeClass('badge-secondary badge-warning').addClass('badge-success');
     } else {
         badge.removeClass('badge-secondary badge-success').addClass('badge-warning');
+    }
+
+    if (found) {
+        const lot = (found.lot && found.lot.trim() !== '') ? found.lot.trim() : 'Sin Lote';
+        const status = found.status ? found.status : 'DISPONIBLE';
+
+        row.find('.lot-text').text(lot);
+
+        let statusBadgeClass = 'badge-success';
+        if (status === 'MUESTRA') statusBadgeClass = 'badge-info';
+        else if (status === 'PRUEBA') statusBadgeClass = 'badge-warning text-dark';
+        else if (status === 'VENTA') statusBadgeClass = 'badge-primary';
+
+        row.find('.transfer-badge-status').removeClass('badge-success badge-info badge-warning text-dark badge-primary').addClass(statusBadgeClass);
+        row.find('.status-text').text(status);
+
+        if (found.expiration_date && found.expiration_date !== '0000-00-00' && found.expiration_date.trim() !== '') {
+            row.find('.exp-text').text(found.expiration_date.split(' ')[0]);
+            row.find('.transfer-text-exp').removeClass('d-none');
+        } else {
+            row.find('.transfer-text-exp').addClass('d-none');
+        }
+        detailsContainer.removeClass('d-none');
+        targetStatusSelect.prop('disabled', false).val(status);
+    } else {
+        detailsContainer.addClass('d-none');
+        targetStatusSelect.prop('disabled', true);
     }
 
     // No forzar 1 por defecto para que el usuario pueda escribir directamente su cantidad
@@ -1344,23 +1376,35 @@ $('#btn_submit_transfer').on('click', function () {
     // Validar que haya al menos una línea con producto y cantidad
     let hasValidItems = false;
     let hasErrors = false;
-    const selectedItems = new Set();
+    const selectedCombos = new Set();
+    const balanceQtySum = {};
 
     $('#transfer_lines_tbody tr').each(function () {
         const select = $(this).find('.transfer-item-select');
         const input = $(this).find('.transfer-qty-input');
+        const targetStatusSelect = $(this).find('.transfer-target-status-select');
         const selectedVal = select.val();
+        const targetStatus = targetStatusSelect.val() || 'DISPONIBLE';
         const qty = parseInt(input.val() || 0);
         const max = parseInt(input.attr('max') || 0);
         const itemText = select.find('option:selected').text();
 
         if (selectedVal) {
-            if (selectedItems.has(selectedVal)) {
-                swal("Atención", `La opción "${itemText}" está duplicada en varias líneas. Por favor consolídela en una sola fila.`, "warning");
+            const comboKey = `${selectedVal}___${targetStatus}`;
+            if (selectedCombos.has(comboKey)) {
+                swal("Atención", `Ya tiene una línea con "${itemText}" hacia el estado "${targetStatus}". Por favor consolide las cantidades en una sola fila.`, "warning");
                 hasErrors = true;
                 return false;
             }
-            selectedItems.add(selectedVal);
+            selectedCombos.add(comboKey);
+
+            balanceQtySum[selectedVal] = (balanceQtySum[selectedVal] || 0) + qty;
+            if (balanceQtySum[selectedVal] > max) {
+                swal("Atención", `La suma total a transferir para "${itemText}" (${balanceQtySum[selectedVal]}) supera el stock disponible (${max}).`, "warning");
+                input.focus();
+                hasErrors = true;
+                return false;
+            }
 
             if (isNaN(qty) || qty <= 0 || qty > max) {
                 swal("Atención", `Por favor ingrese una cantidad válida (entre 1 y ${max}) para "${itemText}".`, "warning");

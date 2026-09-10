@@ -411,6 +411,8 @@ class Warehouse extends BaseController
         $lot         = $lotRaw === '' ? null : substr($lotRaw, 0, 25);
         $expDateRaw  = trim($this->request->getPost('expiration_date') ?? '');
         $expirationDate = null;
+        $statusRaw   = trim($this->request->getPost('status') ?? '');
+        $status      = in_array($statusRaw, ['MUESTRA', 'PRUEBA', 'VENTA', 'DISPONIBLE']) ? $statusRaw : 'DISPONIBLE';
 
         if (!$this->canOperateWarehouse((int)$idWarehouse)) {
             return $this->response->setJSON([
@@ -456,6 +458,7 @@ class Warehouse extends BaseController
         $balanceModel = new WarehousesBalance();
         $query = $balanceModel->where('id_warehouse', $idWarehouse)
             ->where('id_reference', $idReference)
+            ->where('status', $status)
             ->where('deleted_at IS NULL');
 
         if ($lot !== null) {
@@ -490,6 +493,7 @@ class Warehouse extends BaseController
                 'quantity'        => $quantity,
                 'lot'             => $lot,
                 'expiration_date' => $expirationDate,
+                'status'          => $status,
                 'created_at'      => $now,
                 'updated_at'      => $now
             ];
@@ -766,6 +770,7 @@ class Warehouse extends BaseController
         $balanceIds = $this->request->getPost('balance_id');
         $itemNames = $this->request->getPost('item_name');
         $itemQuantities = $this->request->getPost('item_quantity');
+        $targetStatuses = $this->request->getPost('target_status') ?? $this->request->getPost('item_status');
 
         if (!$idWarehouseSend || !$idWarehouseReceives) {
             return $this->response->setJSON([
@@ -876,6 +881,7 @@ class Warehouse extends BaseController
             $rawId = $balanceIds[$i] ?? null;
             $rawName = trim($itemNames[$i] ?? '');
             $qty = filter_var($itemQuantities[$i] ?? 0, FILTER_VALIDATE_INT);
+            $rawTargetStatus = trim($targetStatuses[$i] ?? '');
 
             if ((empty($rawId) && empty($rawName)) || $qty === false || $qty <= 0) {
                 continue;
@@ -911,6 +917,12 @@ class Warehouse extends BaseController
                 ]);
             }
 
+            // Validar estado destino seleccionado por el usuario o tomar el estado de origen
+            $allowedStatuses = ['MUESTRA', 'PRUEBA', 'VENTA', 'DISPONIBLE'];
+            $targetStatus = in_array($rawTargetStatus, $allowedStatuses, true) 
+                ? $rawTargetStatus 
+                : (!empty($originBalance['status']) ? $originBalance['status'] : 'DISPONIBLE');
+
             // 3.0 Descontar saldo en bodega origen
             $newOriginQty = (int)$originBalance['quantity'] - $qty;
             $updateOrigin = $balanceModel->update($originBalance['id'], [
@@ -926,9 +938,10 @@ class Warehouse extends BaseController
                 ]);
             }
 
-            // 4.0 Aumentar saldo o registrar nuevo artículo en bodega destino
+            // 4.0 Aumentar saldo o registrar nuevo artículo en bodega destino con el estado destino
             $destQuery = $balanceModel->where('id_warehouse', $idWarehouseReceives)
                 ->where('id_reference', $originBalance['id_reference'])
+                ->where('status', $targetStatus)
                 ->where('deleted_at IS NULL');
 
             $itemLot = !empty($originBalance['lot']) ? trim($originBalance['lot']) : null;
@@ -966,6 +979,7 @@ class Warehouse extends BaseController
                     'quantity'        => $qty,
                     'lot'             => $itemLot,
                     'expiration_date' => $originBalance['expiration_date'] ?? null,
+                    'status'          => $targetStatus,
                     'created_at'      => $now,
                     'updated_at'      => $now
                 ]);
@@ -991,7 +1005,9 @@ class Warehouse extends BaseController
             $refRecord = $famRefModel->getWithFamilyById((int)$originBalance['id_reference']);
             $refCode = $refRecord ? $refRecord['reference'] : ('REF-' . $originBalance['id_reference']);
             $familyName = $refRecord ? ($refRecord['family_name'] ?? $refRecord['family_keyword']) : (!empty($rawName) ? $rawName : ('Referencia #' . $originBalance['id_reference']));
-            $displayName = $familyName . ' [' . $refCode . ']' . (($itemLot !== null && $itemLot !== '') ? ' [Lote: ' . $itemLot . ']' : '');
+            $originStatus = !empty($originBalance['status']) ? $originBalance['status'] : 'DISPONIBLE';
+            $statusLabel = ($originStatus === $targetStatus) ? $targetStatus : "{$originStatus} → {$targetStatus}";
+            $displayName = $familyName . ' [' . $refCode . ']' . (($itemLot !== null && $itemLot !== '') ? ' [Lote: ' . $itemLot . ']' : '') . ' [Estado: ' . $statusLabel . ']';
 
             $dispatchItemsModel->insert([
                 'id_base'         => $dispatchId,

@@ -1589,8 +1589,9 @@
                   <thead class="bg-light">
                     <tr>
                       <th>Artículo / Lote Disponible</th>
-                      <th style="width: 140px;" class="text-center">Stock Disp.</th>
-                      <th style="width: 150px;" class="text-center">Cantidad a Enviar</th>
+                      <th style="width: 150px;" class="text-center">Estado Destino *</th>
+                      <th style="width: 110px;" class="text-center">Stock Disp.</th>
+                      <th style="width: 130px;" class="text-center">Cantidad a Enviar</th>
                       <th style="width: 50px;" class="text-center">Acción</th>
                     </tr>
                   </thead>

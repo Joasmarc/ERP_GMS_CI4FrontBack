@@ -18,6 +18,7 @@ class WarehousesBalance extends Model
         'quantity',
         'lot',
         'expiration_date',
+        'status',
         'deleted_at'
     ];
 
@@ -29,6 +30,7 @@ class WarehousesBalance extends Model
         'quantity'        => 'int',
         'lot'             => '?string',
         'expiration_date' => '?datetime',
+        'status'          => 'string',
         'created_at'      => 'datetime',
         'updated_at'      => 'datetime',
         'deleted_at'      => 'int'
@@ -48,7 +50,14 @@ class WarehousesBalance extends Model
         'id_reference'    => 'permit_empty|integer',
         'quantity'        => 'permit_empty|integer',
         'lot'             => 'permit_empty|string|max_length[25]',
-        'expiration_date' => 'permit_empty|valid_date'
+        'expiration_date' => 'permit_empty|valid_date',
+        'status'          => 'permit_empty|in_list[MUESTRA,PRUEBA,VENTA,DISPONIBLE]'
+    ];
+
+    protected $validationMessages = [
+        'status' => [
+            'in_list' => 'El estado debe ser MUESTRA, PRUEBA, VENTA o DISPONIBLE'
+        ]
     ];
 
     /**
