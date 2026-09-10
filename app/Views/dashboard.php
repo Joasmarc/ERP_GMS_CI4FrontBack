@@ -752,7 +752,8 @@
                           <th style="width: 50px;">ID</th>
                           <th>Bodega</th>
                           <th>Dirección</th>
-                          <th>Responsable</th>
+                          <th>Admin</th>
+                          <th>Titular</th>
                           <th>Estado</th>
                           <th class="text-center">Artículos</th>
                           <th>Fecha Registro</th>
@@ -786,7 +787,10 @@
                       <p class="text-muted small mb-0">
                         <span id="bodega_detail_adress"></span>
                         <span id="bodega_detail_resp_wrapper" class="ms-2 ps-2 border-start d-none">
-                          <i class="fas fa-user-tie text-primary me-1"></i>Responsable: <strong id="bodega_detail_responsible" class="text-dark"></strong>
+                          <i class="fas fa-user-shield text-primary me-1"></i>Admin: <strong id="bodega_detail_responsible" class="text-dark"></strong>
+                        </span>
+                        <span id="bodega_detail_titular_wrapper" class="ms-2 ps-2 border-start d-none">
+                          <i class="fas fa-user-tie text-info me-1"></i>Titular: <strong id="bodega_detail_titular" class="text-dark"></strong>
                         </span>
                       </p>
                     </div>
@@ -850,7 +854,7 @@
                       <thead>
                         <tr>
                           <th style="width: 50px;">ID</th>
-                          <th style="min-width: 250px;">Artículo / Insumo</th>
+                          <th style="min-width: 250px;">Familia / Referencia</th>
                           <th style="width: 120px;">Lote</th>
                           <th style="width: 120px;">Vencimiento</th>
                           <th class="text-center" style="width: 100px;">Cantidad</th>
@@ -1361,16 +1365,28 @@
               <input type="text" class="form-control" id="in_warehouse_adress" name="adress" maxlength="55" placeholder="Ej: Calle 45 # 12-34" required>
             </div>
             <div class="form-group mb-3">
-              <label for="in_warehouse_user" class="form-label fw-bold">Usuario Responsable *</label>
-              <select class="form-select" id="in_warehouse_user" name="id_user" required>
-                <option value="" disabled selected>-- Seleccione el usuario responsable --</option>
+              <label for="in_warehouse_user" class="form-label fw-bold">Usuario Administrador *</label>
+              <select class="form-select" id="in_warehouse_user" name="id_user_admin" required>
+                <option value="" disabled selected>-- Seleccione el usuario administrador --</option>
                 <?php if (!empty($warehouseUsers)): ?>
                   <?php foreach ($warehouseUsers as $wUser): ?>
-                    <option value="<?= esc($wUser['id']) ?>"><?= esc($wUser['name']) ?> (<?= esc($wUser['email']) ?>)</option>
+                    <option value="<?= esc($wUser['id']) ?>"><?= esc($wUser['name']) ?> (ID: <?= esc($wUser['id']) ?> - <?= esc($wUser['email']) ?>)</option>
                   <?php endforeach; ?>
                 <?php endif; ?>
               </select>
-              <small class="form-text text-muted">Asigne el responsable que tendrá autorización para operar y gestionar los movimientos de esta bodega.</small>
+              <small class="form-text text-muted">Asigne el administrador que tendrá autorización para operar y gestionar esta bodega.</small>
+            </div>
+            <div class="form-group mb-3">
+              <label for="in_warehouse_client" class="form-label fw-bold">Titular (Cliente)</label>
+              <select class="form-select" id="in_warehouse_client" name="id_client">
+                <option value="" selected>-- Sin titular / Opcional --</option>
+                <?php if (!empty($clientsList)): ?>
+                  <?php foreach ($clientsList as $cItem): ?>
+                    <option value="<?= esc($cItem['id']) ?>"><?= esc($cItem['nombre_cliente']) ?> (ID: <?= esc($cItem['id']) ?><?= !empty($cItem['numero_documento']) ? ' - ' . esc($cItem['numero_documento']) : '' ?>)</option>
+                  <?php endforeach; ?>
+                <?php endif; ?>
+              </select>
+              <small class="form-text text-muted">Seleccione el cliente titular asociado a la bodega (si aplica).</small>
             </div>
             <div class="form-group mb-3">
               <label for="in_warehouse_state" class="form-label fw-bold">Estado</label>
@@ -1421,8 +1437,7 @@
               <table class="table table-bordered table-hover align-middle mb-0" id="tbl_remision_warehouse_items">
                 <thead class="bg-light">
                   <tr>
-                    <th style="min-width: 360px;"><i class="fas fa-box text-success me-1"></i> Producto / Familia *</th>
-                    <th style="width: 160px;"><i class="fas fa-tag text-muted me-1"></i> Referencia</th>
+                    <th style="min-width: 360px;"><i class="fas fa-tag text-success me-1"></i> Referencia / Familia *</th>
                     <th style="width: 160px;"><i class="fas fa-barcode text-muted me-1"></i> Lote</th>
                     <th style="width: 170px;"><i class="fas fa-calendar-alt text-muted me-1"></i> F. Vencimiento</th>
                     <th style="width: 130px;" class="text-center"><i class="fas fa-cubes text-muted me-1"></i> Cantidad *</th>

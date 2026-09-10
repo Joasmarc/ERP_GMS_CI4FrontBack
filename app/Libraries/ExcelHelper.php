@@ -105,9 +105,9 @@ class ExcelHelper
         $xmlWriter->startElement('worksheet');
         $xmlWriter->writeAttribute('xmlns', 'http://schemas.openxmlformats.org/spreadsheetml/2006/main');
 
-        // Anchos de columna
+        // Anchos de columna: [ID_REFERENCIA: 16, REFERENCIA: 25, FAMILIA: 45, CANTIDAD: 16, LOTE: 20, FECHA_VENCIMIENTO: 22]
         $xmlWriter->startElement('cols');
-        $colWidths = [15, 45, 16, 18, 20, 24];
+        $colWidths = [16, 25, 45, 16, 20, 22];
         foreach ($colWidths as $idx => $w) {
             $colNum = $idx + 1;
             $xmlWriter->startElement('col');

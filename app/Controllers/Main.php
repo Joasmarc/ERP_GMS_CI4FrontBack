@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Models\Cities;
 use App\Models\Users;
+use App\Models\Clients;
 
 class Main extends BaseController
 {
@@ -56,6 +57,10 @@ class Main extends BaseController
             log_message('error', 'Error en ensureSynced de Siigo en dashboard: ' . $e->getMessage());
         }
 
+        // 1.6 Obtener lista de clientes registrados para asociación de titular
+        $clientsModel = new Clients();
+        $clientsList = $clientsModel->select('id, nombre_cliente, numero_documento')->orderBy('nombre_cliente', 'ASC')->findAll();
+
         // 2.0 Preparar datos de la vista - Obtener datos de sesión
         $userData = [
             'user_id'        => session('user_id'),
@@ -65,7 +70,8 @@ class Main extends BaseController
             'credentials'    => session('credentials'),
             'title'          => 'Dashboard - Sistema de Administración',
             'cities'         => $cities,
-            'warehouseUsers' => $warehouseUsers
+            'warehouseUsers' => $warehouseUsers,
+            'clientsList'    => $clientsList
         ];
 
         // 3.0 Renderizar vista del dashboard

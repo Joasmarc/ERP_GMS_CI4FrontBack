@@ -14,7 +14,7 @@ class WarehousesTransferItems extends Model
     // 2.0 Configurar campos permitidos
     protected $allowedFields = [
         'id_warehouse_transfer',
-        'id_family',
+        'id_reference',
         'quantity'
     ];
 
@@ -22,7 +22,7 @@ class WarehousesTransferItems extends Model
     protected $castings = [
         'id'                    => 'int',
         'id_warehouse_transfer' => '?int',
-        'id_family'             => '?int',
+        'id_reference'          => '?int',
         'quantity'              => '?int'
     ];
 
@@ -32,7 +32,7 @@ class WarehousesTransferItems extends Model
     // 5.0 Validación de datos
     protected $validationRules = [
         'id_warehouse_transfer' => 'permit_empty|integer',
-        'id_family'             => 'permit_empty|integer',
+        'id_reference'          => 'permit_empty|integer',
         'quantity'              => 'permit_empty|integer'
     ];
 }

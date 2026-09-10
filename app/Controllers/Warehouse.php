@@ -54,7 +54,7 @@ class Warehouse extends BaseController
             return false;
         }
 
-        return (int)($warehouse['id_user'] ?? 0) === (int)session('user_id');
+        return (int)($warehouse['id_user_admin'] ?? $warehouse['id_user'] ?? 0) === (int)session('user_id');
     }
 
     /**
@@ -82,16 +82,8 @@ class Warehouse extends BaseController
             ])->setStatusCode(403);
         }
 
-        $db = \Config\Database::connect();
-        $builder = $db->table('warehouses_base wb');
-        $builder->select('wb.id, wb.name, wb.adress, wb.state, wb.id_user, wb.created_at, wb.updated_at, u.name as user_name, u.email as user_email, COUNT(b.id) as total_items');
-        $builder->join('warehouses_balance b', 'b.id_warehouse = wb.id AND b.deleted_at IS NULL AND b.quantity > 0', 'left');
-        $builder->join('users u', 'u.id = wb.id_user', 'left');
-        $builder->where('wb.deleted_at IS NULL');
-        $builder->groupBy('wb.id, wb.name, wb.adress, wb.state, wb.id_user, wb.created_at, wb.updated_at, u.name, u.email');
-        $builder->orderBy('wb.id', 'ASC');
-
-        $records = $builder->get()->getResultArray();
+        $warehouseModel = new WarehousesBase();
+        $records = $warehouseModel->getWarehousesWithDetails();
 
         $mainWarehouseId = $this->getMainWarehouseId();
         $currentUserId = (int)session('user_id');
@@ -101,8 +93,14 @@ class Warehouse extends BaseController
 
         foreach ($records as &$rec) {
             $rec['is_main'] = ($mainWarehouseId !== null && (int)$rec['id'] === $mainWarehouseId);
-            $rec['is_responsible'] = ($currentUserId === (int)($rec['id_user'] ?? 0));
+            $rec['is_responsible'] = ($currentUserId === (int)($rec['id_user_admin'] ?? $rec['id_user'] ?? 0));
             $rec['can_operate'] = ($isAdmin || $isWarehouseAdmin || $rec['is_responsible']);
+            // Compatibilidad y aliases
+            $rec['admin'] = $rec['id_user_admin'];
+            $rec['titular'] = $rec['id_client'];
+            $rec['id_user'] = $rec['id_user_admin'];
+            $rec['user_name'] = $rec['admin_name'] ?? null;
+            $rec['user_email'] = $rec['admin_email'] ?? null;
         }
         unset($rec);
 
@@ -182,7 +180,7 @@ class Warehouse extends BaseController
         $credentials = session('credentials');
         $isAdmin = (isset($credentials[0]) && $credentials[0] === '1');
         $isWarehouseAdmin = (isset($credentials[14]) && $credentials[14] === '1');
-        $isResponsible = ($currentUserId === (int)($warehouse['id_user'] ?? 0));
+        $isResponsible = ($currentUserId === (int)($warehouse['id_user_admin'] ?? $warehouse['id_user'] ?? 0));
         $canOperate = ($isAdmin || $isWarehouseAdmin || $isResponsible);
         $canAdjust = $isWarehouseAdmin; // La opción de ajustar es exclusiva para usuarios con credencial 14
 
@@ -190,14 +188,29 @@ class Warehouse extends BaseController
         $warehouse['can_operate'] = $canOperate;
         $warehouse['can_adjust'] = $canAdjust;
 
-        if (!empty($warehouse['id_user'])) {
+        $idAdmin = $warehouse['id_user_admin'] ?? $warehouse['id_user'] ?? null;
+        if (!empty($idAdmin)) {
             $userModel = new Users();
-            $respUser = $userModel->select('id, name, email')->find($warehouse['id_user']);
+            $respUser = $userModel->select('id, name, email')->find($idAdmin);
             $warehouse['responsible_name'] = $respUser ? $respUser['name'] : 'Sin asignar';
             $warehouse['responsible_email'] = $respUser ? $respUser['email'] : '';
+            $warehouse['admin_name'] = $warehouse['responsible_name'];
+            $warehouse['admin_email'] = $warehouse['responsible_email'];
         } else {
             $warehouse['responsible_name'] = 'Sin asignar';
             $warehouse['responsible_email'] = '';
+            $warehouse['admin_name'] = 'Sin asignar';
+            $warehouse['admin_email'] = '';
+        }
+
+        if (!empty($warehouse['id_client'])) {
+            $clientModel = new \App\Models\Clients();
+            $client = $clientModel->select('id, nombre_cliente, numero_documento')->find($warehouse['id_client']);
+            $warehouse['client_name'] = $client ? $client['nombre_cliente'] : 'Sin asignar';
+            $warehouse['titular_name'] = $warehouse['client_name'];
+        } else {
+            $warehouse['client_name'] = 'Sin asignar';
+            $warehouse['titular_name'] = 'Sin asignar';
         }
 
         $balanceModel = new WarehousesBalance();
@@ -273,7 +286,8 @@ class Warehouse extends BaseController
         $name = trim($this->request->getPost('name') ?? '');
         $adress = trim($this->request->getPost('adress') ?? '');
         $state = trim($this->request->getPost('state') ?? 'ACTIVE');
-        $idUser = filter_var($this->request->getPost('id_user'), FILTER_VALIDATE_INT);
+        $idUserAdmin = filter_var($this->request->getPost('id_user_admin') ?? $this->request->getPost('id_user'), FILTER_VALIDATE_INT);
+        $idClient = filter_var($this->request->getPost('id_client'), FILTER_VALIDATE_INT) ?: null;
 
         if (empty($name) || empty($adress)) {
             return $this->response->setJSON([
@@ -282,20 +296,30 @@ class Warehouse extends BaseController
             ]);
         }
 
-        if (!$idUser) {
+        if (!$idUserAdmin) {
             return $this->response->setJSON([
                 'status'  => 'error',
-                'message' => 'Debe seleccionar un usuario responsable para la bodega.'
+                'message' => 'Debe seleccionar un usuario administrador para la bodega.'
             ]);
         }
 
         $userModel = new Users();
-        $assignedUser = $userModel->find($idUser);
+        $assignedUser = $userModel->find($idUserAdmin);
         if (!$assignedUser) {
             return $this->response->setJSON([
                 'status'  => 'error',
-                'message' => 'El usuario seleccionado como responsable no existe.'
+                'message' => 'El usuario seleccionado como administrador no existe.'
             ]);
+        }
+
+        if ($idClient) {
+            $clientModel = new \App\Models\Clients();
+            if (!$clientModel->find($idClient)) {
+                return $this->response->setJSON([
+                    'status'  => 'error',
+                    'message' => 'El cliente titular seleccionado no existe.'
+                ]);
+            }
         }
 
         if (!in_array($state, ['ACTIVE', 'INACTIVE'], true)) {
@@ -307,12 +331,13 @@ class Warehouse extends BaseController
 
         $warehouseModel = new WarehousesBase();
         $data = [
-            'name'       => $name,
-            'adress'     => $adress,
-            'state'      => $state,
-            'id_user'    => $idUser,
-            'created_at' => $now,
-            'updated_at' => $now
+            'name'          => $name,
+            'adress'        => $adress,
+            'state'         => $state,
+            'id_user_admin' => $idUserAdmin,
+            'id_client'     => $idClient,
+            'created_at'    => $now,
+            'updated_at'    => $now
         ];
 
         if ($warehouseModel->insert($data)) {
@@ -330,7 +355,7 @@ class Warehouse extends BaseController
     }
 
     /**
-     * Buscar familias activas para autocompletado en registro de items
+     * Buscar referencias activas con sus familias para autocompletado en registro de items
      */
     public function search_families()
     {
@@ -343,27 +368,32 @@ class Warehouse extends BaseController
 
         $term = trim($this->request->getGet('q') ?? '');
 
-        $familiesModel = new Families();
-        $builder = $familiesModel->select('id, keyword, img_path')
-            ->where('state', 'ACTIVO')
-            ->where('deleted_at IS NULL');
+        $refModel = new \App\Models\FamiliesReference();
+        $builder = $refModel->select('families_reference.id as id, families_reference.id as reference_id, families_reference.reference, families_reference.id_family, families.keyword as family_name, CONCAT(families_reference.reference, " - ", families.keyword) as keyword')
+            ->join('families', 'families.id = families_reference.id_family AND families.deleted_at IS NULL', 'inner')
+            ->where('families.state', 'ACTIVO')
+            ->where('families_reference.status', 'ACTIVE');
 
         if (!empty($term)) {
-            $builder->like('keyword', $term);
+            $builder->groupStart()
+                ->like('families_reference.reference', $term)
+                ->orLike('families.keyword', $term)
+                ->groupEnd();
         }
 
-        $families = $builder->orderBy('keyword', 'ASC')
+        $results = $builder->orderBy('families_reference.reference', 'ASC')
+            ->orderBy('families.keyword', 'ASC')
             ->limit(50)
             ->findAll();
 
         return $this->response->setJSON([
             'status' => 'success',
-            'data'   => $families
+            'data'   => $results
         ]);
     }
 
     /**
-     * Guardar un nuevo artículo en el balance de la bodega con id_family
+     * Guardar un nuevo artículo en el balance de la bodega con id_reference
      */
     public function save_item()
     {
@@ -375,7 +405,7 @@ class Warehouse extends BaseController
         }
 
         $idWarehouse = filter_var($this->request->getPost('id_warehouse'), FILTER_VALIDATE_INT);
-        $idFamily    = filter_var($this->request->getPost('id_family'), FILTER_VALIDATE_INT);
+        $idReference = filter_var($this->request->getPost('id_reference') ?? $this->request->getPost('id_family'), FILTER_VALIDATE_INT);
         $quantity    = filter_var($this->request->getPost('quantity'), FILTER_VALIDATE_INT);
         $lotRaw      = trim($this->request->getPost('lot') ?? '');
         $lot         = $lotRaw === '' ? null : substr($lotRaw, 0, 25);
@@ -395,23 +425,20 @@ class Warehouse extends BaseController
             }
         }
 
-        if (!$idWarehouse || !$idFamily || $quantity === false || $quantity < 0) {
+        if (!$idWarehouse || !$idReference || $quantity === false || $quantity < 0) {
             return $this->response->setJSON([
                 'status'  => 'error',
-                'message' => 'Debe seleccionar un producto válido de la lista y especificar una cantidad permitida.'
+                'message' => 'Debe seleccionar una referencia válida de la lista y especificar una cantidad permitida.'
             ]);
         }
 
-        $familyModel = new Families();
-        $family = $familyModel->where('id', $idFamily)
-            ->where('state', 'ACTIVO')
-            ->where('deleted_at IS NULL')
-            ->first();
+        $refModel = new \App\Models\FamiliesReference();
+        $refRecord = $refModel->getWithFamilyById($idReference);
 
-        if (!$family) {
+        if (!$refRecord || $refRecord['status'] !== 'ACTIVE') {
             return $this->response->setJSON([
                 'status'  => 'error',
-                'message' => 'El producto seleccionado no pertenece al catálogo de familias activas.'
+                'message' => 'La referencia seleccionada no existe o no se encuentra activa en el catálogo.'
             ])->setStatusCode(400);
         }
 
@@ -428,7 +455,7 @@ class Warehouse extends BaseController
 
         $balanceModel = new WarehousesBalance();
         $query = $balanceModel->where('id_warehouse', $idWarehouse)
-            ->where('id_family', $idFamily)
+            ->where('id_reference', $idReference)
             ->where('deleted_at IS NULL');
 
         if ($lot !== null) {
@@ -453,13 +480,13 @@ class Warehouse extends BaseController
             if ($updated) {
                 return $this->response->setJSON([
                     'status'  => 'success',
-                    'message' => 'Se incrementaron las existencias del producto en la bodega correctamente.'
+                    'message' => 'Se incrementaron las existencias de la referencia en la bodega correctamente.'
                 ]);
             }
         } else {
             $data = [
                 'id_warehouse'    => $idWarehouse,
-                'id_family'       => $idFamily,
+                'id_reference'    => $idReference,
                 'quantity'        => $quantity,
                 'lot'             => $lot,
                 'expiration_date' => $expirationDate,
@@ -470,7 +497,7 @@ class Warehouse extends BaseController
             if ($balanceModel->insert($data)) {
                 return $this->response->setJSON([
                     'status'  => 'success',
-                    'message' => 'Artículo agregado al balance correctamente.'
+                    'message' => 'Referencia agregada al balance correctamente.'
                 ]);
             }
         }
@@ -536,6 +563,7 @@ class Warehouse extends BaseController
         $adress = $destAdress;
         $observacion = 'Esta remision es automatica por el sistema para registrar los ingresos a bodega principal.';
 
+        $refIds = $this->request->getPost('id_reference') ?? $this->request->getPost('id_family');
         $familyIds = $this->request->getPost('id_family');
         $itemNames = $this->request->getPost('item_name');
         $referencias = $this->request->getPost('item_referencia');
@@ -591,16 +619,16 @@ class Warehouse extends BaseController
 
         $itemsModel = new DispatchAdviceItems();
         $balanceModel = new WarehousesBalance();
-        $familyModel = new Families();
+        $refModel = new \App\Models\FamiliesReference();
 
         $itemsCount = count($cantidades);
         $processedCount = 0;
 
         for ($i = 0; $i < $itemsCount; $i++) {
             $qty = filter_var($cantidades[$i] ?? 0, FILTER_VALIDATE_INT);
-            $famId = filter_var($familyIds[$i] ?? null, FILTER_VALIDATE_INT);
+            $rId = filter_var($refIds[$i] ?? null, FILTER_VALIDATE_INT);
             $rawName = trim($itemNames[$i] ?? '');
-            $ref = trim($referencias[$i] ?? '');
+            $refCode = trim($referencias[$i] ?? '');
             $lotRaw = trim($lotes[$i] ?? '');
             $lot = $lotRaw === '' ? null : substr($lotRaw, 0, 25);
             $expDateRaw = trim($vencimientos[$i] ?? '');
@@ -616,40 +644,41 @@ class Warehouse extends BaseController
                 continue;
             }
 
-            // Buscar producto / familia
-            $family = null;
-            if ($famId) {
-                $family = $familyModel->where('id', $famId)
-                    ->where('state', 'ACTIVO')
-                    ->where('deleted_at IS NULL')
-                    ->first();
+            // Buscar referencia activa
+            $refRecord = null;
+            if ($rId) {
+                $refRecord = $refModel->getWithFamilyById($rId);
             }
 
-            if (!$family && !empty($rawName)) {
-                $family = $familyModel->where('keyword', $rawName)
-                    ->where('state', 'ACTIVO')
-                    ->where('deleted_at IS NULL')
-                    ->first();
-                if ($family) {
-                    $famId = (int)$family['id'];
+            if (!$refRecord && !empty($refCode)) {
+                $refRecord = $refModel->getWithFamily($refCode);
+            }
+
+            if (!$refRecord && !empty($rawName)) {
+                $refRecord = $refModel->where('reference', $rawName)->first();
+                if ($refRecord) {
+                    $refRecord = $refModel->getWithFamilyById((int)$refRecord['id']);
                 }
             }
 
-            if (!$family) {
+            if (!$refRecord || ($refRecord['status'] ?? 'ACTIVE') !== 'ACTIVE') {
                 $db->transRollback();
-                $itemLabel = !empty($rawName) ? $rawName : ('Línea #' . ($i + 1));
+                $itemLabel = !empty($refCode) ? $refCode : (!empty($rawName) ? $rawName : ('Línea #' . ($i + 1)));
                 return $this->response->setJSON([
                     'status'  => 'error',
-                    'message' => "El producto '{$itemLabel}' no pertenece al catálogo de familias activas."
+                    'message' => "La referencia '{$itemLabel}' no existe o no se encuentra activa en el catálogo."
                 ]);
             }
 
-            $description = $family['keyword'];
+            $actualRefId = (int)$refRecord['id'];
+            $actualRefCode = $refRecord['reference'];
+            $familyName = $refRecord['family_name'] ?? ($refRecord['family_keyword'] ?? 'Producto');
+            $description = $familyName . ' [' . $actualRefCode . ']';
 
             // 1. Guardar item de la remisión
             $itemData = [
                 'id_base'         => $dispatchId,
-                'reference'       => $ref,
+                'reference'       => $actualRefCode,
                 'description'     => $description,
                 'batch'           => $lot ?? '',
                 'expiration_date' => $expDate,
@@ -661,7 +690,7 @@ class Warehouse extends BaseController
 
             // 2. Ingresar/actualizar existencias en warehouses_balance
             $balQuery = $balanceModel->where('id_warehouse', $idWarehouse)
-                ->where('id_family', $famId)
+                ->where('id_reference', $actualRefId)
                 ->where('deleted_at IS NULL');
 
             if ($lot !== null) {
@@ -684,7 +713,7 @@ class Warehouse extends BaseController
             } else {
                 $balanceModel->insert([
                     'id_warehouse'    => $idWarehouse,
-                    'id_family'       => $famId,
+                    'id_reference'    => $actualRefId,
                     'quantity'        => $qty,
                     'lot'             => $lot,
                     'expiration_date' => $expDate,
@@ -862,10 +891,11 @@ class Warehouse extends BaseController
             }
 
             if (!$originBalance && !empty($rawName)) {
-                $family = $familyModel->where('keyword', $rawName)->where('deleted_at IS NULL')->first();
-                if ($family) {
+                $famRefModel = new \App\Models\FamiliesReference();
+                $refMatch = $famRefModel->where('reference', $rawName)->where('status', 'ACTIVE')->first();
+                if ($refMatch) {
                     $originBalance = $balanceModel->where('id_warehouse', $idWarehouseSend)
-                        ->where('id_family', $family['id'])
+                        ->where('id_reference', $refMatch['id'])
                         ->where('deleted_at IS NULL')
                         ->first();
                 }
@@ -898,7 +928,7 @@ class Warehouse extends BaseController
 
             // 4.0 Aumentar saldo o registrar nuevo artículo en bodega destino
             $destQuery = $balanceModel->where('id_warehouse', $idWarehouseReceives)
-                ->where('id_family', $originBalance['id_family'])
+                ->where('id_reference', $originBalance['id_reference'])
                 ->where('deleted_at IS NULL');
 
             $itemLot = !empty($originBalance['lot']) ? trim($originBalance['lot']) : null;
@@ -932,7 +962,7 @@ class Warehouse extends BaseController
             } else {
                 $insertDest = $balanceModel->insert([
                     'id_warehouse'    => $idWarehouseReceives,
-                    'id_family'       => $originBalance['id_family'],
+                    'id_reference'    => $originBalance['id_reference'],
                     'quantity'        => $qty,
                     'lot'             => $itemLot,
                     'expiration_date' => $originBalance['expiration_date'] ?? null,
@@ -949,23 +979,23 @@ class Warehouse extends BaseController
                 }
             }
 
-            // 5.0 Registrar línea del item transferido con id_family
+            // 5.0 Registrar línea del item transferido con id_reference
             $transferItemsModel->insert([
                 'id_warehouse_transfer' => $transferId,
-                'id_family'             => $originBalance['id_family'],
+                'id_reference'          => $originBalance['id_reference'],
                 'quantity'              => $qty
             ]);
 
             // 5.1 Registrar línea correspondiente en la remisión de traslado
-            $family = $familyModel->find($originBalance['id_family']);
-            $familyName = $family ? $family['keyword'] : (!empty($rawName) ? $rawName : ('Producto #' . $originBalance['id_family']));
-            $displayName = ($itemLot !== null && $itemLot !== '')
-                ? $familyName . ' [Lote: ' . $itemLot . ']'
-                : $familyName;
+            $famRefModel = new \App\Models\FamiliesReference();
+            $refRecord = $famRefModel->getWithFamilyById((int)$originBalance['id_reference']);
+            $refCode = $refRecord ? $refRecord['reference'] : ('REF-' . $originBalance['id_reference']);
+            $familyName = $refRecord ? ($refRecord['family_name'] ?? $refRecord['family_keyword']) : (!empty($rawName) ? $rawName : ('Referencia #' . $originBalance['id_reference']));
+            $displayName = $familyName . ' [' . $refCode . ']' . (($itemLot !== null && $itemLot !== '') ? ' [Lote: ' . $itemLot . ']' : '');
 
             $dispatchItemsModel->insert([
                 'id_base'         => $dispatchId,
-                'reference'       => 'TR-' . $originBalance['id_family'],
+                'reference'       => $refCode,
                 'description'     => $displayName,
                 'batch'           => $itemLot ?? '',
                 'expiration_date' => $originBalance['expiration_date'] ?? null,
@@ -1150,21 +1180,16 @@ class Warehouse extends BaseController
                 ]);
             }
 
-            // Obtener datos de la familia para descripción y referencia
-            $famId = !empty($existing['id_family']) ? (int)$existing['id_family'] : null;
-            $family = null;
-            if ($famId) {
-                $family = $familyModel->where('id', $famId)->first();
-            }
-            $description = $family ? ($family['keyword'] ?? ('Producto #' . $famId)) : ('Producto #' . $balId);
-
-            // Obtener referencia desde families_reference asociada a la familia
-            $ref = '';
-            if ($famId) {
+            // Obtener datos de la referencia y familia para descripción
+            $refId = !empty($existing['id_reference']) ? (int)$existing['id_reference'] : null;
+            $refRecord = null;
+            if ($refId) {
                 $famRefModel = new \App\Models\FamiliesReference();
-                $famRef = $famRefModel->where('id_family', $famId)->where('status', 'ACTIVE')->first();
-                $ref = $famRef['reference'] ?? ($family['reference'] ?? '');
+                $refRecord = $famRefModel->getWithFamilyById($refId);
             }
+            $ref = $refRecord ? $refRecord['reference'] : '';
+            $familyName = $refRecord ? ($refRecord['family_name'] ?? $refRecord['family_keyword']) : ('Referencia #' . $balId);
+            $description = $ref ? ($familyName . ' [' . $ref . ']') : $familyName;
 
             // 1. Guardar item del ajuste (dispatch_advice_items) para auditoría y remisión
             $itemData = [
@@ -1214,7 +1239,7 @@ class Warehouse extends BaseController
 
     /**
      * Descargar plantilla Excel para cargue masivo de productos a la bodega principal
-     * Organizada por REFERENCIA de los items pertenecientes a las familias activas
+     * Organizada exclusivamente por REFERENCIA de las familias activas
      */
     public function download_batch_template()
     {
@@ -1223,9 +1248,9 @@ class Warehouse extends BaseController
         }
 
         $headers = [
-            'ID_PRODUCTO',
-            'NOMBRE_PRODUCTO',
+            'ID_REFERENCIA',
             'REFERENCIA',
+            'FAMILIA',
             'CANTIDAD',
             'LOTE',
             'FECHA_VENCIMIENTO'
@@ -1234,7 +1259,7 @@ class Warehouse extends BaseController
         $rows = $this->getCatalogItemsForTemplate();
 
         $xlsxContent = ExcelHelper::generateXlsx($headers, $rows);
-        $filename = 'plantilla_cargue_masivo_bodega_principal.xlsx';
+        $filename = 'plantilla_cargue_masivo_referencias.xlsx';
 
         return $this->response
             ->setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -1245,13 +1270,13 @@ class Warehouse extends BaseController
 
     /**
      * Obtener el listado de referencias asociadas a familias activas para la plantilla
+     * Solo incluye referencias reales activas de familias (no familias solas)
      *
-     * @return array Filas listas para Excel [id_family, family_name, reference, '', '', '']
+     * @return array Filas listas para Excel [reference_id, reference, family_name, '', '', '']
      */
     private function getCatalogItemsForTemplate(): array
     {
         $refModel = new \App\Models\FamiliesReference();
-        $familyModel = new Families();
 
         // Asegurar que families y families_reference estén sincronizadas
         $siigoService = new \App\Libraries\SiigoService();
@@ -1264,60 +1289,19 @@ class Warehouse extends BaseController
         // Consultar referencias activas directamente desde families_reference con families
         $activeReferences = $refModel->getAllActiveWithFamilies();
 
-        $rows = [];
-        $coveredFamilyIds = [];
-
+        // Formatear filas para Excel: [ID_REFERENCIA, REFERENCIA, FAMILIA, CANTIDAD, LOTE, FECHA_VENCIMIENTO]
+        $excelRows = [];
         if (!empty($activeReferences)) {
             foreach ($activeReferences as $item) {
-                $famId = (int)$item['id_family'];
-                $rows[] = [
-                    'id_family'   => $famId,
-                    'family_name' => $item['family_name'],
-                    'reference'   => $item['reference'],
-                ];
-                $coveredFamilyIds[$famId] = true;
-            }
-        }
-
-        // Si alguna familia activa no tiene referencias en families_reference,
-        // incluirla para que el usuario pueda ingresar productos de esa familia
-        $allActiveFamilies = $familyModel->select('id, keyword')
-            ->where('state', 'ACTIVO')
-            ->where('deleted_at IS NULL')
-            ->orderBy('keyword', 'ASC')
-            ->findAll();
-
-        foreach ($allActiveFamilies as $f) {
-            $famId = (int)$f['id'];
-            if (!isset($coveredFamilyIds[$famId])) {
-                $rows[] = [
-                    'id_family'   => $famId,
-                    'family_name' => $f['keyword'],
-                    'reference'   => '',
+                $excelRows[] = [
+                    (int)$item['reference_id'],
+                    $item['reference'],
+                    $item['family_name'],
+                    '', // Cantidad vacía
+                    '', // Lote vacío
+                    ''  // Fecha de vencimiento vacía
                 ];
             }
-        }
-
-        // Ordenar alfabéticamente por familia y luego por referencia
-        usort($rows, function ($a, $b) {
-            $cmp = strcasecmp($a['family_name'], $b['family_name']);
-            if ($cmp === 0) {
-                return strcasecmp($a['reference'], $b['reference']);
-            }
-            return $cmp;
-        });
-
-        // Formatear filas para Excel: [ID_PRODUCTO, NOMBRE_PRODUCTO, REFERENCIA, CANTIDAD, LOTE, FECHA_VENCIMIENTO]
-        $excelRows = [];
-        foreach ($rows as $item) {
-            $excelRows[] = [
-                $item['id_family'],
-                $item['family_name'],
-                $item['reference'],
-                '', // Cantidad vacía
-                '', // Lote vacío
-                ''  // Fecha de vencimiento vacía
-            ];
         }
 
         return $excelRows;
@@ -1413,27 +1397,36 @@ class Warehouse extends BaseController
             ]);
         }
 
-        // Primera fila puede ser encabezado
+        // Primera fila puede ser encabezado: comprobar si contiene palabras clave típicas de encabezados
         $headerCandidate = $parsedRows[0];
         $isHeader = false;
-        if (isset($headerCandidate[0]) && (
-            stripos((string)$headerCandidate[0], 'id') !== false ||
-            stripos((string)$headerCandidate[0], 'producto') !== false ||
-            stripos((string)($headerCandidate[1] ?? ''), 'nombre') !== false ||
-            stripos((string)($headerCandidate[1] ?? ''), 'producto') !== false
-        )) {
-            $isHeader = true;
+        foreach ($headerCandidate as $cellVal) {
+            $cellStr = mb_strtolower(trim((string)$cellVal), 'UTF-8');
+            if (
+                preg_match('/(^|[\s_-])id([\s_-]|$)/i', $cellStr) ||
+                strpos($cellStr, 'id_') === 0 ||
+                stripos($cellStr, 'referencia') !== false ||
+                stripos($cellStr, 'familia') !== false ||
+                stripos($cellStr, 'producto') !== false ||
+                stripos($cellStr, 'nombre') !== false ||
+                stripos($cellStr, 'cant') !== false ||
+                stripos($cellStr, 'lote') !== false ||
+                stripos($cellStr, 'venc') !== false
+            ) {
+                $isHeader = true;
+                break;
+            }
         }
 
         $dataRows = $isHeader ? array_slice($parsedRows, 1) : $parsedRows;
 
         // Detección dinámica de índices de columnas según encabezados
-        // Formato nuevo: [0 => ID, 1 => NOMBRE, 2 => REFERENCIA, 3 => CANTIDAD, 4 => LOTE, 5 => FECHA_VENCIMIENTO]
-        // Formato anterior: [0 => ID, 1 => NOMBRE, 2 => CANTIDAD, 3 => LOTE, 4 => REFERENCIA, 5 => FECHA_VENCIMIENTO]
+        // Formato plantilla oficial: [0 => ID_REFERENCIA, 1 => REFERENCIA, 2 => FAMILIA, 3 => CANTIDAD, 4 => LOTE, 5 => FECHA_VENCIMIENTO]
+        // Formato anterior compatible: [0 => ID, 1 => NOMBRE/FAMILIA, 2 => CANTIDAD, 3 => LOTE, 4 => REFERENCIA, 5 => FECHA_VENCIMIENTO]
         $colMap = [
             'id'       => 0,
-            'name'     => 1,
-            'ref'      => 2,
+            'ref'      => 1,
+            'name'     => 2,
             'qty'      => 3,
             'lot'      => 4,
             'exp_date' => 5
@@ -1442,26 +1435,41 @@ class Warehouse extends BaseController
         if ($isHeader) {
             foreach ($headerCandidate as $idx => $headerVal) {
                 $h = mb_strtolower(trim((string)$headerVal), 'UTF-8');
-                if (stripos($h, 'id') !== false) {
-                    $colMap['id'] = $idx;
-                } elseif (stripos($h, 'nombre') !== false || stripos($h, 'producto') !== false || stripos($h, 'familia') !== false) {
-                    $colMap['name'] = $idx;
-                } elseif (stripos($h, 'ref') !== false) {
-                    $colMap['ref'] = $idx;
-                } elseif (stripos($h, 'cant') !== false) {
+                if ($h === '') {
+                    continue;
+                }
+                // 1. CANTIDAD: Evaluar primero para evitar falsos positivos con 'id' (cantIDad)
+                if (stripos($h, 'cant') !== false || stripos($h, 'qty') !== false || stripos($h, 'unidades') !== false) {
                     $colMap['qty'] = $idx;
-                } elseif (stripos($h, 'lote') !== false) {
+                }
+                // 2. ID: Identificador único (id, id_referencia, id referencia, etc.)
+                elseif (preg_match('/(^|[\s_-])id([\s_-]|$)/i', $h) || strpos($h, 'id_') === 0 || $h === 'id') {
+                    $colMap['id'] = $idx;
+                }
+                // 3. REFERENCIA o CÓDIGO
+                elseif (stripos($h, 'ref') !== false || stripos($h, 'codigo') !== false || stripos($h, 'código') !== false) {
+                    $colMap['ref'] = $idx;
+                }
+                // 4. NOMBRE o FAMILIA
+                elseif (stripos($h, 'familia') !== false || stripos($h, 'nombre') !== false || stripos($h, 'producto') !== false || stripos($h, 'desc') !== false) {
+                    $colMap['name'] = $idx;
+                }
+                // 5. LOTE
+                elseif (stripos($h, 'lote') !== false || stripos($h, 'batch') !== false) {
                     $colMap['lot'] = $idx;
-                } elseif (stripos($h, 'venc') !== false || stripos($h, 'fecha') !== false) {
+                }
+                // 6. FECHA DE VENCIMIENTO
+                elseif (stripos($h, 'venc') !== false || stripos($h, 'fecha') !== false || stripos($h, 'exp') !== false) {
                     $colMap['exp_date'] = $idx;
                 }
             }
         } else {
-            // Si no hay encabezados, inspeccionar la primera fila de datos para determinar si la col 2 es cantidad (formato anterior)
+            // Si no hay encabezados, detectar si es formato anterior [id, name, qty, lot, ref, exp_date]
+            // donde col 2 era numérica (cantidad) y col 3 no numérica (lote o texto)
             if (!empty($dataRows)) {
                 $firstRow = $dataRows[0];
-                $col2 = trim($firstRow[2] ?? '');
-                $col3 = trim($firstRow[3] ?? '');
+                $col2 = trim((string)($firstRow[2] ?? ''));
+                $col3 = trim((string)($firstRow[3] ?? ''));
                 if (is_numeric($col2) && !is_numeric($col3)) {
                     $colMap = [
                         'id'       => 0,
@@ -1475,17 +1483,21 @@ class Warehouse extends BaseController
             }
         }
 
-        // Cargar catálogo de familias activas para indexación rápida por ID y por keyword
-        $familyModel = new Families();
-        $allFamilies = $familyModel->where('state', 'ACTIVO')
-            ->where('deleted_at IS NULL')
-            ->findAll();
+        // Cargar catálogo de referencias activas con familias para indexación rápida
+        $refModel = new \App\Models\FamiliesReference();
+        $siigoService = new \App\Libraries\SiigoService();
+        try {
+            $siigoService->ensureSynced();
+        } catch (\Throwable $t) {
+            log_message('error', 'Error en ensureSynced para importación: ' . $t->getMessage());
+        }
 
-        $familiesById = [];
-        $familiesByKeyword = [];
-        foreach ($allFamilies as $fam) {
-            $familiesById[(int)$fam['id']] = $fam;
-            $familiesByKeyword[mb_strtolower(trim($fam['keyword']), 'UTF-8')] = $fam;
+        $activeReferences = $refModel->getAllActiveWithFamilies();
+        $refsById = [];
+        $refsByCode = [];
+        foreach ($activeReferences as $r) {
+            $refsById[(int)$r['reference_id']] = $r;
+            $refsByCode[mb_strtolower(trim($r['reference']), 'UTF-8')] = $r;
         }
 
         // Procesar y validar filas
@@ -1497,28 +1509,36 @@ class Warehouse extends BaseController
         foreach ($dataRows as $index => $row) {
             $rowNumber = $isHeader ? ($index + 2) : ($index + 1);
 
-            $idRaw = trim($row[$colMap['id']] ?? '');
-            $nameRaw = trim($row[$colMap['name']] ?? '');
-            $refRaw = trim($row[$colMap['ref']] ?? '');
-            $qtyRaw = trim($row[$colMap['qty']] ?? '');
-            $lotRaw = trim($row[$colMap['lot']] ?? '');
-            $expDateRaw = trim($row[$colMap['exp_date']] ?? '');
+            $idRaw = trim((string)($row[$colMap['id']] ?? ''));
+            $nameRaw = trim((string)($row[$colMap['name']] ?? ''));
+            $refRaw = trim((string)($row[$colMap['ref']] ?? ''));
+            $qtyRaw = trim((string)($row[$colMap['qty']] ?? ''));
+            $lotRaw = trim((string)($row[$colMap['lot']] ?? ''));
+            $expDateRaw = trim((string)($row[$colMap['exp_date']] ?? ''));
 
-            // Si la cantidad está vacía o es 0, ignorar silenciosamente la fila
-            if ($qtyRaw === '' || $qtyRaw === null) {
+            // Si la cantidad está vacía, ignorar silenciosamente la fila
+            if ($qtyRaw === '') {
                 $skippedCount++;
                 continue;
             }
 
+            // Normalizar formato de número (espacios, coma decimal o miles)
+            $qtyNorm = str_replace(' ', '', $qtyRaw);
+            if (strpos($qtyNorm, ',') !== false && strpos($qtyNorm, '.') === false) {
+                $qtyNorm = str_replace(',', '.', $qtyNorm);
+            } else {
+                $qtyNorm = str_replace(',', '', $qtyNorm);
+            }
+
             // Validar que la cantidad sea numérica y positiva
-            if (!is_numeric($qtyRaw) || (int)$qtyRaw <= 0) {
+            if (!is_numeric($qtyNorm) || (float)$qtyNorm <= 0) {
                 // Si la fila no tiene ningún dato más, omitir
-                if ($idRaw === '' && $nameRaw === '' && $lotRaw === '') {
+                if ($idRaw === '' && $nameRaw === '' && $refRaw === '' && $lotRaw === '') {
                     $skippedCount++;
                     continue;
                 }
-                // Si tiene datos pero cantidad no válida, reportar
-                if ((int)$qtyRaw < 0) {
+                // Si tiene datos pero cantidad negativa, reportar
+                if (is_numeric($qtyNorm) && (float)$qtyNorm < 0) {
                     $invalidRows[] = "Fila {$rowNumber}: la cantidad no puede ser negativa ({$qtyRaw}).";
                     continue;
                 }
@@ -1526,33 +1546,29 @@ class Warehouse extends BaseController
                 continue;
             }
 
-            $qty = (int)$qtyRaw;
+            $qty = (int)round((float)$qtyNorm);
 
-            // Identificar producto por ID o por Nombre
-            $family = null;
-            $famId = filter_var($idRaw, FILTER_VALIDATE_INT);
-            if ($famId && isset($familiesById[$famId])) {
-                $family = $familiesById[$famId];
-            } elseif (!empty($nameRaw)) {
-                $key = mb_strtolower($nameRaw, 'UTF-8');
-                if (isset($familiesByKeyword[$key])) {
-                    $family = $familiesByKeyword[$key];
-                    $famId = (int)$family['id'];
+            // Identificar referencia por ID o por Código de Referencia
+            $refRecord = null;
+            $refId = filter_var($idRaw, FILTER_VALIDATE_INT);
+            if ($refId && isset($refsById[$refId])) {
+                $refRecord = $refsById[$refId];
+            } elseif (!empty($refRaw)) {
+                $key = mb_strtolower($refRaw, 'UTF-8');
+                if (isset($refsByCode[$key])) {
+                    $refRecord = $refsByCode[$key];
                 }
             }
 
-            if (!$family) {
-                $itemLabel = !empty($nameRaw) ? $nameRaw : (!empty($idRaw) ? "ID #{$idRaw}" : "Fila {$rowNumber}");
-                $invalidRows[] = "Fila {$rowNumber}: el producto '{$itemLabel}' no existe o no se encuentra activo en el catálogo.";
+            if (!$refRecord) {
+                $itemLabel = !empty($refRaw) ? $refRaw : (!empty($nameRaw) ? $nameRaw : (!empty($idRaw) ? "ID #{$idRaw}" : "Fila {$rowNumber}"));
+                $invalidRows[] = "Fila {$rowNumber}: la referencia '{$itemLabel}' no existe o no se encuentra activa en el catálogo.";
                 continue;
             }
 
             // Normalizar lote (máx 25 para warehouse balance, máx 10 para dispatch item batch)
             $lot = ($lotRaw === '') ? null : substr($lotRaw, 0, 25);
             $batchForDispatch = ($lot !== null) ? substr($lot, 0, 10) : '';
-
-            // Normalizar referencia
-            $ref = ($refRaw === '') ? '' : substr($refRaw, 0, 75);
 
             // Normalizar fecha de vencimiento
             $expDate = null;
@@ -1572,12 +1588,13 @@ class Warehouse extends BaseController
             }
 
             $validItems[] = [
-                'id_family'         => (int)$family['id'],
-                'name'              => $family['keyword'],
+                'id_reference'      => (int)$refRecord['reference_id'],
+                'reference'         => $refRecord['reference'],
+                'id_family'         => (int)$refRecord['id_family'],
+                'name'              => $refRecord['family_name'],
                 'quantity'          => $qty,
                 'lot'               => $lot,
                 'batch_dispatch'    => $batchForDispatch,
-                'reference'         => $ref,
                 'expiration_date'   => $expDate,
                 'row_number'        => $rowNumber
             ];
@@ -1664,7 +1681,7 @@ class Warehouse extends BaseController
             $itemData = [
                 'id_base'         => $dispatchId,
                 'reference'       => $item['reference'],
-                'description'     => $item['name'],
+                'description'     => $item['name'] . ' [' . $item['reference'] . ']',
                 'batch'           => $item['batch_dispatch'],
                 'expiration_date' => $item['expiration_date'],
                 'quiantity'       => $item['quantity'],
@@ -1675,7 +1692,7 @@ class Warehouse extends BaseController
 
             // 2. Actualizar existencias en warehouses_balance
             $balQuery = $balanceModel->where('id_warehouse', $mainWarehouseId)
-                ->where('id_family', $item['id_family'])
+                ->where('id_reference', $item['id_reference'])
                 ->where('deleted_at IS NULL');
 
             if ($item['lot'] !== null) {
@@ -1698,7 +1715,7 @@ class Warehouse extends BaseController
             } else {
                 $balanceModel->insert([
                     'id_warehouse'    => $mainWarehouseId,
-                    'id_family'       => $item['id_family'],
+                    'id_reference'    => $item['id_reference'],
                     'quantity'        => $item['quantity'],
                     'lot'             => $item['lot'],
                     'expiration_date' => $item['expiration_date'],

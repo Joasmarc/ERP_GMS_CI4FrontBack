@@ -927,17 +927,21 @@ $(document).on('click', '.btn-remove-warehouse-remision-line', function () {
     }
 });
 
-// Bodegas - Búsqueda de familias por línea con autocompletado dinámico
+// Bodegas - Búsqueda de referencias por línea con autocompletado dinámico
 let remisionSearchTimer = null;
 $(document).on('input', '.remision-family-search', function () {
     const input = $(this);
     const query = input.val().trim();
     const cell = input.closest('.remision-family-cell');
     const dropdown = cell.find('.remision-family-dropdown');
-    const hiddenId = cell.find('.remision-family-id');
+    const hiddenRefId = cell.find('.remision-reference-id');
+    const hiddenFamId = cell.find('.remision-family-id');
+    const hiddenRefCode = cell.find('.remision-reference-code');
     const hiddenName = cell.find('.remision-family-name');
 
-    hiddenId.val('');
+    hiddenRefId.val('');
+    hiddenFamId.val('');
+    hiddenRefCode.val('');
     hiddenName.val('');
 
     clearTimeout(remisionSearchTimer);
@@ -954,7 +958,7 @@ $(document).on('input', '.remision-family-search', function () {
 
     dropdown.html(`
         <div class="p-2 text-center text-muted small">
-            <i class="fas fa-spinner fa-spin me-1 text-success"></i> Buscando familias...
+            <i class="fas fa-spinner fa-spin me-1 text-success"></i> Buscando referencias...
         </div>
     `).show();
 
@@ -968,15 +972,17 @@ $(document).on('input', '.remision-family-search', function () {
                 if (resp.status === 'success' && resp.data && resp.data.length > 0) {
                     let itemsHtml = '';
                     resp.data.forEach(item => {
-                        const escaped = $('<div>').text(item.keyword).html();
-                        const highlighted = highlightFamilyMatch(item.keyword, query);
+                        const escapedRef = $('<div>').text(item.reference || '').html();
+                        const escapedFam = $('<div>').text(item.family_name || '').html();
+                        const escapedKeyword = $('<div>').text(item.keyword || (escapedRef + ' - ' + escapedFam)).html();
+                        const highlighted = highlightFamilyMatch(item.keyword || (escapedRef + ' - ' + escapedFam), query);
                         itemsHtml += `
-                            <a href="javascript:void(0);" class="dropdown-item remision-family-dropdown-item py-2 px-3 border-bottom text-decoration-none" data-id="${item.id}" data-keyword="${escaped}">
+                            <a href="javascript:void(0);" class="dropdown-item remision-family-dropdown-item py-2 px-3 border-bottom text-decoration-none" data-id="${item.id}" data-family-id="${item.id_family || ''}" data-reference="${escapedRef}" data-family-name="${escapedFam}" data-keyword="${escapedKeyword}">
                                 <div class="d-flex align-items-center justify-content-between">
                                     <div class="me-2" style="white-space: normal; line-height: 1.35;">
                                         <span class="fw-bold text-dark">${highlighted}</span>
                                     </div>
-                                    <span class="badge badge-success badge-sm flex-shrink-0 ms-2">ID #${item.id}</span>
+                                    <span class="badge badge-success badge-sm flex-shrink-0 ms-2">Ref #${item.id}</span>
                                 </div>
                             </a>
                         `;
@@ -985,7 +991,7 @@ $(document).on('input', '.remision-family-search', function () {
                 } else {
                     dropdown.html(`
                         <div class="p-3 text-center text-muted small">
-                            <i class="fas fa-exclamation-circle text-warning me-1"></i> No se encontraron familias activas.
+                            <i class="fas fa-exclamation-circle text-warning me-1"></i> No se encontraron referencias activas.
                         </div>
                     `).show();
                 }
@@ -993,7 +999,7 @@ $(document).on('input', '.remision-family-search', function () {
             error: function () {
                 dropdown.html(`
                     <div class="p-2 text-center text-danger small">
-                        Error al consultar familias.
+                        Error al consultar referencias.
                     </div>
                 `).show();
             }
@@ -1001,16 +1007,21 @@ $(document).on('input', '.remision-family-search', function () {
     }, 250);
 });
 
-// Bodegas - Selección de familia en la línea de remisión
+// Bodegas - Selección de referencia en la línea de remisión
 $(document).on('click', '.remision-family-dropdown-item', function (e) {
     e.preventDefault();
     const item = $(this);
-    const famId = item.data('id');
+    const refId = item.data('id');
+    const famId = item.data('family-id');
+    const refCode = item.data('reference');
+    const famName = item.data('family-name');
     const keyword = item.data('keyword');
     const cell = item.closest('.remision-family-cell');
 
+    cell.find('.remision-reference-id').val(refId);
     cell.find('.remision-family-id').val(famId);
-    cell.find('.remision-family-name').val(keyword);
+    cell.find('.remision-reference-code').val(refCode);
+    cell.find('.remision-family-name').val(famName || keyword);
     cell.find('.remision-family-label').text(keyword);
     cell.find('.remision-search-group').addClass('d-none');
     cell.find('.remision-family-selected').removeClass('d-none');
@@ -1019,10 +1030,12 @@ $(document).on('click', '.remision-family-dropdown-item', function (e) {
     cell.closest('tr').removeClass('is-searching').css('z-index', '');
 });
 
-// Bodegas - Limpiar selección de familia para volver a buscar
+// Bodegas - Limpiar selección de referencia para volver a buscar
 $(document).on('click', '.btn-clear-remision-family', function () {
     const cell = $(this).closest('.remision-family-cell');
+    cell.find('.remision-reference-id').val('');
     cell.find('.remision-family-id').val('');
+    cell.find('.remision-reference-code').val('');
     cell.find('.remision-family-name').val('');
     cell.find('.remision-family-label').text('');
     cell.find('.remision-family-selected').addClass('d-none');
@@ -1065,15 +1078,15 @@ $('#btn_save_warehouse').on('click', function () {
     const form = $('#form_create_warehouse');
     const name = $('#in_warehouse_name').val().trim();
     const adress = $('#in_warehouse_adress').val().trim();
-    const idUser = $('#in_warehouse_user').val();
+    const idUserAdmin = $('#in_warehouse_user').val();
 
     if (!name || !adress) {
         swal("Atención", "Por favor ingrese el nombre y la dirección de la bodega.", "warning");
         return;
     }
 
-    if (!idUser) {
-        swal("Atención", "Por favor seleccione el usuario responsable de la bodega.", "warning");
+    if (!idUserAdmin) {
+        swal("Atención", "Por favor seleccione el usuario administrador de la bodega.", "warning");
         return;
     }
 
@@ -1119,13 +1132,13 @@ $('#btn_save_warehouse_item').on('click', function () {
 
     $('#remision_warehouse_items_body tr').each(function (index) {
         const row = $(this);
-        const famId = row.find('.remision-family-id').val();
+        const refId = row.find('.remision-reference-id').val() || row.find('.remision-family-id').val();
         const searchInput = row.find('.remision-family-search');
         const rawName = searchInput.val() ? searchInput.val().trim() : '';
         const qty = parseInt(row.find('input[name="item_cantidad[]"]').val() || 0);
 
-        if (!famId && !rawName) {
-            swal("Atención", `Debe seleccionar un producto de la tabla de familias en la línea #${index + 1}.`, "warning");
+        if (!refId && !rawName) {
+            swal("Atención", `Debe seleccionar una referencia del catálogo en la línea #${index + 1}.`, "warning");
             searchInput.focus();
             hasErrors = true;
             return false;
@@ -1271,7 +1284,9 @@ $(document).on('change', '.transfer-item-select', function () {
     const selectedId = parseInt(selectedVal);
     const found = currentWarehouseItems.find(i => parseInt(i.id) === selectedId || i.name_item === selectedVal);
     const available = found ? parseInt(found.quantity || 0) : 0;
-    const itemName = found ? (found.family_name || found.name_item || ('Producto #' + found.id)) : '';
+    const refCode = found ? (found.reference || '') : '';
+    const famName = found ? (found.family_name || found.name_item || '') : '';
+    const itemName = refCode && famName ? `${refCode} - ${famName}` : (refCode || famName || ('Ref #' + (found ? found.id : '')));
 
     hiddenName.val(itemName);
 

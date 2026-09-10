@@ -201,15 +201,28 @@ function initBodegasTable() {
                 }
             },
             { 
-                data: 'user_name',
+                data: 'id_user_admin',
                 render: function (data, type, row) {
                     if (data) {
-                        const email = row.user_email ? `<small class="text-muted d-block">${$('<div>').text(row.user_email).html()}</small>` : '';
-                        const isMe = (window.userId && parseInt(row.id_user) === parseInt(window.userId));
+                        const name = row.admin_name ? $('<div>').text(row.admin_name).html() : `Admin #${data}`;
+                        const email = row.admin_email ? `<small class="text-muted d-block">${$('<div>').text(row.admin_email).html()}</small>` : '';
+                        const isMe = (window.userId && parseInt(data) === parseInt(window.userId));
                         const meBadge = isMe ? '<span class="badge badge-success ms-1 py-0 px-1" style="font-size: 0.68rem;">Tú</span>' : '';
-                        return `<div><i class="fas fa-user-check text-primary me-1"></i><strong>${$('<div>').text(data).html()}</strong>${meBadge}${email}</div>`;
+                        const idBadge = `<span class="badge badge-light text-primary border border-primary-subtle ms-1" style="font-size: 0.72rem;">ID: ${data}</span>`;
+                        return `<div><i class="fas fa-user-shield text-primary me-1"></i><strong>${name}</strong>${meBadge}${idBadge}${email}</div>`;
                     }
                     return '<span class="badge badge-warning text-dark"><i class="fas fa-user-slash me-1"></i> Sin asignar</span>';
+                }
+            },
+            { 
+                data: 'id_client',
+                render: function (data, type, row) {
+                    if (data) {
+                        const clientName = row.client_name ? $('<div>').text(row.client_name).html() : `Cliente #${data}`;
+                        const idBadge = `<span class="badge badge-light text-info border border-info-subtle ms-1" style="font-size: 0.72rem;">ID: ${data}</span>`;
+                        return `<div><i class="fas fa-user-tie text-info me-1"></i><strong>${clientName}</strong>${idBadge}</div>`;
+                    }
+                    return '<span class="badge badge-secondary"><i class="fas fa-minus-circle me-1"></i> Sin titular</span>';
                 }
             },
             { 

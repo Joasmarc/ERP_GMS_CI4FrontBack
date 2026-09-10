@@ -364,24 +364,23 @@ function addWarehouseRemisionLine() {
                 <div class="position-relative remision-family-cell">
                     <div class="remision-search-group position-relative">
                         <i class="fas fa-search remision-search-icon"></i>
-                        <input type="text" class="form-control remision-family-search" placeholder="Buscar familia o producto..." autocomplete="off" required>
+                        <input type="text" class="form-control remision-family-search" placeholder="Buscar referencia o familia..." autocomplete="off" required>
                     </div>
-                    <input type="hidden" name="id_family[]" class="remision-family-id" value="" required>
+                    <input type="hidden" name="id_reference[]" class="remision-reference-id" value="" required>
+                    <input type="hidden" name="id_family[]" class="remision-family-id" value="">
+                    <input type="hidden" name="item_referencia[]" class="remision-reference-code" value="">
                     <input type="hidden" name="item_name[]" class="remision-family-name" value="">
                     <div class="remision-family-selected d-none">
                         <div class="d-flex align-items-center text-truncate me-2">
                             <i class="fas fa-check-circle text-success me-2 fs-5"></i>
                             <span class="fw-bold text-dark fs-6 remision-family-label text-truncate"></span>
                         </div>
-                        <button type="button" class="btn btn-outline-danger btn-round p-1 px-2 btn-clear-remision-family" title="Cambiar producto">
+                        <button type="button" class="btn btn-outline-danger btn-round p-1 px-2 btn-clear-remision-family" title="Cambiar referencia">
                             <i class="fas fa-times me-1"></i>Cambiar
                         </button>
                     </div>
                     <div class="dropdown-menu w-100 shadow-lg p-0 mt-1 border-0 remision-family-dropdown" style="max-height: 260px; overflow-y: auto; z-index: 1080; display: none;"></div>
                 </div>
-            </td>
-            <td>
-                <input type="text" class="form-control" name="item_referencia[]" placeholder="Ej: REF-01">
             </td>
             <td>
                 <input type="text" class="form-control" name="item_lote[]" placeholder="Ej: L-01" maxlength="25">
@@ -406,10 +405,12 @@ function addWarehouseRemisionLine() {
  * Agregar una nueva fila de artículo a la tabla del modal de ajuste de bodega
  */
 function addWarehouseAdjustLine() {
-    let optionsHtml = '<option value="">Seleccione un artículo / lote...</option>';
+    let optionsHtml = '<option value="">Seleccione una referencia / lote...</option>';
     if (typeof currentWarehouseItems !== 'undefined' && currentWarehouseItems && currentWarehouseItems.length > 0) {
         currentWarehouseItems.forEach(item => {
-            const itemName = item.family_name || item.name_item || ('Producto #' + (item.id_family || item.id));
+            const refCode = item.reference || ('Ref #' + (item.id_reference || item.id));
+            const famName = item.family_name || item.name_item || '';
+            const itemName = famName ? `${refCode} - ${famName}` : refCode;
             const lotInfo = (item.lot && item.lot.trim() !== '') ? ` [Lote: ${item.lot.trim()}]` : ' [Sin Lote]';
             let expInfo = '';
             if (item.expiration_date && item.expiration_date !== '0000-00-00' && item.expiration_date.trim() !== '') {
@@ -423,7 +424,7 @@ function addWarehouseAdjustLine() {
             optionsHtml += `<option value="${item.id}" data-quantity="${currentQty}">${safeItemName}${safeLotInfo}${safeExpInfo} (Saldo: ${currentQty})</option>`;
         });
     } else {
-        optionsHtml = '<option value="">No hay artículos registrados con saldo en esta bodega</option>';
+        optionsHtml = '<option value="">No hay referencias registradas con saldo en esta bodega</option>';
     }
 
     const rowHtml = `
@@ -456,13 +457,22 @@ function addWarehouseAdjustLine() {
  * Agregar una nueva fila de artículo a la tabla del modal de transferencia
  */
 function addTransferLine() {
-    let optionsHtml = '<option value="">Seleccione un artículo / lote...</option>';
-    currentWarehouseItems.forEach(item => {
-        const itemName = item.family_name || item.name_item || ('Producto #' + item.id);
-        const lotInfo = (item.lot && item.lot.trim() !== '') ? `[Lote: ${item.lot.trim()}]` : '[Sin Lote]';
+    let optionsHtml = '<option value="">Seleccione una referencia / lote...</option>';
+    (currentWarehouseItems || []).forEach(item => {
+        const refCode = item.reference || ('Ref #' + (item.id_reference || item.id));
+        const famName = item.family_name || item.name_item || '';
+        const itemName = famName ? `${refCode} - ${famName}` : refCode;
+        const lotInfo = (item.lot && item.lot.trim() !== '') ? ` [Lote: ${item.lot.trim()}]` : ' [Sin Lote]';
+        let expInfo = '';
+        if (item.expiration_date && item.expiration_date !== '0000-00-00' && item.expiration_date.trim() !== '') {
+            const expOnly = item.expiration_date.split(' ')[0];
+            expInfo = ` - Vence: ${expOnly}`;
+        }
         const safeItemName = $('<div>').text(itemName).html();
         const safeLotInfo = $('<div>').text(lotInfo).html();
-        optionsHtml += `<option value="${item.id}" data-name="${safeItemName}">${safeItemName} ${safeLotInfo}</option>`;
+        const safeExpInfo = $('<div>').text(expInfo).html();
+        const currentQty = parseInt(item.quantity || 0);
+        optionsHtml += `<option value="${item.id}" data-name="${safeItemName}" data-quantity="${currentQty}">${safeItemName}${safeLotInfo}${safeExpInfo} (Disp: ${currentQty})</option>`;
     });
 
     const rowHtml = `
@@ -530,11 +540,22 @@ function viewWarehouseBalance(warehouseId) {
                 $('#bodega_detail_title').text(warehouse.name || 'Bodega');
                 $('#bodega_detail_adress').text(warehouse.adress || '');
                 
-                if (warehouse && warehouse.responsible_name) {
-                    $('#bodega_detail_responsible').text(warehouse.responsible_name);
+                if (warehouse && (warehouse.admin_name || warehouse.responsible_name) && (warehouse.admin_name !== 'Sin asignar' || warehouse.id_user_admin)) {
+                    const adminTxt = warehouse.admin_name || warehouse.responsible_name;
+                    const adminIdTxt = warehouse.id_user_admin ? ` (ID: ${warehouse.id_user_admin})` : '';
+                    $('#bodega_detail_responsible').text(adminTxt + adminIdTxt);
                     $('#bodega_detail_resp_wrapper').removeClass('d-none');
                 } else {
                     $('#bodega_detail_resp_wrapper').addClass('d-none');
+                }
+
+                if (warehouse && (warehouse.client_name || warehouse.titular_name || warehouse.id_client) && warehouse.client_name !== 'Sin asignar') {
+                    const clientTxt = warehouse.client_name || warehouse.titular_name || `Cliente #${warehouse.id_client}`;
+                    const clientIdTxt = warehouse.id_client ? ` (ID: ${warehouse.id_client})` : '';
+                    $('#bodega_detail_titular').text(clientTxt + clientIdTxt);
+                    $('#bodega_detail_titular_wrapper').removeClass('d-none');
+                } else {
+                    $('#bodega_detail_titular_wrapper').addClass('d-none');
                 }
                 
                 let statusBadge = warehouse.state === 'ACTIVE' 
@@ -600,7 +621,7 @@ function viewWarehouseBalance(warehouseId) {
 }
 
 /**
- * Agrupar balance de inventario por familias de productos (solo ítems con stock > 0)
+ * Agrupar balance de inventario por familias y referencias de productos (solo ítems con stock > 0)
  */
 function groupWarehouseBalanceByFamily(items) {
     const map = new Map();
@@ -609,14 +630,35 @@ function groupWarehouseBalanceByFamily(items) {
         const qty = parseInt(item.quantity || 0);
         if (qty <= 0) return; // Omitir cualquier línea con stock en 0
 
-        const famId = item.id_family || 0;
-        const famName = item.family_name || item.name_item || 'Sin nombre';
-        const key = famId > 0 ? `fam_${famId}` : `name_${famName}`;
+        const famId = parseInt(item.id_family || 0);
+        const refId = parseInt(item.id_reference || 0);
+        const refCode = (item.reference || '').trim();
+        const famName = (item.family_name || item.name_item || '').trim();
+
+        // Agrupar por la combinación exacta de familia y referencia
+        let key = '';
+        if (refId > 0 && famId > 0) {
+            key = `fam_${famId}_ref_${refId}`;
+        } else if (refId > 0) {
+            key = `ref_${refId}`;
+        } else if (refCode !== '' && famId > 0) {
+            key = `fam_${famId}_refcode_${refCode.toLowerCase()}`;
+        } else if (refCode !== '' && famName !== '') {
+            key = `famname_${famName.toLowerCase()}_refcode_${refCode.toLowerCase()}`;
+        } else if (famId > 0) {
+            key = `fam_${famId}`;
+        } else if (famName !== '') {
+            key = `famname_${famName.toLowerCase()}`;
+        } else {
+            key = `bal_${item.id}`;
+        }
 
         if (!map.has(key)) {
             map.set(key, {
-                id_family: famId > 0 ? famId : item.id,
-                family_name: famName,
+                id_family: famId > 0 ? famId : (item.id_family || null),
+                id_reference: refId > 0 ? refId : (item.id_reference || null),
+                reference: refCode || (item.reference || ''),
+                family_name: famName || (item.family_name || item.name_item || 'Sin familia'),
                 total_quantity: 0,
                 latest_update: item.updated_at || item.created_at || '-',
                 variations: []
@@ -636,7 +678,7 @@ function groupWarehouseBalanceByFamily(items) {
 }
 
 /**
- * Sub-líneas que lucen visualmente como filas de la tabla sin ID y sin repetir el nombre (solo stock > 0)
+ * Sub-líneas que lucen visualmente como filas de la tabla sin repetir familia ni referencia (variaciones de lotes)
  */
 function formatFamilySubLines(rowData) {
     if (!rowData || !rowData.variations) {
@@ -650,21 +692,22 @@ function formatFamilySubLines(rowData) {
 
     let rowsHtml = '';
     validVariations.forEach(v => {
-        const safeLot = v.lot 
-            ? `<span class="badge badge-secondary"><i class="fas fa-barcode me-1"></i>${$('<div>').text(v.lot).html()}</span>` 
-            : '<span class="text-muted small">-</span>';
-        const safeExp = v.expiration_date 
+        const safeLot = (v.lot && v.lot.trim() !== '') 
+            ? `<span class="badge badge-secondary"><i class="fas fa-barcode me-1"></i>${$('<div>').text(v.lot.trim()).html()}</span>` 
+            : '<span class="badge badge-light border text-muted small">Sin lote</span>';
+        const safeExp = (v.expiration_date && v.expiration_date !== '0000-00-00' && v.expiration_date.trim() !== '') 
             ? `<span class="small text-muted"><i class="fas fa-calendar-alt me-1 text-secondary"></i>${$('<div>').text(v.expiration_date.split(' ')[0]).html()}</span>` 
             : '<span class="text-muted small">-</span>';
         const qty = parseInt(v.quantity || 0);
         const badgeClass = qty > 10 ? 'badge-success' : 'badge-warning';
-        const safeDate = v.updated_at ? $('<div>').text(v.updated_at).html() : '-';
+        const safeDate = v.updated_at ? $('<div>').text(v.updated_at).html() : (v.created_at ? $('<div>').text(v.created_at).html() : '-');
 
         rowsHtml += `
             <tr class="subline-row">
                 <td class="border-top-0 text-center"></td>
                 <td class="border-top-0 ps-3 text-muted">
                     <i class="fas fa-level-up-alt fa-rotate-90 text-muted opacity-50 me-2"></i>
+                    <span class="small text-secondary fw-semibold">Lote específico</span>
                 </td>
                 <td class="border-top-0">${safeLot}</td>
                 <td class="border-top-0">${safeExp}</td>
@@ -714,7 +757,7 @@ function syncSublineColumns() {
 }
 
 /**
- * Renderizar la tabla de balance agrupada por familia con sub-líneas permanentemente visibles
+ * Renderizar la tabla de balance agrupada por familia y referencia con sub-líneas para variación de lotes
  */
 function renderBalanceTable(items) {
     if ($.fn.DataTable.isDataTable('#tbl_list_bodega_balance')) {
@@ -732,20 +775,33 @@ function renderBalanceTable(items) {
                 data: null,
                 width: '50px',
                 render: function (data, type, row) {
-                    if (row && row.variations && row.variations.length === 1) {
-                        return row.variations[0].id || '-';
+                    if (row && row.id_reference) {
+                        return row.id_reference;
                     }
-                    return (row && row.id_family) ? row.id_family : (row ? row.id : '-');
+                    if (row && row.variations && row.variations.length === 1) {
+                        return row.variations[0].id_reference || row.variations[0].id || '-';
+                    }
+                    return (row && row.id_family) ? row.id_family : (row ? (row.id || '-') : '-');
                 }
             },
             { 
-                data: 'family_name',
+                data: null,
                 defaultContent: '',
-                render: function (data) {
-                    const safeName = $('<div>').text(data || 'Sin nombre').html();
+                render: function (data, type, row) {
+                    const safeFam = $('<div>').text((row && row.family_name) ? row.family_name : 'Sin familia').html();
+                    const safeRef = $('<div>').text((row && row.reference) ? row.reference : '').html();
+                    
+                    let refBadge = '';
+                    if (safeRef && safeRef !== '-' && safeRef.toLowerCase() !== safeFam.toLowerCase()) {
+                        refBadge = `<span class="badge badge-success badge-sm ms-2 font-monospace" style="font-size: 0.8rem; font-weight: 600;">
+                            <i class="fas fa-tag me-1"></i>${safeRef}
+                        </span>`;
+                    }
+
                     return `<div class="d-inline-flex align-items-center py-1 text-wrap">
                         <i class="fas fa-box text-secondary me-2 fs-6 flex-shrink-0"></i>
-                        <strong class="text-dark" style="font-size: 0.94rem; word-break: break-word;">${safeName}</strong>
+                        <strong class="text-dark" style="font-size: 0.94rem; word-break: break-word;">${safeFam}</strong>
+                        ${refBadge}
                     </div>`;
                 }
             },
@@ -756,7 +812,7 @@ function renderBalanceTable(items) {
                     if (!variations || variations.length === 0) return '<span class="text-muted small">-</span>';
                     if (variations.length === 1) {
                         const lot = variations[0].lot;
-                        return lot ? `<span class="badge badge-secondary"><i class="fas fa-barcode me-1"></i>${$('<div>').text(lot).html()}</span>` : '<span class="text-muted small">-</span>';
+                        return (lot && lot.trim() !== '') ? `<span class="badge badge-secondary"><i class="fas fa-barcode me-1"></i>${$('<div>').text(lot.trim()).html()}</span>` : '<span class="badge badge-light border text-muted small">Sin lote</span>';
                     }
                     return `<span class="badge badge-secondary"><i class="fas fa-layer-group me-1"></i>${variations.length} lotes</span>`;
                 }
@@ -768,7 +824,7 @@ function renderBalanceTable(items) {
                     if (!variations || variations.length === 0) return '<span class="text-muted small">-</span>';
                     if (variations.length === 1) {
                         const exp = variations[0].expiration_date;
-                        return exp ? `<span class="small text-muted"><i class="fas fa-calendar-alt me-1 text-secondary"></i>${$('<div>').text(exp.split(' ')[0]).html()}</span>` : '<span class="text-muted small">-</span>';
+                        return (exp && exp !== '0000-00-00' && exp.trim() !== '') ? `<span class="small text-muted"><i class="fas fa-calendar-alt me-1 text-secondary"></i>${$('<div>').text(exp.split(' ')[0]).html()}</span>` : '<span class="text-muted small">-</span>';
                     }
                     return '<span class="text-muted small">-</span>';
                 }
@@ -788,13 +844,13 @@ function renderBalanceTable(items) {
                     return `<span class="badge ${badgeClass} fs-6 fw-bold">${qty.toLocaleString()}</span>`;
                 }
             },
-            {
+            { 
                 data: null,
                 width: '150px',
                 render: function (data, type, row) {
                     let updateVal = '-';
                     if (row && row.variations && row.variations.length === 1) {
-                        updateVal = row.variations[0].updated_at || '-';
+                        updateVal = row.variations[0].updated_at || (row.variations[0].created_at || '-');
                     } else if (row) {
                         updateVal = row.latest_update || '-';
                     }
@@ -806,20 +862,23 @@ function renderBalanceTable(items) {
         pageLength: 10,
         language: getDatatablesLanguageBodegas(),
         createdRow: function (row, data) {
-            // Aplicar estilo de fila padre solo si la familia tiene más de 1 lote
+            // Aplicar estilo de fila padre solo si tiene más de 1 lote
             if (data && data.variations && data.variations.length > 1) {
                 $(row).addClass('family-parent-row');
             }
         },
         drawCallback: function () {
-            // Solo mostrar sub-líneas si la familia tiene más de 1 lote
+            // Mostrar sub-líneas para variaciones de lotes de una misma familia y referencia
             const api = this.api();
             api.rows({ page: 'current' }).every(function () {
                 const data = this.data();
-                if (data && data.variations && data.variations.length > 1) {
-                    this.child(formatFamilySubLines(data), 'child-subline p-0').show();
+                const sublinesHtml = formatFamilySubLines(data);
+                if (sublinesHtml && sublinesHtml.trim() !== '') {
+                    this.child(sublinesHtml, 'child-subline p-0').show();
                 } else {
-                    this.child.hide();
+                    if (this.child && typeof this.child.isShown === 'function' && this.child.isShown()) {
+                        this.child.hide();
+                    }
                 }
             });
             syncSublineColumns();

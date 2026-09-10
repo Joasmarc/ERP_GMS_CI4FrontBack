@@ -106,5 +106,19 @@ class FamiliesReference extends Model
             ->orderBy('families_reference.reference', 'ASC')
             ->findAll();
     }
+
+    /**
+     * Obtener referencia por ID con datos de la familia asociada
+     *
+     * @param int $id
+     * @return array|null
+     */
+    public function getWithFamilyById(int $id): ?array
+    {
+        return $this->select('families_reference.*, families.keyword as family_name, families.keyword as family_keyword, families.state as family_state')
+            ->join('families', 'families.id = families_reference.id_family AND families.deleted_at IS NULL', 'left')
+            ->where('families_reference.id', $id)
+            ->first();
+    }
 }
 
