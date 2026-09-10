@@ -170,7 +170,7 @@
                 </a>
               </li>
             <?php endif; ?>
-            <?php if (isset($credentials[13]) && $credentials[13] === '1'): ?>
+            <?php if ((isset($credentials[13]) && $credentials[13] === '1') || (isset($credentials[14]) && $credentials[14] === '1')): ?>
               <li class="nav-item" style="background: transparent !important;">
                 <a href="#" id="btn_open_bodega">
                   <i class="fas fa-warehouse"></i>
@@ -752,6 +752,7 @@
                           <th style="width: 50px;">ID</th>
                           <th>Bodega</th>
                           <th>Dirección</th>
+                          <th>Responsable</th>
                           <th>Estado</th>
                           <th class="text-center">Artículos</th>
                           <th>Fecha Registro</th>
@@ -780,17 +781,25 @@
                         <i class="fas fa-boxes text-info me-2"></i>
                         <span id="bodega_detail_title">Inventario de Bodega</span>
                         <span id="bodega_detail_status" class="ms-2"></span>
+                        <span id="bodega_detail_role_badge" class="ms-2"></span>
                       </h4>
-                      <p class="text-muted small mb-0" id="bodega_detail_adress"></p>
+                      <p class="text-muted small mb-0">
+                        <span id="bodega_detail_adress"></span>
+                        <span id="bodega_detail_resp_wrapper" class="ms-2 ps-2 border-start d-none">
+                          <i class="fas fa-user-tie text-primary me-1"></i>Responsable: <strong id="bodega_detail_responsible" class="text-dark"></strong>
+                        </span>
+                      </p>
                     </div>
                   </div>
                   <div class="card-tools mt-2 mt-sm-0">
-                    <button class="btn btn-round btn-dark btn-sm me-2 text-white" id="btn_open_adjust_modal">
+                    <?php if (isset($credentials[14]) && $credentials[14] === '1'): ?>
+                    <button class="btn btn-round btn-dark btn-sm me-2 text-white d-none" id="btn_open_adjust_modal">
                       <span class="btn-label">
                         <i class="fas fa-sliders-h"></i>
                       </span>
                       Ajustar
                     </button>
+                    <?php endif; ?>
                     <button class="btn btn-round btn-warning btn-sm me-2" id="btn_open_transfer_modal">
                       <span class="btn-label">
                         <i class="fas fa-exchange-alt"></i>
@@ -1254,6 +1263,18 @@
               <input type="text" class="form-control" id="in_warehouse_adress" name="adress" maxlength="55" placeholder="Ej: Calle 45 # 12-34" required>
             </div>
             <div class="form-group mb-3">
+              <label for="in_warehouse_user" class="form-label fw-bold">Usuario Responsable *</label>
+              <select class="form-select" id="in_warehouse_user" name="id_user" required>
+                <option value="" disabled selected>-- Seleccione el usuario responsable --</option>
+                <?php if (!empty($warehouseUsers)): ?>
+                  <?php foreach ($warehouseUsers as $wUser): ?>
+                    <option value="<?= esc($wUser['id']) ?>"><?= esc($wUser['name']) ?> (<?= esc($wUser['email']) ?>)</option>
+                  <?php endforeach; ?>
+                <?php endif; ?>
+              </select>
+              <small class="form-text text-muted">Asigne el responsable que tendrá autorización para operar y gestionar los movimientos de esta bodega.</small>
+            </div>
+            <div class="form-group mb-3">
               <label for="in_warehouse_state" class="form-label fw-bold">Estado</label>
               <select class="form-select" id="in_warehouse_state" name="state">
                 <option value="ACTIVE" selected>Activo</option>
@@ -1344,17 +1365,17 @@
             <div class="card-body p-3">
               <div class="d-flex align-items-center mb-2">
                 <span class="badge bg-success me-2 px-2 py-1">Paso 1</span>
-                <h6 class="fw-bold mb-0 text-dark">Descargar Plantilla con Catálogo de Productos</h6>
+                <h6 class="fw-bold mb-0 text-dark">Descargar Plantilla por Referencia de Productos</h6>
               </div>
               <p class="text-muted small mb-3">
-                Descargue el formato en Excel que contiene el catálogo completo con el ID y Nombre de todos los productos activos en el sistema. Diligencie las casillas de <strong>Cantidad</strong>, <strong>Lote</strong>, <strong>Referencia</strong> y <strong>Fecha de Vencimiento</strong> para los artículos a ingresar.
+                Descargue el formato en Excel que contiene el catálogo organizado por la <strong>Referencia</strong> de cada artículo perteneciente a las familias de productos activas en el sistema. Diligencie únicamente las casillas de <strong>Cantidad</strong>, <strong>Lote</strong> y <strong>Fecha de Vencimiento</strong> para los artículos a ingresar.
               </p>
               <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                 <a href="<?= base_url('warehouse/download_batch_template') ?>" class="btn btn-sm btn-outline-success btn-round fw-bold px-3 shadow-sm" id="btn_download_batch_template">
                   <i class="fas fa-file-excel text-success me-1"></i> Descargar Plantilla Excel (.xlsx)
                 </a>
                 <span class="text-muted small">
-                  <i class="fas fa-info-circle text-info me-1"></i> Deje en blanco los productos que no ingresarán.
+                  <i class="fas fa-info-circle text-info me-1"></i> Deje en blanco los artículos que no ingresarán.
                 </span>
               </div>
             </div>
@@ -1605,6 +1626,7 @@
   <!-- Main -->
   <script>
     window.userCredentials = <?= json_encode($credentials ?? []) ?>;
+    window.userId = <?= json_encode((int)($user_id ?? 0)) ?>;
     window.BASE_URL = '<?= base_url() ?>';
   </script>
   <script src="<?= base_url('public/assets/js/module/dashboard/global.js') ?>?v=<?= filemtime(ROOTPATH . 'public/assets/js/module/dashboard/global.js') ?>"></script>

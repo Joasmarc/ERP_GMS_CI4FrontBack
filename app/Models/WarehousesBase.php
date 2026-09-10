@@ -16,6 +16,7 @@ class WarehousesBase extends Model
         'name',
         'adress',
         'state',
+        'id_user',
         'deleted_at'
     ];
 
@@ -25,6 +26,7 @@ class WarehousesBase extends Model
         'name'       => 'string',
         'adress'     => 'string',
         'state'      => 'string',
+        'id_user'    => 'int',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'int'
@@ -40,8 +42,9 @@ class WarehousesBase extends Model
 
     // 5.0 Validación de datos
     protected $validationRules = [
-        'name'   => 'required|string|max_length[55]',
-        'adress' => 'required|string|max_length[55]',
-        'state'  => 'permit_empty|in_list[ACTIVE,INACTIVE]'
+        'name'    => 'required|string|max_length[55]',
+        'adress'  => 'required|string|max_length[55]',
+        'state'   => 'permit_empty|in_list[ACTIVE,INACTIVE]',
+        'id_user' => 'permit_empty|integer'
     ];
 }

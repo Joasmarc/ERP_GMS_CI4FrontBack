@@ -19,6 +19,8 @@ const SCREENS = {
 
 let GLOBAL_PRODUCTS_DATA = [];
 const CAN_DELETE = window.userCredentials && window.userCredentials[8] === '1';
+const CAN_ADJUST_WAREHOUSE = window.userCredentials && window.userCredentials[14] === '1';
+const CAN_MANAGE_ALL_WAREHOUSES = window.userCredentials && (window.userCredentials[14] === '1' || window.userCredentials[0] === '1');
 
 // Bodegas States
 let dtBodegas = null;

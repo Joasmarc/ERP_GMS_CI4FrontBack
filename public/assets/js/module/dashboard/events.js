@@ -895,6 +895,11 @@ $('#modal_add_warehouse_item').on('show.bs.modal', function (e) {
         swal("No permitido", "Solo la bodega principal puede registrar ingresos de inventario.", "warning");
         return false;
     }
+    if (!currentWarehouseData.can_operate) {
+        e.preventDefault();
+        swal("Acceso Denegado", "Solo el usuario responsable asignado puede registrar ingresos en esta bodega.", "warning");
+        return false;
+    }
     $('#in_item_warehouse_id').val(currentWarehouseId);
 
     // Si la tabla no tiene filas, añadir la primera fila lista
@@ -1034,14 +1039,41 @@ $(document).on('click', function (e) {
     }
 });
 
+// Bodegas - Asegurar carga de usuarios autorizados al abrir modal de crear bodega
+$('#modal_create_warehouse').on('show.bs.modal', function () {
+    const userSelect = $('#in_warehouse_user');
+    if (userSelect.find('option:not(:disabled)').length === 0) {
+        $.ajax({
+            url: SITE_URL + '/warehouse/users',
+            type: 'GET',
+            dataType: 'json',
+            success: function (resp) {
+                if (resp.status === 'success' && Array.isArray(resp.data)) {
+                    userSelect.find('option:not(:disabled)').remove();
+                    resp.data.forEach(function (u) {
+                        const opt = $('<option>').val(u.id).text(u.name + (u.email ? ' (' + u.email + ')' : ''));
+                        userSelect.append(opt);
+                    });
+                }
+            }
+        });
+    }
+});
+
 // Bodegas - Guardar nueva bodega
 $('#btn_save_warehouse').on('click', function () {
     const form = $('#form_create_warehouse');
     const name = $('#in_warehouse_name').val().trim();
     const adress = $('#in_warehouse_adress').val().trim();
+    const idUser = $('#in_warehouse_user').val();
 
     if (!name || !adress) {
-        swal("Atención", "Por favor complete todos los campos obligatorios.", "warning");
+        swal("Atención", "Por favor ingrese el nombre y la dirección de la bodega.", "warning");
+        return;
+    }
+
+    if (!idUser) {
+        swal("Atención", "Por favor seleccione el usuario responsable de la bodega.", "warning");
         return;
     }
 
@@ -1155,6 +1187,11 @@ $('#btn_save_warehouse_item').on('click', function () {
 $('#btn_open_transfer_modal').on('click', function () {
     if (!currentWarehouseId || !currentWarehouseData) {
         swal("Atención", "No hay una bodega activa seleccionada.", "warning");
+        return;
+    }
+
+    if (!currentWarehouseData.can_operate) {
+        swal("Acceso Denegado", "Solo el usuario responsable asignado puede realizar transferencias de stock en esta bodega.", "warning");
         return;
     }
 
@@ -1369,6 +1406,17 @@ $('#btn_open_adjust_modal').on('click', function () {
         swal("Atención", "Seleccione una bodega válida para realizar el ajuste.", "warning");
         return;
     }
+
+    if (!window.userCredentials || window.userCredentials[14] !== '1') {
+        swal("Acceso Denegado", "La opción de ajustar inventario es exclusiva para usuarios con la credencial 14 autorizada.", "warning");
+        return;
+    }
+
+    if (!currentWarehouseData.can_operate) {
+        swal("Acceso Denegado", "No tiene permisos para operar en esta bodega.", "warning");
+        return;
+    }
+
     $('#adjust_warehouse_id').val(currentWarehouseId);
     $('#adjust_warehouse_name').text(currentWarehouseData.name || 'Bodega #' + currentWarehouseId);
     $('#form_adjust_warehouse_stock')[0].reset();
@@ -1454,6 +1502,11 @@ $(document).on('input', '.adjust-qty-input', function () {
 
 // Guardar ajuste de inventario
 $('#btn_save_adjust_stock').on('click', function () {
+    if (!window.userCredentials || window.userCredentials[14] !== '1') {
+        swal("Acceso Denegado", "Solo los usuarios con la credencial 14 autorizada pueden guardar ajustes de inventario.", "warning");
+        return;
+    }
+
     const form = $('#form_adjust_warehouse_stock');
     const obs = $('#adjust_observation').val().trim();
 
@@ -1568,7 +1621,12 @@ function resetMassUploadModal() {
 }
 
 // Al abrir o cerrar la modal, reiniciar estado
-$('#modal_mass_upload_warehouse').on('show.bs.modal', function () {
+$('#modal_mass_upload_warehouse').on('show.bs.modal', function (e) {
+    if (!currentWarehouseData || !currentWarehouseData.can_operate) {
+        e.preventDefault();
+        swal("Acceso Denegado", "Solo el usuario responsable asignado puede realizar cargues masivos en esta bodega.", "warning");
+        return false;
+    }
     resetMassUploadModal();
 });
 $('#modal_mass_upload_warehouse').on('hidden.bs.modal', function () {
@@ -1657,6 +1715,11 @@ $('#btn_process_mass_upload').on('click', function () {
 
     if (!currentWarehouseData || !currentWarehouseData.is_main) {
         swal("No permitido", "El cargue masivo solo se puede realizar en la Bodega Principal.", "warning");
+        return;
+    }
+
+    if (!currentWarehouseData.can_operate) {
+        swal("Acceso Denegado", "Solo el usuario responsable asignado puede procesar cargues masivos en esta bodega.", "warning");
         return;
     }
 

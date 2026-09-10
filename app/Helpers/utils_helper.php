@@ -4,7 +4,7 @@ if (!function_exists('pad_right_zeros')) {
     // Rellenar ceros a la derecha
     function pad_right_zeros(string $inputString): string
     {
-        $targetLength = 15;
+        $targetLength = 20;
 
         // 1.0 Inicializar interfaz y formatear cadena - Iniciar variable de interfaz
         $UTILS = [];

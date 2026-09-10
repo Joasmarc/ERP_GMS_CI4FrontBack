@@ -512,10 +512,15 @@ function viewWarehouseBalance(warehouseId) {
                 const items = rawItems.filter(i => parseInt(i.quantity || 0) > 0);
 
                 const isMainWarehouse = resp.is_main === true || (warehouse && warehouse.is_main === true);
+                const canManageAll = window.userCredentials && (window.userCredentials[14] === '1' || window.userCredentials[0] === '1');
+                const canOperate = canManageAll || resp.can_operate === true || (warehouse && warehouse.can_operate === true);
+                const canAdjust = (resp.can_adjust === true) || (window.userCredentials && window.userCredentials[14] === '1');
 
                 currentWarehouseData = warehouse;
                 if (currentWarehouseData) {
                     currentWarehouseData.is_main = isMainWarehouse;
+                    currentWarehouseData.can_operate = canOperate;
+                    currentWarehouseData.can_adjust = canAdjust;
                 }
 
                 // Guardar artículos con saldo disponible > 0 para transferencias
@@ -524,6 +529,13 @@ function viewWarehouseBalance(warehouseId) {
                 // Actualizar títulos e información de cabecera
                 $('#bodega_detail_title').text(warehouse.name || 'Bodega');
                 $('#bodega_detail_adress').text(warehouse.adress || '');
+                
+                if (warehouse && warehouse.responsible_name) {
+                    $('#bodega_detail_responsible').text(warehouse.responsible_name);
+                    $('#bodega_detail_resp_wrapper').removeClass('d-none');
+                } else {
+                    $('#bodega_detail_resp_wrapper').addClass('d-none');
+                }
                 
                 let statusBadge = warehouse.state === 'ACTIVE' 
                     ? '<span class="badge badge-success"><i class="fas fa-check-circle me-1"></i> Activo</span>'
@@ -534,11 +546,36 @@ function viewWarehouseBalance(warehouseId) {
                 }
                 $('#bodega_detail_status').html(statusBadge);
 
-                // Mostrar botón "Agregar Artículo" y "Cargue Masivo" únicamente si es la bodega principal
-                if (isMainWarehouse) {
-                    $('#btn_add_warehouse_item').removeClass('d-none');
-                    $('#btn_open_mass_upload_modal').removeClass('d-none');
+                let roleBadge = '';
+                if (window.userCredentials && window.userCredentials[14] === '1') {
+                    roleBadge = '<span class="badge badge-primary ms-1"><i class="fas fa-user-shield me-1"></i> Administrador de Bodegas</span>';
+                } else if (canOperate) {
+                    roleBadge = '<span class="badge badge-info ms-1"><i class="fas fa-user-check me-1"></i> Responsable</span>';
                 } else {
+                    roleBadge = '<span class="badge badge-secondary ms-1"><i class="fas fa-eye me-1"></i> Solo Lectura</span>';
+                }
+                $('#bodega_detail_role_badge').html(roleBadge);
+
+                // Control de visibilidad de botones según autorización can_operate y can_adjust
+                if (canOperate) {
+                    $('#btn_open_transfer_modal').removeClass('d-none');
+                    if (canAdjust) {
+                        $('#btn_open_adjust_modal').removeClass('d-none');
+                    } else {
+                        $('#btn_open_adjust_modal').addClass('d-none');
+                    }
+
+                    if (isMainWarehouse) {
+                        $('#btn_add_warehouse_item').removeClass('d-none');
+                        $('#btn_open_mass_upload_modal').removeClass('d-none');
+                    } else {
+                        $('#btn_add_warehouse_item').addClass('d-none');
+                        $('#btn_open_mass_upload_modal').addClass('d-none');
+                    }
+                } else {
+                    // Ocultar botones de movimiento para usuarios sin autorización en esta bodega
+                    $('#btn_open_adjust_modal').addClass('d-none');
+                    $('#btn_open_transfer_modal').addClass('d-none');
                     $('#btn_add_warehouse_item').addClass('d-none');
                     $('#btn_open_mass_upload_modal').addClass('d-none');
                 }

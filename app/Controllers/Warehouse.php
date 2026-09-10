@@ -10,6 +10,7 @@ use App\Models\Families;
 use App\Models\DispatchAdvices;
 use App\Models\DispatchAdviceItems;
 use App\Libraries\ExcelHelper;
+use App\Models\Users;
 
 class Warehouse extends BaseController
 {
@@ -23,7 +24,37 @@ class Warehouse extends BaseController
         }
 
         $credentials = session('credentials');
-        return isset($credentials[13]) && $credentials[13] === '1';
+        return (isset($credentials[13]) && $credentials[13] === '1') || 
+               (isset($credentials[14]) && $credentials[14] === '1') || 
+               (isset($credentials[0]) && $credentials[0] === '1');
+    }
+
+    /**
+     * Verificar si el usuario en sesión es responsable de la bodega o administrador
+     */
+    private function canOperateWarehouse(int $warehouseId): bool
+    {
+        if (!session()->has('user_id')) {
+            return false;
+        }
+
+        $credentials = session('credentials');
+        // Administrador general (credentials[0]) o Administrador de todas las bodegas (credentials[14])
+        if ((isset($credentials[0]) && $credentials[0] === '1') || 
+            (isset($credentials[14]) && $credentials[14] === '1')) {
+            return true;
+        }
+
+        $warehouseModel = new WarehousesBase();
+        $warehouse = $warehouseModel->where('id', $warehouseId)
+            ->where('deleted_at IS NULL')
+            ->first();
+
+        if (!$warehouse) {
+            return false;
+        }
+
+        return (int)($warehouse['id_user'] ?? 0) === (int)session('user_id');
     }
 
     /**
@@ -53,17 +84,25 @@ class Warehouse extends BaseController
 
         $db = \Config\Database::connect();
         $builder = $db->table('warehouses_base wb');
-        $builder->select('wb.id, wb.name, wb.adress, wb.state, wb.created_at, wb.updated_at, COUNT(b.id) as total_items');
+        $builder->select('wb.id, wb.name, wb.adress, wb.state, wb.id_user, wb.created_at, wb.updated_at, u.name as user_name, u.email as user_email, COUNT(b.id) as total_items');
         $builder->join('warehouses_balance b', 'b.id_warehouse = wb.id AND b.deleted_at IS NULL AND b.quantity > 0', 'left');
+        $builder->join('users u', 'u.id = wb.id_user', 'left');
         $builder->where('wb.deleted_at IS NULL');
-        $builder->groupBy('wb.id, wb.name, wb.adress, wb.state, wb.created_at, wb.updated_at');
+        $builder->groupBy('wb.id, wb.name, wb.adress, wb.state, wb.id_user, wb.created_at, wb.updated_at, u.name, u.email');
         $builder->orderBy('wb.id', 'ASC');
 
         $records = $builder->get()->getResultArray();
 
         $mainWarehouseId = $this->getMainWarehouseId();
+        $currentUserId = (int)session('user_id');
+        $credentials = session('credentials');
+        $isAdmin = (isset($credentials[0]) && $credentials[0] === '1');
+        $isWarehouseAdmin = (isset($credentials[14]) && $credentials[14] === '1');
+
         foreach ($records as &$rec) {
             $rec['is_main'] = ($mainWarehouseId !== null && (int)$rec['id'] === $mainWarehouseId);
+            $rec['is_responsible'] = ($currentUserId === (int)($rec['id_user'] ?? 0));
+            $rec['can_operate'] = ($isAdmin || $isWarehouseAdmin || $rec['is_responsible']);
         }
         unset($rec);
 
@@ -139,14 +178,83 @@ class Warehouse extends BaseController
         $isMain = ($mainWarehouseId !== null && (int)$warehouse['id'] === $mainWarehouseId);
         $warehouse['is_main'] = $isMain;
 
+        $currentUserId = (int)session('user_id');
+        $credentials = session('credentials');
+        $isAdmin = (isset($credentials[0]) && $credentials[0] === '1');
+        $isWarehouseAdmin = (isset($credentials[14]) && $credentials[14] === '1');
+        $isResponsible = ($currentUserId === (int)($warehouse['id_user'] ?? 0));
+        $canOperate = ($isAdmin || $isWarehouseAdmin || $isResponsible);
+        $canAdjust = $isWarehouseAdmin; // La opción de ajustar es exclusiva para usuarios con credencial 14
+
+        $warehouse['is_responsible'] = $isResponsible;
+        $warehouse['can_operate'] = $canOperate;
+        $warehouse['can_adjust'] = $canAdjust;
+
+        if (!empty($warehouse['id_user'])) {
+            $userModel = new Users();
+            $respUser = $userModel->select('id, name, email')->find($warehouse['id_user']);
+            $warehouse['responsible_name'] = $respUser ? $respUser['name'] : 'Sin asignar';
+            $warehouse['responsible_email'] = $respUser ? $respUser['email'] : '';
+        } else {
+            $warehouse['responsible_name'] = 'Sin asignar';
+            $warehouse['responsible_email'] = '';
+        }
+
         $balanceModel = new WarehousesBalance();
         $items = $balanceModel->getBalanceWithFamilies($warehouseId);
 
         return $this->response->setJSON([
-            'status'    => 'success',
-            'warehouse' => $warehouse,
-            'is_main'   => $isMain,
-            'data'      => $items
+            'status'      => 'success',
+            'warehouse'   => $warehouse,
+            'is_main'     => $isMain,
+            'can_operate' => $canOperate,
+            'can_adjust'  => $canAdjust,
+            'data'        => $items
+        ]);
+    }
+
+    /**
+     * Obtener listado de usuarios autorizados para asignación como responsables de bodega
+     */
+    public function get_users()
+    {
+        if (!$this->checkPermission()) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'No autorizado.'
+            ])->setStatusCode(403);
+        }
+
+        helper('utils');
+        $userModel = new Users();
+        $allUsers = $userModel->select('id, name, email, credentials')->orderBy('name', 'ASC')->findAll();
+
+        $warehouseUsers = [];
+        foreach ($allUsers as $u) {
+            $userCreds = pad_right_zeros((string)($u['credentials'] ?? ''));
+            if ((isset($userCreds[13]) && $userCreds[13] === '1') || (isset($userCreds[14]) && $userCreds[14] === '1')) {
+                $warehouseUsers[] = [
+                    'id'    => (int)$u['id'],
+                    'name'  => $u['name'],
+                    'email' => $u['email']
+                ];
+            }
+        }
+
+        // Fallback si ningún usuario tiene la credencial configurada aún
+        if (empty($warehouseUsers)) {
+            foreach ($allUsers as $u) {
+                $warehouseUsers[] = [
+                    'id'    => (int)$u['id'],
+                    'name'  => $u['name'],
+                    'email' => $u['email']
+                ];
+            }
+        }
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'data'   => $warehouseUsers
         ]);
     }
 
@@ -165,11 +273,28 @@ class Warehouse extends BaseController
         $name = trim($this->request->getPost('name') ?? '');
         $adress = trim($this->request->getPost('adress') ?? '');
         $state = trim($this->request->getPost('state') ?? 'ACTIVE');
+        $idUser = filter_var($this->request->getPost('id_user'), FILTER_VALIDATE_INT);
 
         if (empty($name) || empty($adress)) {
             return $this->response->setJSON([
                 'status'  => 'error',
                 'message' => 'Nombre y dirección son campos requeridos.'
+            ]);
+        }
+
+        if (!$idUser) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'Debe seleccionar un usuario responsable para la bodega.'
+            ]);
+        }
+
+        $userModel = new Users();
+        $assignedUser = $userModel->find($idUser);
+        if (!$assignedUser) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'El usuario seleccionado como responsable no existe.'
             ]);
         }
 
@@ -185,6 +310,7 @@ class Warehouse extends BaseController
             'name'       => $name,
             'adress'     => $adress,
             'state'      => $state,
+            'id_user'    => $idUser,
             'created_at' => $now,
             'updated_at' => $now
         ];
@@ -255,6 +381,13 @@ class Warehouse extends BaseController
         $lot         = $lotRaw === '' ? null : substr($lotRaw, 0, 25);
         $expDateRaw  = trim($this->request->getPost('expiration_date') ?? '');
         $expirationDate = null;
+
+        if (!$this->canOperateWarehouse((int)$idWarehouse)) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'No tiene permisos para registrar artículos en esta bodega. Solo el responsable asignado puede operar.'
+            ])->setStatusCode(403);
+        }
         if (!empty($expDateRaw)) {
             $parsedDate = date_create($expDateRaw);
             if ($parsedDate) {
@@ -373,6 +506,13 @@ class Warehouse extends BaseController
                 'status'  => 'error',
                 'message' => 'No se especificó la bodega.'
             ]);
+        }
+
+        if (!$this->canOperateWarehouse((int)$idWarehouse)) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'No tiene permisos para generar remisiones en esta bodega. Solo el responsable asignado puede operar.'
+            ])->setStatusCode(403);
         }
 
         $mainWarehouseId = $this->getMainWarehouseId();
@@ -603,6 +743,13 @@ class Warehouse extends BaseController
                 'status'  => 'error',
                 'message' => 'Debe especificar tanto la bodega de origen como la de destino.'
             ]);
+        }
+
+        if (!$this->canOperateWarehouse((int)$idWarehouseSend)) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'No tiene permisos para transferir stock desde esta bodega. Solo el responsable asignado puede operar.'
+            ])->setStatusCode(403);
         }
 
         if ($idWarehouseSend === $idWarehouseReceives) {
@@ -868,6 +1015,15 @@ class Warehouse extends BaseController
             ])->setStatusCode(403);
         }
 
+        // La opción de ajustar es exclusiva para usuarios con la credencial 14 activa
+        $credentials = session('credentials');
+        if (!isset($credentials[14]) || $credentials[14] !== '1') {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'No autorizado. La opción de ajuste de inventario es exclusiva para usuarios con la credencial 14 autorizada.'
+            ])->setStatusCode(403);
+        }
+
         $idWarehouse = filter_var($this->request->getPost('id_warehouse'), FILTER_VALIDATE_INT);
         $observacion = trim($this->request->getPost('observacion') ?? '');
 
@@ -876,6 +1032,13 @@ class Warehouse extends BaseController
                 'status'  => 'error',
                 'message' => 'No se especificó la bodega a ajustar.'
             ]);
+        }
+
+        if (!$this->canOperateWarehouse((int)$idWarehouse)) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'No tiene permisos para realizar ajustes en esta bodega.'
+            ])->setStatusCode(403);
         }
 
         if (empty($observacion)) {
@@ -1044,6 +1207,7 @@ class Warehouse extends BaseController
 
     /**
      * Descargar plantilla Excel para cargue masivo de productos a la bodega principal
+     * Organizada por REFERENCIA de los items pertenecientes a las familias activas
      */
     public function download_batch_template()
     {
@@ -1051,33 +1215,16 @@ class Warehouse extends BaseController
             return $this->response->setStatusCode(403)->setBody('No autorizado.');
         }
 
-        $familyModel = new Families();
-        $families = $familyModel->select('id, keyword')
-            ->where('state', 'ACTIVO')
-            ->where('deleted_at IS NULL')
-            ->orderBy('keyword', 'ASC')
-            ->findAll();
-
         $headers = [
             'ID_PRODUCTO',
             'NOMBRE_PRODUCTO',
+            'REFERENCIA',
             'CANTIDAD',
             'LOTE',
-            'REFERENCIA',
             'FECHA_VENCIMIENTO'
         ];
 
-        $rows = [];
-        foreach ($families as $f) {
-            $rows[] = [
-                (int)$f['id'],
-                $f['keyword'],
-                '', // Cantidad vacía
-                '', // Lote vacío
-                '', // Referencia vacía
-                ''  // Fecha de vencimiento vacía
-            ];
-        }
+        $rows = $this->getCatalogItemsForTemplate();
 
         $xlsxContent = ExcelHelper::generateXlsx($headers, $rows);
         $filename = 'plantilla_cargue_masivo_bodega_principal.xlsx';
@@ -1087,6 +1234,225 @@ class Warehouse extends BaseController
             ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
             ->setHeader('Cache-Control', 'max-age=0, no-cache, must-revalidate')
             ->setBody($xlsxContent);
+    }
+
+    /**
+     * Obtener el listado de referencias asociadas a familias activas para la plantilla
+     *
+     * @return array Filas listas para Excel [id_family, family_name, reference, '', '', '']
+     */
+    private function getCatalogItemsForTemplate(): array
+    {
+        $familyModel = new Families();
+        $families = $familyModel->select('id, keyword')
+            ->where('state', 'ACTIVO')
+            ->where('deleted_at IS NULL')
+            ->orderBy('keyword', 'ASC')
+            ->findAll();
+
+        $familiesByNormalizedName = [];
+        $familiesById = [];
+        foreach ($families as $f) {
+            $norm = mb_strtolower(trim($f['keyword']), 'UTF-8');
+            $familiesByNormalizedName[$norm] = $f;
+            $familiesById[(int)$f['id']] = $f;
+        }
+
+        // Obtener productos de Siigo (desde caché o API)
+        $siigoProducts = $this->getSiigoCatalogProducts();
+
+        $rows = [];
+        $coveredFamilyIds = [];
+
+        if (!empty($siigoProducts)) {
+            foreach ($siigoProducts as $prod) {
+                $pName = trim($prod['name'] ?? '');
+                $normName = mb_strtolower($pName, 'UTF-8');
+
+                if (isset($familiesByNormalizedName[$normName])) {
+                    $family = $familiesByNormalizedName[$normName];
+                    $famId = (int)$family['id'];
+                    $ref = trim($prod['code'] ?? '');
+                    if ($ref === '' && !empty($prod['reference'])) {
+                        $ref = trim($prod['reference']);
+                    }
+
+                    $rows[] = [
+                        'id_family'   => $famId,
+                        'family_name' => $family['keyword'],
+                        'reference'   => $ref,
+                    ];
+                    $coveredFamilyIds[$famId] = true;
+                }
+            }
+        }
+
+        // Si alguna familia activa no tiene referencias en Siigo o Siigo no respondió,
+        // incluirla para que el usuario pueda ingresar productos de esa familia
+        foreach ($families as $f) {
+            $famId = (int)$f['id'];
+            if (!isset($coveredFamilyIds[$famId])) {
+                $rows[] = [
+                    'id_family'   => $famId,
+                    'family_name' => $f['keyword'],
+                    'reference'   => '',
+                ];
+            }
+        }
+
+        // Ordenar alfabéticamente por familia y luego por referencia
+        usort($rows, function ($a, $b) {
+            $cmp = strcasecmp($a['family_name'], $b['family_name']);
+            if ($cmp === 0) {
+                return strcasecmp($a['reference'], $b['reference']);
+            }
+            return $cmp;
+        });
+
+        // Formatear filas para Excel: [ID_PRODUCTO, NOMBRE_PRODUCTO, REFERENCIA, CANTIDAD, LOTE, FECHA_VENCIMIENTO]
+        $excelRows = [];
+        foreach ($rows as $item) {
+            $excelRows[] = [
+                $item['id_family'],
+                $item['family_name'],
+                $item['reference'],
+                '', // Cantidad vacía
+                '', // Lote vacío
+                ''  // Fecha de vencimiento vacía
+            ];
+        }
+
+        return $excelRows;
+    }
+
+    /**
+     * Obtener el catálogo de productos de Siigo usando caché si está disponible
+     */
+    private function getSiigoCatalogProducts(): array
+    {
+        // 1. Revisar caché de CodeIgniter (duración 30 minutos)
+        $cache = \Config\Services::cache();
+        $cached = $cache->get('siigo_products_catalog');
+        if (is_array($cached) && !empty($cached)) {
+            return $cached;
+        }
+
+        // 2. Verificar modo simulación
+        if (env('SIIGO_SIMULATE') === true || env('SIIGO_SIMULATE') === 'true') {
+            return [
+                ['id' => 'siigo-1', 'code' => 'MOCK-001', 'name' => 'Producto Simulado 1 (Siigo)', 'reference' => 'MOCK-001'],
+                ['id' => 'siigo-2', 'code' => 'MOCK-002', 'name' => 'Producto Simulado 2 (Siigo)', 'reference' => 'MOCK-002'],
+                ['id' => 'siigo-3', 'code' => 'MOCK-003', 'name' => 'Producto Simulado 3 (Siigo)', 'reference' => 'MOCK-003'],
+            ];
+        }
+
+        // 3. Obtener token de Siigo
+        $token = $this->getSiigoToken();
+        if (!$token) {
+            return [];
+        }
+
+        // 4. Consultar API de Siigo paginada
+        $client = \Config\Services::curlrequest();
+        $url = 'https://api.siigo.com/v1/products?page_size=100';
+        $products = [];
+
+        try {
+            while ($url) {
+                $response = $client->get($url, [
+                    'headers' => [
+                        'Partner-Id'    => env('SIIGO_PARTNER_ID', 'gsmerp'),
+                        'Authorization' => 'Bearer ' . $token,
+                    ],
+                    'http_errors' => false
+                ]);
+
+                if ($response->getStatusCode() === 200) {
+                    $data = json_decode($response->getBody(), true);
+                    foreach ($data['results'] ?? [] as $p) {
+                        $products[] = [
+                            'id'          => $p['id'] ?? '',
+                            'code'        => $p['code'] ?? '',
+                            'reference'   => $p['reference'] ?? '',
+                            'name'        => $p['name'] ?? '',
+                            'description' => $p['description'] ?? '',
+                        ];
+                    }
+                    $url = $data['_links']['next']['href'] ?? null;
+                } else {
+                    log_message('error', 'Error consultando productos de Siigo para plantilla: ' . $response->getBody());
+                    break;
+                }
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'Excepción consultando productos de Siigo para plantilla: ' . $e->getMessage());
+        }
+
+        if (!empty($products)) {
+            // Guardar en caché por 30 minutos (1800 seg)
+            $cache->save('siigo_products_catalog', $products, 1800);
+        }
+
+        return $products;
+    }
+
+    /**
+     * Obtener o renovar el token de autenticación de Siigo
+     */
+    private function getSiigoToken(): ?string
+    {
+        // 1. Revisar si hay un token válido en la sesión actual
+        $sessionToken = session()->get('siigo_token');
+        $sessionExpires = session()->get('siigo_token_expires');
+        if (!empty($sessionToken) && !empty($sessionExpires) && $sessionExpires > time()) {
+            return $sessionToken;
+        }
+
+        // 2. Si es simulado
+        if (env('SIIGO_SIMULATE') === true || env('SIIGO_SIMULATE') === 'true') {
+            return 'simulated_siigo_token_12345';
+        }
+
+        // 3. Autenticar contra Siigo API
+        $authUrl = env('SIIGO_AUTH_URL', 'https://api.siigo.com/auth');
+        $partnerId = env('SIIGO_PARTNER_ID', 'gsmerp');
+        $username = env('SIIGO_USERNAME');
+        $accessKey = env('SIIGO_ACCESS_KEY');
+
+        if (empty($username) || empty($accessKey)) {
+            return null;
+        }
+
+        $client = \Config\Services::curlrequest();
+        try {
+            $response = $client->post($authUrl, [
+                'headers' => [
+                    'Partner-Id'   => $partnerId,
+                    'Content-Type' => 'application/json',
+                ],
+                'json' => [
+                    'username'   => $username,
+                    'access_key' => $accessKey,
+                ],
+                'http_errors' => false
+            ]);
+
+            if ($response->getStatusCode() === 200) {
+                $data = json_decode($response->getBody(), true);
+                $accessToken = $data['access_token'] ?? null;
+                $expiresIn = $data['expires_in'] ?? 86400;
+
+                if ($accessToken) {
+                    session()->set('siigo_token', $accessToken);
+                    session()->set('siigo_token_expires', time() + $expiresIn);
+                    return $accessToken;
+                }
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'Error obteniendo token Siigo en Warehouse: ' . $e->getMessage());
+        }
+
+        return null;
     }
 
     /**
@@ -1108,6 +1474,13 @@ class Warehouse extends BaseController
                 'status'  => 'error',
                 'message' => 'No se encontró la bodega principal configurada en el sistema.'
             ])->setStatusCode(400);
+        }
+
+        if (!$this->canOperateWarehouse($mainWarehouseId)) {
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => 'No tiene permisos para realizar cargues masivos en la bodega principal. Solo el responsable asignado puede operar.'
+            ])->setStatusCode(403);
         }
 
         $file = $this->request->getFile('excel_file');
@@ -1168,6 +1541,54 @@ class Warehouse extends BaseController
 
         $dataRows = $isHeader ? array_slice($parsedRows, 1) : $parsedRows;
 
+        // Detección dinámica de índices de columnas según encabezados
+        // Formato nuevo: [0 => ID, 1 => NOMBRE, 2 => REFERENCIA, 3 => CANTIDAD, 4 => LOTE, 5 => FECHA_VENCIMIENTO]
+        // Formato anterior: [0 => ID, 1 => NOMBRE, 2 => CANTIDAD, 3 => LOTE, 4 => REFERENCIA, 5 => FECHA_VENCIMIENTO]
+        $colMap = [
+            'id'       => 0,
+            'name'     => 1,
+            'ref'      => 2,
+            'qty'      => 3,
+            'lot'      => 4,
+            'exp_date' => 5
+        ];
+
+        if ($isHeader) {
+            foreach ($headerCandidate as $idx => $headerVal) {
+                $h = mb_strtolower(trim((string)$headerVal), 'UTF-8');
+                if (stripos($h, 'id') !== false) {
+                    $colMap['id'] = $idx;
+                } elseif (stripos($h, 'nombre') !== false || stripos($h, 'producto') !== false || stripos($h, 'familia') !== false) {
+                    $colMap['name'] = $idx;
+                } elseif (stripos($h, 'ref') !== false) {
+                    $colMap['ref'] = $idx;
+                } elseif (stripos($h, 'cant') !== false) {
+                    $colMap['qty'] = $idx;
+                } elseif (stripos($h, 'lote') !== false) {
+                    $colMap['lot'] = $idx;
+                } elseif (stripos($h, 'venc') !== false || stripos($h, 'fecha') !== false) {
+                    $colMap['exp_date'] = $idx;
+                }
+            }
+        } else {
+            // Si no hay encabezados, inspeccionar la primera fila de datos para determinar si la col 2 es cantidad (formato anterior)
+            if (!empty($dataRows)) {
+                $firstRow = $dataRows[0];
+                $col2 = trim($firstRow[2] ?? '');
+                $col3 = trim($firstRow[3] ?? '');
+                if (is_numeric($col2) && !is_numeric($col3)) {
+                    $colMap = [
+                        'id'       => 0,
+                        'name'     => 1,
+                        'qty'      => 2,
+                        'lot'      => 3,
+                        'ref'      => 4,
+                        'exp_date' => 5
+                    ];
+                }
+            }
+        }
+
         // Cargar catálogo de familias activas para indexación rápida por ID y por keyword
         $familyModel = new Families();
         $allFamilies = $familyModel->where('state', 'ACTIVO')
@@ -1190,12 +1611,12 @@ class Warehouse extends BaseController
         foreach ($dataRows as $index => $row) {
             $rowNumber = $isHeader ? ($index + 2) : ($index + 1);
 
-            $idRaw = trim($row[0] ?? '');
-            $nameRaw = trim($row[1] ?? '');
-            $qtyRaw = trim($row[2] ?? '');
-            $lotRaw = trim($row[3] ?? '');
-            $refRaw = trim($row[4] ?? '');
-            $expDateRaw = trim($row[5] ?? '');
+            $idRaw = trim($row[$colMap['id']] ?? '');
+            $nameRaw = trim($row[$colMap['name']] ?? '');
+            $refRaw = trim($row[$colMap['ref']] ?? '');
+            $qtyRaw = trim($row[$colMap['qty']] ?? '');
+            $lotRaw = trim($row[$colMap['lot']] ?? '');
+            $expDateRaw = trim($row[$colMap['exp_date']] ?? '');
 
             // Si la cantidad está vacía o es 0, ignorar silenciosamente la fila
             if ($qtyRaw === '' || $qtyRaw === null) {

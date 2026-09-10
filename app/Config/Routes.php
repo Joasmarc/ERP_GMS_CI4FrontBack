@@ -52,6 +52,7 @@ $routes->group('warehouse', ['filter' => 'cors'], static function ($routes) {
     $routes->get('active_list/(:num)', 'Warehouse::active_list/$1');
     $routes->get('balance/(:num)', 'Warehouse::balance/$1');
     $routes->get('search_families', 'Warehouse::search_families');
+    $routes->get('users', 'Warehouse::get_users');
     $routes->post('save', 'Warehouse::save');
     $routes->post('save_item', 'Warehouse::save_item');
     $routes->post('save_remision', 'Warehouse::save_remision');

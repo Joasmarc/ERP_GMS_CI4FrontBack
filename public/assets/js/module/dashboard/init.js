@@ -201,6 +201,18 @@ function initBodegasTable() {
                 }
             },
             { 
+                data: 'user_name',
+                render: function (data, type, row) {
+                    if (data) {
+                        const email = row.user_email ? `<small class="text-muted d-block">${$('<div>').text(row.user_email).html()}</small>` : '';
+                        const isMe = (window.userId && parseInt(row.id_user) === parseInt(window.userId));
+                        const meBadge = isMe ? '<span class="badge badge-success ms-1 py-0 px-1" style="font-size: 0.68rem;">Tú</span>' : '';
+                        return `<div><i class="fas fa-user-check text-primary me-1"></i><strong>${$('<div>').text(data).html()}</strong>${meBadge}${email}</div>`;
+                    }
+                    return '<span class="badge badge-warning text-dark"><i class="fas fa-user-slash me-1"></i> Sin asignar</span>';
+                }
+            },
+            { 
                 data: 'state',
                 render: function (data) {
                     if (data === 'ACTIVE') {
