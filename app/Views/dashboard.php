@@ -889,12 +889,110 @@
 
           <!-- Ini Cliente Screen -->
           <div id="cont_cliente" class="row d-none">
-            <div class="col-12">
-              <div class="card card-round shadow-none border">
-                <div class="card-body text-center py-5">
-                  <i class="fas fa-tools fa-2x text-muted mb-3 opacity-75"></i>
-                  <h4 class="fw-bold text-dark mb-1">Clientes</h4>
-                  <p class="text-muted small mb-0">Módulo en desarrollo</p>
+            <!-- Tarjeta Formulario de Registro de Cliente -->
+            <div class="col-12 mb-4" id="card_client_create">
+              <div class="card card-round shadow-sm border">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                  <div class="card-title mb-0 d-flex align-items-center">
+                    <i class="fas fa-user-plus text-primary me-2 fa-lg"></i>
+                    <span class="fw-bold">Registrar Cliente</span>
+                  </div>
+                </div>
+                <div class="card-body">
+                  <form id="form_client_create" autocomplete="off">
+                    <div class="row">
+                      <div class="col-md-6">
+                        <div class="form-group form-group-default">
+                          <label for="client_nombre">Nombre / Razón Social <span class="text-danger">*</span></label>
+                          <input type="text" class="form-control" id="client_nombre" name="nombre_cliente" placeholder="Ej: Juan Pérez / Inversiones SAS" required maxlength="255">
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label for="client_tipo_doc">Tipo de Documento</label>
+                          <select class="form-select" id="client_tipo_doc" name="tipo_documento">
+                            <option value="CC">CC - Cédula de Ciudadanía</option>
+                            <option value="NIT">NIT - Número de Identificación Tributaria</option>
+                            <option value="CE">CE - Cédula de Extranjería</option>
+                            <option value="PAS">PAS - Pasaporte</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label for="client_num_doc">Número de Documento / NIT <span class="text-danger">*</span></label>
+                          <input type="text" class="form-control" id="client_num_doc" name="numero_documento" placeholder="Ej: 900123456-1" required maxlength="100">
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="row">
+                      <div class="col-md-4">
+                        <div class="form-group form-group-default">
+                          <label for="client_telefono">Teléfono / Celular</label>
+                          <input type="text" class="form-control" id="client_telefono" name="telefono_cliente" placeholder="Ej: 3001234567" maxlength="50">
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-group form-group-default">
+                          <label for="client_correo">Correo Electrónico</label>
+                          <input type="email" class="form-control" id="client_correo" name="correo_cliente" placeholder="Ej: cliente@empresa.com" maxlength="255">
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="form-group form-group-default">
+                          <label for="client_direccion">Dirección</label>
+                          <input type="text" class="form-control" id="client_direccion" name="direccion_cliente" placeholder="Ej: Calle 100 # 15 - 20" maxlength="255">
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end align-items-center gap-2 mt-3">
+                      <button type="button" class="btn btn-round btn-secondary" id="btn_reset_client">
+                        <i class="fas fa-redo me-1"></i> Limpiar
+                      </button>
+                      <button type="button" class="btn btn-round btn-success" id="btn_save_client">
+                        <i class="fas fa-save me-1"></i> Guardar Cliente
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tarjeta Listado de Clientes Registrados -->
+            <div class="col-12" id="cliente_list_view">
+              <div class="card card-round shadow-sm border">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                  <div class="card-title mb-0 d-flex align-items-center">
+                    <i class="fas fa-users text-primary me-2 fa-lg"></i>
+                    <span class="fw-bold">Clientes Registrados</span>
+                  </div>
+                  <div class="card-tools">
+                    <button class="btn btn-round btn-sm btn-outline-primary" id="btn_reload_clients">
+                      <i class="fas fa-sync-alt me-1"></i> Actualizar
+                    </button>
+                  </div>
+                </div>
+                <div class="card-body">
+                  <div class="table-responsive">
+                    <table id="tbl_list_clientes" class="display table table-striped table-hover w-100">
+                      <thead>
+                        <tr>
+                          <th>ID</th>
+                          <th>Nombre / Razón Social</th>
+                          <th>Tipo Doc</th>
+                          <th>N° Documento</th>
+                          <th>Teléfono</th>
+                          <th>Correo Electrónico</th>
+                          <th>Dirección</th>
+                          <th>Fecha Registro</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             </div>

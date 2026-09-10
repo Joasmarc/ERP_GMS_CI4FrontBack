@@ -18,6 +18,71 @@ $(function () {
         initClientesTable();
     });
 
+    // Guardar nuevo cliente (Modelo Clients)
+    $('#btn_save_client').on('click', function () {
+        const nombre = $.trim($('#client_nombre').val());
+        const numDoc = $.trim($('#client_num_doc').val());
+        const correo = $.trim($('#client_correo').val());
+
+        if (!nombre) {
+            swal("Campo Requerido", "Por favor ingrese el Nombre o Razón Social del cliente.", "warning");
+            $('#client_nombre').focus();
+            return;
+        }
+
+        if (!numDoc) {
+            swal("Campo Requerido", "Por favor ingrese el Número de Documento o NIT.", "warning");
+            $('#client_num_doc').focus();
+            return;
+        }
+
+        if (correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+            swal("Formato Inválido", "El formato del correo electrónico no es válido.", "warning");
+            $('#client_correo').focus();
+            return;
+        }
+
+        const btn = $(this);
+        const originalHtml = btn.html();
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Guardando...');
+
+        $.ajax({
+            url: SITE_URL + '/client/save',
+            type: 'POST',
+            data: $('#form_client_create').serialize(),
+            dataType: 'json',
+            success: function (resp) {
+                if (resp && resp.status === 'success') {
+                    swal("¡Guardado!", resp.message || "Cliente guardado exitosamente.", "success");
+                    $('#form_client_create')[0].reset();
+                    if (dtClientes) {
+                        dtClientes.ajax.reload(null, false);
+                    }
+                } else {
+                    swal("Error", (resp && resp.message) ? resp.message : "No se pudo guardar el cliente.", "error");
+                }
+            },
+            error: function () {
+                swal("Error", "Error de comunicación con el servidor al intentar guardar el cliente.", "error");
+            },
+            complete: function () {
+                btn.prop('disabled', false).html(originalHtml);
+            }
+        });
+    });
+
+    // Limpiar formulario de cliente
+    $('#btn_reset_client').on('click', function () {
+        $('#form_client_create')[0].reset();
+    });
+
+    // Actualizar tabla de clientes
+    $('#btn_reload_clients').on('click', function () {
+        if (dtClientes) {
+            dtClientes.ajax.reload(null, false);
+        }
+    });
+
     // 2.0 Manejadores del Formulario de Creación
     $('#form_counterparty_create input[name="person_type"]').on('change', function () {
         const val = $(this).val();
@@ -212,35 +277,65 @@ function initProveedoresTable() {
     });
 }
 
-// Inicializar la tabla de clientes
+// Inicializar la tabla de clientes (Modelo Clients)
 function initClientesTable() {
-    if (dtClientes !== null) return;
+    if (dtClientes !== null) {
+        dtClientes.ajax.reload(null, false);
+        return;
+    }
 
     dtClientes = $("#tbl_list_clientes").DataTable({
-        ajax: SITE_URL + '/counterparty/listing?type=cliente',
+        ajax: SITE_URL + '/client/listing',
         columns: [
-            { data: 'id' },
-            { data: 'nombre_completo' },
-            { data: 'numero_identificacion' },
             { 
-                data: 'person_type',
+                data: 'id',
+                className: 'fw-bold text-center'
+            },
+            { 
+                data: 'nombre_cliente',
+                render: $.fn.dataTable.render.text()
+            },
+            { 
+                data: 'tipo_documento',
                 render: function (data) {
-                    return data === 'natural' ? '<span class="badge badge-info">Natural</span>' : '<span class="badge badge-primary">Jurídica</span>';
+                    if (!data) return '<span class="text-muted">-</span>';
+                    const safe = $('<div>').text(data).html();
+                    return '<span class="badge badge-primary">' + safe + '</span>';
                 }
             },
-            { data: 'email_principal' },
-            { data: 'telefono_principal' },
-            { data: 'regimen_tributario' },
-            {
-                data: null,
-                className: 'text-center',
-                render: function (data, type, row) {
-                    return `
-                        <button class="btn btn-round btn-info btn-sm me-1 btn-view-counterparty" data-id="${row.id}"><i class="fas fa-eye"></i></button>
-                    `;
+            { 
+                data: 'numero_documento',
+                render: $.fn.dataTable.render.text()
+            },
+            { 
+                data: 'telefono_cliente',
+                render: function (data) {
+                    return data ? $('<div>').text(data).html() : '<span class="text-muted">-</span>';
+                }
+            },
+            { 
+                data: 'correo_cliente',
+                render: function (data) {
+                    return data ? $('<div>').text(data).html() : '<span class="text-muted">-</span>';
+                }
+            },
+            { 
+                data: 'direccion_cliente',
+                render: function (data) {
+                    return data ? $('<div>').text(data).html() : '<span class="text-muted">-</span>';
+                }
+            },
+            { 
+                data: 'created_at',
+                className: 'text-nowrap small text-muted',
+                render: function (data) {
+                    if (!data) return '<span class="text-muted">-</span>';
+                    const parts = data.split(' ');
+                    return parts[0];
                 }
             }
         ],
+        order: [[0, 'desc']],
         processing: true,
         serverSide: false,
         pageLength: 10,
