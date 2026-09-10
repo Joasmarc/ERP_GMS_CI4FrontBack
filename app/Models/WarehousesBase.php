@@ -16,20 +16,22 @@ class WarehousesBase extends Model
         'name',
         'adress',
         'state',
-        'id_user',
+        'id_user_admin',
+        'id_client',
         'deleted_at'
     ];
 
     // 3.0 Configurar tipos de datos
     protected $castings = [
-        'id'         => 'int',
-        'name'       => 'string',
-        'adress'     => 'string',
-        'state'      => 'string',
-        'id_user'    => 'int',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'deleted_at' => 'int'
+        'id'            => 'int',
+        'name'          => 'string',
+        'adress'        => 'string',
+        'state'         => 'string',
+        'id_user_admin' => '?int',
+        'id_client'     => '?int',
+        'created_at'    => 'datetime',
+        'updated_at'    => 'datetime',
+        'deleted_at'    => 'int'
     ];
 
     // 4.0 Configurar Timestamps
@@ -42,9 +44,10 @@ class WarehousesBase extends Model
 
     // 5.0 Validación de datos
     protected $validationRules = [
-        'name'    => 'required|string|max_length[55]',
-        'adress'  => 'required|string|max_length[55]',
-        'state'   => 'permit_empty|in_list[ACTIVE,INACTIVE]',
-        'id_user' => 'permit_empty|integer'
+        'name'          => 'required|string|max_length[55]',
+        'adress'        => 'required|string|max_length[55]',
+        'state'         => 'permit_empty|in_list[ACTIVE,INACTIVE]',
+        'id_user_admin' => 'permit_empty|integer',
+        'id_client'     => 'permit_empty|integer'
     ];
 }
