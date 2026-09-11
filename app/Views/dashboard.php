@@ -764,6 +764,12 @@
                     </div>
                   </div>
                   <div class="card-tools mt-2 mt-sm-0">
+                    <button class="btn btn-round btn-info btn-sm me-2 text-white" id="btn_export_warehouse_report" title="Descargar Informe de Inventario y Saldos">
+                      <span class="btn-label">
+                        <i class="fas fa-file-excel me-1"></i>
+                      </span>
+                      Informe
+                    </button>
                     <?php if (isset($credentials[14]) && $credentials[14] === '1'): ?>
                       <button class="btn btn-round btn-dark btn-sm me-2 text-white d-none" id="btn_open_adjust_modal">
                         <span class="btn-label">

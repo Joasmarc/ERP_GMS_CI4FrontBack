@@ -1404,6 +1404,356 @@ class Warehouse extends BaseController
     }
 
     /**
+     * Generar y descargar informe Excel de inventario y saldos (Kardex) de una bodega
+     * Hoja 1: Listado de saldos, referencias y familias con lote, estado y vencimiento
+     * Hoja 2: Saldos y movimientos históricos agrupados en 3 columnas por cada referencia
+     */
+    public function export_report($warehouseId = null)
+    {
+        if (!$this->checkPermission()) {
+            return $this->response->setStatusCode(403)->setBody('No autorizado.');
+        }
+
+        $warehouseId = filter_var($warehouseId, FILTER_VALIDATE_INT);
+        if (!$warehouseId) {
+            return $this->response->setStatusCode(400)->setBody('Identificador de bodega no válido.');
+        }
+
+        $warehouseModel = new WarehousesBase();
+        $warehouse = $warehouseModel->where('id', $warehouseId)
+            ->where('deleted_at IS NULL')
+            ->first();
+
+        if (!$warehouse) {
+            return $this->response->setStatusCode(404)->setBody('Bodega no encontrada.');
+        }
+
+        $balanceModel = new WarehousesBalance();
+        $balanceItems = $balanceModel->getBalanceWithFamilies($warehouseId);
+
+        // ==========================================
+        // 1. HOJA 1: INVENTARIO (Saldos actuales por lote y estado)
+        // ==========================================
+        $sheet1Headers = [
+            'ID_REFERENCIA',
+            'FAMILIA',
+            'REFERENCIA',
+            'ESTADO',
+            'LOTE',
+            'FECHA_VENCIMIENTO',
+            'SALDO'
+        ];
+
+        $sheet1Rows = [];
+        $sheet1Rows[] = $sheet1Headers;
+
+        if (!empty($balanceItems)) {
+            foreach ($balanceItems as $item) {
+                $refId = (int)($item['id_reference'] ?? $item['id'] ?? 0);
+                $familyName = (string)($item['family_name'] ?? $item['name_item'] ?? 'Sin familia');
+                $reference = (string)($item['reference'] ?? '-');
+                $status = (string)($item['status'] ?? 'DISPONIBLE');
+                $lot = (string)(!empty($item['lot']) && trim($item['lot']) !== '' ? trim($item['lot']) : '-');
+                $expDate = '-';
+                if (!empty($item['expiration_date']) && $item['expiration_date'] !== '0000-00-00' && trim($item['expiration_date']) !== '') {
+                    $expDate = explode(' ', trim($item['expiration_date']))[0];
+                }
+                $qty = (int)($item['quantity'] ?? 0);
+
+                $sheet1Rows[] = [
+                    $refId,
+                    $familyName,
+                    $reference,
+                    $status,
+                    $lot,
+                    $expDate,
+                    $qty
+                ];
+            }
+        } else {
+            $sheet1Rows[] = ['-', 'Sin existencias registradas', '-', '-', '-', '-', 0];
+        }
+
+        $sheet1ColWidths = [16, 35, 22, 16, 18, 20, 14];
+
+        // ==========================================
+        // 2. HOJA 2: SALDOS (Kardex con 3 columnas por cada referencia)
+        // ==========================================
+        // Mapear referencias únicas de esta bodega
+        $refMap = [];
+        foreach ($balanceItems as $item) {
+            $refId = (int)($item['id_reference'] ?? 0);
+            $refCode = trim((string)($item['reference'] ?? ''));
+            $famName = trim((string)($item['family_name'] ?? $item['name_item'] ?? 'Sin familia'));
+            $famId = (int)($item['id_family'] ?? 0);
+            $qty = (int)($item['quantity'] ?? 0);
+
+            $key = $refId > 0 ? ('id_' . $refId) : ('code_' . mb_strtolower($refCode));
+            if (!isset($refMap[$key])) {
+                $refMap[$key] = [
+                    'id_reference' => $refId > 0 ? $refId : ($item['id'] ?? 0),
+                    'reference'    => $refCode !== '' ? $refCode : ('REF-' . $refId),
+                    'family_name'  => $famName,
+                    'id_family'    => $famId,
+                    'current_qty'  => 0,
+                    'earliest_date'=> $item['created_at'] ?? null,
+                    'movements'    => []
+                ];
+            }
+            $refMap[$key]['current_qty'] += $qty;
+            if (!empty($item['created_at']) && ($refMap[$key]['earliest_date'] === null || $item['created_at'] < $refMap[$key]['earliest_date'])) {
+                $refMap[$key]['earliest_date'] = $item['created_at'];
+            }
+        }
+
+        // Obtener catálogo de referencias para mapeo inverso
+        $famRefModel = new \App\Models\FamiliesReference();
+        $allRefs = $famRefModel->getAllActiveWithFamilies();
+        $refCodeToId = [];
+        $refIdToInfo = [];
+        foreach ($allRefs as $r) {
+            $rId = (int)$r['reference_id'];
+            $code = mb_strtolower(trim($r['reference']));
+            $refCodeToId[$code] = $rId;
+            $refIdToInfo[$rId] = $r;
+        }
+
+        // Mapear bodegas para nombres legibles en traslados
+        $allWh = $warehouseModel->findAll();
+        $allWarehousesMap = [];
+        foreach ($allWh as $w) {
+            $allWarehousesMap[(int)$w['id']] = $w;
+        }
+
+        // Consultar movimientos en dispatch_advice y dispatch_advice_items
+        $db = \Config\Database::connect();
+        $dispatchItemsBuilder = $db->table('dispatch_advice_items dai');
+        $dispatchItemsBuilder->select('dai.id, dai.id_base, dai.reference, dai.description, dai.batch, dai.quiantity, dai.created_at, da.sequence, da.type, da.transfer_code, da.observation, da.client, da.dispatcher, da.created_at as header_date');
+        $dispatchItemsBuilder->join('dispatch_advice da', 'da.id = dai.id_base', 'inner');
+        $dispatchItemsBuilder->groupStart()
+            ->like('da.transfer_code', 'ING-BOD-' . $warehouseId, 'after')
+            ->orLike('da.transfer_code', 'AJUSTE-BOD-' . $warehouseId, 'after')
+            ->orLike('da.transfer_code', 'TRAS-BOD-' . $warehouseId . '-', 'after')
+            ->orLike('da.transfer_code', '-' . $warehouseId, 'before')
+        ->groupEnd();
+        $dispatchItemsBuilder->orderBy('da.created_at', 'ASC')->orderBy('dai.id', 'ASC');
+        $dispatchesRaw = $dispatchItemsBuilder->get()->getResultArray();
+
+        // Procesar movimientos y asociarlos a cada referencia
+        foreach ($dispatchesRaw as $row) {
+            $tCode = trim($row['transfer_code'] ?? '');
+            $isRelevant = false;
+            $delta = 0;
+            $desc = '';
+
+            if (preg_match('/^ING-BOD-(\d+)$/i', $tCode, $m)) {
+                if ((int)$m[1] === $warehouseId) {
+                    $isRelevant = true;
+                    $delta = abs((int)($row['quiantity'] ?? 0));
+                    $obs = !empty($row['observation']) ? (' - ' . $row['observation']) : '';
+                    $desc = 'Ingreso (Remisión #' . $row['sequence'] . ')' . $obs;
+                }
+            } elseif (preg_match('/^AJUSTE-BOD-(\d+)$/i', $tCode, $m)) {
+                if ((int)$m[1] === $warehouseId) {
+                    $isRelevant = true;
+                    $delta = (int)($row['quiantity'] ?? 0);
+                    $obs = !empty($row['observation']) ? (' - ' . $row['observation']) : '';
+                    $desc = 'Ajuste de inventario (Doc #' . $row['sequence'] . ')' . $obs;
+                }
+            } elseif (preg_match('/^TRAS-BOD-(\d+)-(\d+)$/i', $tCode, $m)) {
+                $sendId = (int)$m[1];
+                $recId = (int)$m[2];
+                $qty = abs((int)($row['quiantity'] ?? 0));
+                if ($sendId === $warehouseId) {
+                    $isRelevant = true;
+                    $delta = -$qty;
+                    $destName = $allWarehousesMap[$recId]['name'] ?? ('Bodega #' . $recId);
+                    $desc = 'Traslado enviado a ' . $destName . ' (Remisión #' . $row['sequence'] . ')';
+                } elseif ($recId === $warehouseId) {
+                    $isRelevant = true;
+                    $delta = +$qty;
+                    $origName = $allWarehousesMap[$sendId]['name'] ?? ('Bodega #' . $sendId);
+                    $desc = 'Traslado recibido de ' . $origName . ' (Remisión #' . $row['sequence'] . ')';
+                }
+            }
+
+            if (!$isRelevant || $delta === 0) {
+                continue;
+            }
+
+            // Identificar la referencia de este item
+            $itemRefCode = mb_strtolower(trim($row['reference'] ?? ''));
+            $matchedRefId = $refCodeToId[$itemRefCode] ?? null;
+
+            $targetKey = null;
+            if ($matchedRefId && isset($refMap['id_' . $matchedRefId])) {
+                $targetKey = 'id_' . $matchedRefId;
+            } elseif (isset($refMap['code_' . $itemRefCode])) {
+                $targetKey = 'code_' . $itemRefCode;
+            } else {
+                if ($matchedRefId && isset($refIdToInfo[$matchedRefId])) {
+                    $info = $refIdToInfo[$matchedRefId];
+                    $targetKey = 'id_' . $matchedRefId;
+                    $refMap[$targetKey] = [
+                        'id_reference' => $matchedRefId,
+                        'reference'    => $info['reference'],
+                        'family_name'  => $info['family_name'],
+                        'id_family'    => (int)$info['id_family'],
+                        'current_qty'  => 0,
+                        'earliest_date'=> $row['header_date'] ?? $row['created_at'],
+                        'movements'    => []
+                    ];
+                }
+            }
+
+            if ($targetKey && isset($refMap[$targetKey])) {
+                $batchTxt = !empty($row['batch']) ? (' [Lote: ' . $row['batch'] . ']') : '';
+                $refMap[$targetKey]['movements'][] = [
+                    'delta'       => $delta,
+                    'description' => $desc . $batchTxt,
+                    'date'        => $row['header_date'] ?? $row['created_at']
+                ];
+            }
+        }
+
+        // Construir líneas de saldo acumulado (Kardex) para cada referencia
+        $refList = array_values($refMap);
+        $sheet2ColWidths = [];
+        $maxMovementsCount = 0;
+
+        foreach ($refList as &$ref) {
+            $currentStock = $ref['current_qty'];
+            $moves = $ref['movements'];
+
+            $sumDeltas = 0;
+            foreach ($moves as $m) {
+                $sumDeltas += $m['delta'];
+            }
+
+            $initialDelta = $currentStock - $sumDeltas;
+            $movementLines = [];
+            $runningBalance = 0;
+
+            // Saldo inicial si hay existencias no explicadas por los documentos posteriores
+            if ($initialDelta > 0) {
+                $runningBalance += $initialDelta;
+                $dateLabel = !empty($ref['earliest_date']) ? (' (' . explode(' ', $ref['earliest_date'])[0] . ')') : '';
+                $movementLines[] = [
+                    'delta'       => $initialDelta,
+                    'description' => 'Saldo inicial / Ingreso a bodega' . $dateLabel,
+                    'balance'     => $runningBalance
+                ];
+            }
+
+            foreach ($moves as $m) {
+                $runningBalance += $m['delta'];
+                $movementLines[] = [
+                    'delta'       => $m['delta'],
+                    'description' => $m['description'],
+                    'balance'     => $runningBalance
+                ];
+            }
+
+            if (empty($movementLines)) {
+                $runningBalance = $currentStock;
+                $movementLines[] = [
+                    'delta'       => $currentStock,
+                    'description' => 'Saldo actual en bodega',
+                    'balance'     => $runningBalance
+                ];
+            }
+
+            $ref['movementLines'] = $movementLines;
+            if (count($movementLines) > $maxMovementsCount) {
+                $maxMovementsCount = count($movementLines);
+            }
+
+            // Anchos de columna: [Valor: 16, Descripción: 45, Saldo: 16]
+            $sheet2ColWidths[] = 16;
+            $sheet2ColWidths[] = 45;
+            $sheet2ColWidths[] = 16;
+        }
+        unset($ref);
+
+        // Construir matriz 2D para la Hoja 2 ("saldos")
+        $sheet2Rows = [];
+        $refCount = count($refList);
+
+        if ($refCount > 0) {
+            // Fila 1: Nombre de la referencia, nombre de la familia y el ID
+            $row1 = [];
+            foreach ($refList as $ref) {
+                $row1[] = $ref['reference'];
+                $row1[] = $ref['family_name'];
+                $row1[] = 'ID: ' . $ref['id_reference'];
+            }
+            $sheet2Rows[] = $row1;
+
+            // Fila 2: Encabezados de las 3 columnas por cada referencia
+            $row2 = [];
+            foreach ($refList as $ref) {
+                $row2[] = 'Valor Movimiento';
+                $row2[] = 'Descripción Movimiento';
+                $row2[] = 'Saldo';
+            }
+            $sheet2Rows[] = $row2;
+
+            // Filas 3+: Movimientos cronológicos y saldo acumulado
+            for ($mIdx = 0; $mIdx < $maxMovementsCount; $mIdx++) {
+                $rowM = [];
+                foreach ($refList as $ref) {
+                    if (isset($ref['movementLines'][$mIdx])) {
+                        $line = $ref['movementLines'][$mIdx];
+                        $rowM[] = $line['delta'];
+                        $rowM[] = $line['description'];
+                        $rowM[] = $line['balance'];
+                    } else {
+                        $rowM[] = '';
+                        $rowM[] = '';
+                        $rowM[] = '';
+                    }
+                }
+                $sheet2Rows[] = $rowM;
+            }
+        } else {
+            $sheet2Rows[] = ['Sin referencias', 'Sin familias', 'ID: -'];
+            $sheet2Rows[] = ['Valor Movimiento', 'Descripción Movimiento', 'Saldo'];
+            $sheet2Rows[] = [0, 'Bodega sin movimientos registrados', 0];
+            $sheet2ColWidths = [16, 45, 16];
+        }
+
+        // ==========================================
+        // 3. GENERAR ARCHIVO MULTI-HOJA
+        // ==========================================
+        $sheets = [
+            [
+                'name'        => 'Inventario',
+                'col_widths'  => $sheet1ColWidths,
+                'header_rows' => 1,
+                'rows'        => $sheet1Rows
+            ],
+            [
+                'name'        => 'Saldo',
+                'col_widths'  => $sheet2ColWidths,
+                'header_rows' => 2,
+                'box_groups'  => 3,
+                'rows'        => $sheet2Rows
+            ]
+        ];
+
+        $xlsxContent = ExcelHelper::generateMultiSheetXlsx($sheets);
+
+        $safeWhName = preg_replace('/[^a-zA-Z0-9_-]/', '_', mb_strtolower(trim($warehouse['name'] ?? 'bodega')));
+        $filename = 'informe_' . $safeWhName . '_' . date('Ymd_His') . '.xlsx';
+
+        return $this->response
+            ->setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->setHeader('Cache-Control', 'max-age=0, no-cache, must-revalidate')
+            ->setBody($xlsxContent);
+    }
+
+    /**
      * Descargar plantilla Excel para cargue masivo de productos a la bodega principal
      * Organizada exclusivamente por REFERENCIA de las familias activas
      */

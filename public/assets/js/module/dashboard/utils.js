@@ -620,6 +620,9 @@ function viewWarehouseBalance(warehouseId) {
                     $('#btn_open_mass_upload_modal').addClass('d-none');
                 }
 
+                // El informe está disponible para todos los usuarios autorizados a consultar la bodega
+                $('#btn_export_warehouse_report').removeClass('d-none');
+
                 // Agrupar balance de inventario por familias y referencias
                 const groupedItems = groupWarehouseBalanceByFamily(items);
 

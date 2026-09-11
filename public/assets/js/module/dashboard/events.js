@@ -1127,6 +1127,17 @@ $('#btn_save_warehouse_item').on('click', function () {
     });
 });
 
+// Bodegas - Descargar informe Excel de la bodega (Inventario y Saldos)
+$(document).on('click', '#btn_export_warehouse_report', function (e) {
+    e.preventDefault();
+    if (!currentWarehouseId) {
+        swal("Atención", "No hay una bodega activa seleccionada para generar el informe.", "warning");
+        return;
+    }
+
+    window.location.href = SITE_URL + '/warehouse/export_report/' + currentWarehouseId;
+});
+
 // Bodegas - Abrir modal de transferencia entre bodegas
 $('#btn_open_transfer_modal').on('click', function () {
     if (!currentWarehouseId || !currentWarehouseData) {
