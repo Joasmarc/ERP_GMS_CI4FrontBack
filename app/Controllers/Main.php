@@ -71,6 +71,7 @@ class Main extends BaseController
             'title'          => 'Dashboard - Sistema de Administración',
             'cities'         => $cities,
             'warehouseUsers' => $warehouseUsers,
+            'allUsers'       => $allUsers,
             'clientsList'    => $clientsList
         ];
 

@@ -558,23 +558,122 @@
 
             <!-- Ini Lista de Remisiones Sub-Screen -->
             <div class="col-md-12" id="remisiones_list_view">
-              <div class="card">
-                <div class="card-header">
-                  <h4 class="card-title mb-0">Remisiones</h4>
+              <div class="card card-round shadow-sm border-0">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                  <div class="d-flex align-items-center">
+                    <div class="me-3 d-flex align-items-center justify-content-center rounded-3" style="width: 44px; height: 44px; background: rgba(26, 133, 192, 0.12);">
+                      <i class="fas fa-file-invoice fs-4" style="color: #1a85c0;"></i>
+                    </div>
+                    <div>
+                      <h4 class="card-title mb-0 fw-bold text-dark">Control de Remisiones</h4>
+                      <small class="text-muted">Historial y trazabilidad de remisiones, traslados e ingresos</small>
+                    </div>
+                  </div>
+                  <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-round shadow-none" id="btn_refresh_remisiones" style="border: 1.5px solid #1a85c0; color: #1a85c0; background: #ffffff; font-weight: 600;" title="Recargar tabla de remisiones">
+                      <i class="fas fa-sync-alt me-1"></i> Actualizar
+                    </button>
+                  </div>
                 </div>
-                <div class="card-body">
+
+                <div class="card-body p-4">
+                  <!-- Bloque de Filtros Avanzados (Estilo Corporativo #1a85c0) -->
+                  <div class="p-3 mb-4 rounded-3" style="background: linear-gradient(135deg, #f0f7fb 0%, #ffffff 100%); border: 1px solid rgba(26, 133, 192, 0.28); border-left: 5px solid #1a85c0; box-shadow: 0 2px 10px rgba(26, 133, 192, 0.08);">
+                    <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2 pb-2" style="border-bottom: 1px solid rgba(26, 133, 192, 0.15);">
+                      <div class="d-flex align-items-center">
+                        <div class="d-flex align-items-center justify-content-center rounded-circle me-2" style="width: 30px; height: 30px; background-color: #1a85c0; color: #ffffff; box-shadow: 0 2px 5px rgba(26, 133, 192, 0.3);">
+                          <i class="fas fa-filter" style="font-size: 0.8rem;"></i>
+                        </div>
+                        <span class="fw-bold text-uppercase" style="color: #125e87; letter-spacing: 0.6px; font-size: 0.85rem;">Filtros de Búsqueda</span>
+                        <span class="badge ms-2" style="background-color: rgba(26, 133, 192, 0.12); color: #1a85c0; font-weight: 600; font-size: 0.72rem; border: 1px solid rgba(26, 133, 192, 0.25);">Remisiones &amp; Bodegas</span>
+                      </div>
+                      <div>
+                        <button type="button" class="btn btn-sm btn-round px-3" id="btn_reset_remisiones_filters" style="border: 1px solid #1a85c0; color: #ffffff; background: #1a85c0; font-size: 0.78rem; font-weight: 600; box-shadow: 0 2px 6px rgba(26, 133, 192, 0.25); transition: all 0.2s ease;">
+                          <i class="fas fa-undo me-1"></i> Limpiar filtros
+                        </button>
+                      </div>
+                    </div>
+
+                    <?php
+                    $listUsersFilter = !empty($allUsers) ? $allUsers : (!empty($warehouseUsers) ? $warehouseUsers : []);
+                    ?>
+                    <div class="row g-3">
+                      <!-- 1. Tipo de Remisión -->
+                      <div class="col-md-4 col-sm-12">
+                        <label for="filtro_remision_tipo" class="form-label fw-bold mb-1" style="color: #125e87; font-size: 0.84rem;">
+                          <i class="fas fa-tag me-1" style="color: #1a85c0;"></i> Tipo de Remisión
+                        </label>
+                        <select class="form-select form-select-sm" id="filtro_remision_tipo" style="border: 1.5px solid rgba(26, 133, 192, 0.38); border-radius: 6px; background-color: #ffffff; color: #1e293b; font-weight: 500;">
+                          <option value="">-- Todos los tipos --</option>
+                          <option value="REMISION">Remisión General</option>
+                          <option value="INTERNO">Traslado Interno</option>
+                          <option value="INGRESO">Ingreso a Bodega</option>
+                          <option value="AJUSTE">Ajuste de Inventario</option>
+                        </select>
+                      </div>
+
+                      <!-- 2. Usuario que Envía (Admin o Titular) -->
+                      <div class="col-md-4 col-sm-12">
+                        <label for="filtro_remision_envia" class="form-label fw-bold mb-1" style="color: #125e87; font-size: 0.84rem;">
+                          <i class="fas fa-paper-plane me-1" style="color: #1a85c0;"></i> Usuario que Envía
+                        </label>
+                        <select class="form-select form-select-sm" id="filtro_remision_envia" style="border: 1.5px solid rgba(26, 133, 192, 0.38); border-radius: 6px; background-color: #ffffff; color: #1e293b; font-weight: 500;">
+                          <option value="">-- Todos los remitentes --</option>
+                          <?php if (!empty($listUsersFilter)): ?>
+                            <optgroup label="Administradores de Bodega / Usuarios">
+                              <?php foreach ($listUsersFilter as $u): ?>
+                                <option value="user_<?= esc($u['id']) ?>">👤 <?= esc($u['name']) ?></option>
+                              <?php endforeach; ?>
+                            </optgroup>
+                          <?php endif; ?>
+                          <?php if (!empty($clientsList)): ?>
+                            <optgroup label="Titulares de Bodega (Clientes)">
+                              <?php foreach ($clientsList as $c): ?>
+                                <option value="client_<?= esc($c['id']) ?>">🏢 <?= esc($c['nombre_cliente']) ?></option>
+                              <?php endforeach; ?>
+                            </optgroup>
+                          <?php endif; ?>
+                        </select>
+                      </div>
+
+                      <!-- 3. Usuario que Recibe (Admin o Titular) -->
+                      <div class="col-md-4 col-sm-12">
+                        <label for="filtro_remision_recibe" class="form-label fw-bold mb-1" style="color: #125e87; font-size: 0.84rem;">
+                          <i class="fas fa-inbox me-1" style="color: #1a85c0;"></i> Usuario que Recibe
+                        </label>
+                        <select class="form-select form-select-sm" id="filtro_remision_recibe" style="border: 1.5px solid rgba(26, 133, 192, 0.38); border-radius: 6px; background-color: #ffffff; color: #1e293b; font-weight: 500;">
+                          <option value="">-- Todos los receptores --</option>
+                          <?php if (!empty($listUsersFilter)): ?>
+                            <optgroup label="Administradores de Bodega / Usuarios">
+                              <?php foreach ($listUsersFilter as $u): ?>
+                                <option value="user_<?= esc($u['id']) ?>">👤 <?= esc($u['name']) ?></option>
+                              <?php endforeach; ?>
+                            </optgroup>
+                          <?php endif; ?>
+                          <?php if (!empty($clientsList)): ?>
+                            <optgroup label="Titulares de Bodega (Clientes)">
+                              <?php foreach ($clientsList as $c): ?>
+                                <option value="client_<?= esc($c['id']) ?>">🏢 <?= esc($c['nombre_cliente']) ?></option>
+                              <?php endforeach; ?>
+                            </optgroup>
+                          <?php endif; ?>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
                   <div class="table-responsive">
-                    <table id="tbl_list_remisiones" class="display table table-striped table-hover w-100">
-                      <thead>
+                    <table id="tbl_list_remisiones" class="display table table-striped table-hover w-100 align-middle">
+                      <thead style="background-color: #f0f7fb; border-bottom: 2px solid rgba(26, 133, 192, 0.3);">
                         <tr>
-                          <th>ID</th>
-                          <th>Consecutivo</th>
-                          <th>Tipo</th>
-                          <th>Cliente</th>
-                          <th>NIT</th>
-                          <th>Ciudad</th>
-                          <th>Fecha</th>
-                          <th class="text-center">Ver</th>
+                          <th style="width: 50px;">ID</th>
+                          <th style="width: 100px;">Consecutivo</th>
+                          <th style="width: 110px;">Tipo</th>
+                          <th>Origen / Envía</th>
+                          <th>Destino / Recibe</th>
+                          <th style="width: 100px;">Ciudad</th>
+                          <th style="width: 100px;">Fecha</th>
+                          <th class="text-center" style="width: 90px;">Ver</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -585,8 +684,6 @@
               </div>
             </div>
             <!-- End Lista de Remisiones Sub-Screen -->
-
-
 
           </div>
           <!-- End Remisiones Screen -->
@@ -668,12 +765,12 @@
                   </div>
                   <div class="card-tools mt-2 mt-sm-0">
                     <?php if (isset($credentials[14]) && $credentials[14] === '1'): ?>
-                    <button class="btn btn-round btn-dark btn-sm me-2 text-white d-none" id="btn_open_adjust_modal">
-                      <span class="btn-label">
-                        <i class="fas fa-sliders-h"></i>
-                      </span>
-                      Ajustar
-                    </button>
+                      <button class="btn btn-round btn-dark btn-sm me-2 text-white d-none" id="btn_open_adjust_modal">
+                        <span class="btn-label">
+                          <i class="fas fa-sliders-h"></i>
+                        </span>
+                        Ajustar
+                      </button>
                     <?php endif; ?>
                     <button class="btn btn-round btn-warning btn-sm me-2" id="btn_open_transfer_modal">
                       <span class="btn-label">
@@ -1370,7 +1467,7 @@
               <!-- Zona Drag & Drop como label interactivo nativo -->
               <label for="in_mass_upload_file" id="mass_upload_dropzone" class="border border-2 border-secondary border-opacity-25 rounded-3 p-4 text-center bg-white d-block mb-0" style="cursor: pointer; transition: all 0.2s ease;">
                 <input type="file" id="in_mass_upload_file" accept=".xlsx, .xls, .csv" class="d-none">
-                
+
                 <div id="mass_upload_prompt">
                   <i class="fas fa-cloud-upload-alt fa-3x text-success mb-2"></i>
                   <p class="fw-bold text-dark mb-1">Arrastre su archivo Excel aquí o haga clic para seleccionarlo</p>

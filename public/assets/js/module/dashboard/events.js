@@ -25,6 +25,30 @@ $('#btn_open_remisiones').on('click', function () {
     showScreen(SCREENS.remisiones);
 });
 
+// Remisiones - Filtrar tabla al cambiar Tipo, Usuario que Envía o Usuario que Recibe
+$(document).on('change', '#filtro_remision_tipo, #filtro_remision_envia, #filtro_remision_recibe', function () {
+    if ($.fn.DataTable.isDataTable('#tbl_list_remisiones')) {
+        $('#tbl_list_remisiones').DataTable().draw();
+    }
+});
+
+// Remisiones - Limpiar filtros
+$(document).on('click', '#btn_reset_remisiones_filters', function () {
+    $('#filtro_remision_tipo').val('');
+    $('#filtro_remision_envia').val('');
+    $('#filtro_remision_recibe').val('');
+    if ($.fn.DataTable.isDataTable('#tbl_list_remisiones')) {
+        $('#tbl_list_remisiones').DataTable().draw();
+    }
+});
+
+// Remisiones - Recargar tabla
+$(document).on('click', '#btn_refresh_remisiones', function () {
+    if ($.fn.DataTable.isDataTable('#tbl_list_remisiones')) {
+        $('#tbl_list_remisiones').DataTable().ajax.reload(null, false);
+    }
+});
+
 
 // Recomendaciones - Guardar recomendación (sin inline onclick)
 $('#btn_save_recommendation').on('click', function () {

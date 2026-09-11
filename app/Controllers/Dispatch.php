@@ -111,19 +111,161 @@ class Dispatch extends BaseController
     // Tabla_G05
     public function listing()
     {
-        $dispatchModel = new DispatchAdvices();
         $db = \Config\Database::connect();
 
-        // Hacemos JOIN con cities para obtener el nombre de la ciudad
+        // 1. Obtener listado de bodegas para mapear ID y nombre
+        $warehouses = $db->table('warehouses_base')
+            ->select('id, name, adress, id_user_admin, id_client')
+            ->where('deleted_at IS NULL')
+            ->get()
+            ->getResultArray();
+
+        $warehouseMap = [];
+        $warehouseByName = [];
+        foreach ($warehouses as $w) {
+            $warehouseMap[(int)$w['id']] = $w;
+            $warehouseByName[mb_strtolower(trim($w['name']))] = $w;
+        }
+
+        // 2. Obtener usuarios para mapear administradores
+        $users = $db->table('users')
+            ->select('id, name, email')
+            ->get()
+            ->getResultArray();
+        $userMap = [];
+        foreach ($users as $u) {
+            $userMap[(int)$u['id']] = $u;
+        }
+
+        // 3. Obtener clientes para mapear titulares
+        $clients = $db->table('clients')
+            ->select('id, nombre_cliente, numero_documento')
+            ->get()
+            ->getResultArray();
+        $clientMap = [];
+        $clientByName = [];
+        foreach ($clients as $c) {
+            $clientMap[(int)$c['id']] = $c;
+            $clientByName[mb_strtolower(trim($c['nombre_cliente']))] = $c;
+        }
+
+        // 4. Hacemos JOIN con cities para obtener el nombre de la ciudad
         $builder = $db->table('dispatch_advice da');
-        $builder->select('da.id, da.type, da.client, da.nit, da.adress, da.sequence, da.transfer_code, da.created_at, c.name as city_name, c.code as city_code');
+        $builder->select('da.id, da.type, da.client, da.nit, da.adress, da.sequence, da.transfer_code, da.dispatcher, da.did_user, da.created_at, c.name as city_name, c.code as city_code');
         $builder->join('cities c', 'c.id = da.city', 'left');
         $builder->orderBy('da.id', 'DESC');
 
         $records = $builder->get()->getResultArray();
+        $enrichedRecords = [];
+
+        foreach ($records as $r) {
+            $transferCode = trim($r['transfer_code'] ?? '');
+            $didUserId = !empty($r['did_user']) ? (int)$r['did_user'] : null;
+
+            $sendWarehouse = null;
+            $receiveWarehouse = null;
+
+            // 5. Detectar bodegas por código de traslado/ingreso/ajuste
+            if (preg_match('/TRAS-BOD-(\d+)-(\d+)/i', $transferCode, $m)) {
+                $idSend = (int)$m[1];
+                $idRec  = (int)$m[2];
+                $sendWarehouse    = $warehouseMap[$idSend] ?? null;
+                $receiveWarehouse = $warehouseMap[$idRec] ?? null;
+            } elseif (preg_match('/ING-BOD-(\d+)/i', $transferCode, $m)) {
+                $idRec = (int)$m[1];
+                $receiveWarehouse = $warehouseMap[$idRec] ?? null;
+            } elseif (preg_match('/AJUSTE-BOD-(\d+)/i', $transferCode, $m)) {
+                $idWh = (int)$m[1];
+                $sendWarehouse    = $warehouseMap[$idWh] ?? null;
+                $receiveWarehouse = $warehouseMap[$idWh] ?? null;
+            }
+
+            // Fallback por nombre de bodega
+            if (!$sendWarehouse && !empty($r['dispatcher'])) {
+                $sendWarehouse = $warehouseByName[mb_strtolower(trim($r['dispatcher']))] ?? null;
+            }
+            if (!$receiveWarehouse && !empty($r['client'])) {
+                $receiveWarehouse = $warehouseByName[mb_strtolower(trim($r['client']))] ?? null;
+            }
+
+            // 6. Configurar datos de Origen / Envía
+            $sendUserIds   = [];
+            $sendClientIds = [];
+            $sendWarehouseId   = $sendWarehouse ? (int)$sendWarehouse['id'] : null;
+            $sendWarehouseName = $sendWarehouse ? $sendWarehouse['name'] : ($r['dispatcher'] ?? 'N/A');
+
+            $sendAdminName = null;
+            $sendAdminId   = null;
+            if ($sendWarehouse && !empty($sendWarehouse['id_user_admin'])) {
+                $sendAdminId = (int)$sendWarehouse['id_user_admin'];
+                $sendUserIds[] = $sendAdminId;
+                $sendAdminName = $userMap[$sendAdminId]['name'] ?? ('Usuario #' . $sendAdminId);
+            }
+            if ($didUserId && !in_array($didUserId, $sendUserIds, true)) {
+                $sendUserIds[] = $didUserId;
+            }
+
+            $sendTitularName = null;
+            $sendTitularId   = null;
+            if ($sendWarehouse && !empty($sendWarehouse['id_client'])) {
+                $sendTitularId = (int)$sendWarehouse['id_client'];
+                $sendClientIds[] = $sendTitularId;
+                $sendTitularName = $clientMap[$sendTitularId]['nombre_cliente'] ?? ('Cliente #' . $sendTitularId);
+            }
+
+            // 7. Configurar datos de Destino / Recibe
+            $receiveUserIds   = [];
+            $receiveClientIds = [];
+            $receiveWarehouseId   = $receiveWarehouse ? (int)$receiveWarehouse['id'] : null;
+            $receiveWarehouseName = $receiveWarehouse ? $receiveWarehouse['name'] : ($r['client'] ?? 'N/A');
+
+            $receiveAdminName = null;
+            $receiveAdminId   = null;
+            if ($receiveWarehouse && !empty($receiveWarehouse['id_user_admin'])) {
+                $receiveAdminId = (int)$receiveWarehouse['id_user_admin'];
+                $receiveUserIds[] = $receiveAdminId;
+                $receiveAdminName = $userMap[$receiveAdminId]['name'] ?? ('Usuario #' . $receiveAdminId);
+            }
+
+            $receiveTitularName = null;
+            $receiveTitularId   = null;
+            if ($receiveWarehouse && !empty($receiveWarehouse['id_client'])) {
+                $receiveTitularId = (int)$receiveWarehouse['id_client'];
+                $receiveClientIds[] = $receiveTitularId;
+                $receiveTitularName = $clientMap[$receiveTitularId]['nombre_cliente'] ?? ('Cliente #' . $receiveTitularId);
+            } elseif (!empty($r['client'])) {
+                $matchedClient = $clientByName[mb_strtolower(trim($r['client']))] ?? null;
+                if ($matchedClient) {
+                    $receiveTitularId = (int)$matchedClient['id'];
+                    $receiveClientIds[] = $receiveTitularId;
+                    $receiveTitularName = $matchedClient['nombre_cliente'];
+                }
+            }
+
+            // Adjuntar datos enriquecidos
+            $r['send_warehouse_id']   = $sendWarehouseId;
+            $r['send_warehouse_name'] = $sendWarehouseName;
+            $r['send_admin_id']       = $sendAdminId;
+            $r['send_admin_name']     = $sendAdminName;
+            $r['send_titular_id']     = $sendTitularId;
+            $r['send_titular_name']   = $sendTitularName;
+            $r['send_user_ids']       = $sendUserIds;
+            $r['send_client_ids']     = $sendClientIds;
+
+            $r['receive_warehouse_id']   = $receiveWarehouseId;
+            $r['receive_warehouse_name'] = $receiveWarehouseName;
+            $r['receive_admin_id']       = $receiveAdminId;
+            $r['receive_admin_name']     = $receiveAdminName;
+            $r['receive_titular_id']     = $receiveTitularId;
+            $r['receive_titular_name']   = $receiveTitularName;
+            $r['receive_user_ids']       = $receiveUserIds;
+            $r['receive_client_ids']     = $receiveClientIds;
+
+            $enrichedRecords[] = $r;
+        }
 
         return $this->response->setJSON([
-            'data' => $records
+            'data' => $enrichedRecords
         ]);
     }
 

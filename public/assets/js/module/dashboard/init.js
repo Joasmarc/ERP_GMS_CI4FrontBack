@@ -93,7 +93,7 @@ $(function () {
                 render: function (data, type, row) {
                     const pre = (row.city_code ? row.city_code : (row.city_name ? row.city_name.substring(0, 3) : 'GM')).toUpperCase();
                     const seq = String(row.sequence).padStart(3, '0');
-                    return `${pre}-${seq}`;
+                    return `<span class="fw-bold text-dark">${pre}-${seq}</span>`;
                 }
             },
             {
@@ -123,8 +123,36 @@ $(function () {
                     return `<span class="badge ${badgeClass} px-2 py-1">${label}</span>`;
                 }
             },
-            { data: 'client' },
-            { data: 'nit' },
+            {
+                data: null,
+                render: function (data, type, row) {
+                    const originName = row.send_warehouse_name || row.dispatcher || 'N/A';
+                    let html = `<div class="fw-bold text-dark">${originName}</div>`;
+                    if (row.send_admin_name) {
+                        html += `<div class="text-muted" style="font-size: 0.8rem;"><i class="fas fa-user-shield text-primary me-1" title="Administrador de bodega"></i><span class="text-secondary">Admin:</span> ${row.send_admin_name}</div>`;
+                    }
+                    if (row.send_titular_name) {
+                        html += `<div class="text-muted" style="font-size: 0.8rem;"><i class="fas fa-user-tie text-info me-1" title="Titular de bodega"></i><span class="text-secondary">Titular:</span> ${row.send_titular_name}</div>`;
+                    }
+                    return html;
+                }
+            },
+            {
+                data: null,
+                render: function (data, type, row) {
+                    const destName = row.receive_warehouse_name || row.client || 'N/A';
+                    let html = `<div class="fw-bold text-dark">${destName}</div>`;
+                    if (row.receive_admin_name) {
+                        html += `<div class="text-muted" style="font-size: 0.8rem;"><i class="fas fa-user-shield text-primary me-1" title="Administrador de bodega"></i><span class="text-secondary">Admin:</span> ${row.receive_admin_name}</div>`;
+                    }
+                    if (row.receive_titular_name) {
+                        html += `<div class="text-muted" style="font-size: 0.8rem;"><i class="fas fa-user-tie text-info me-1" title="Titular de bodega"></i><span class="text-secondary">Titular:</span> ${row.receive_titular_name}</div>`;
+                    } else if (row.nit && row.nit !== '1') {
+                        html += `<div class="text-muted" style="font-size: 0.78rem;">NIT: ${row.nit}</div>`;
+                    }
+                    return html;
+                }
+            },
             { data: 'city_name' },
             {
                 data: 'created_at',
@@ -164,6 +192,65 @@ $(function () {
                 previous: 'Anterior'
             }
         }
+    });
+
+    // Filtro personalizado de DataTables para la tabla de Remisiones
+    $.fn.dataTable.ext.search.push(function (settings, data, dataIndex, rowData) {
+        if (!settings || !settings.nTable || settings.nTable.id !== 'tbl_list_remisiones') {
+            return true;
+        }
+
+        const filtroTipo = ($('#filtro_remision_tipo').val() || '').trim().toUpperCase();
+        const filtroEnvia = ($('#filtro_remision_envia').val() || '').trim();
+        const filtroRecibe = ($('#filtro_remision_recibe').val() || '').trim();
+
+        // 1. Filtro Tipo de Remisión
+        if (filtroTipo) {
+            const rowType = (rowData.type || '').toUpperCase();
+            if (rowType !== filtroTipo) {
+                return false;
+            }
+        }
+
+        // 2. Filtro Usuario que Envía (Admin o Titular)
+        if (filtroEnvia) {
+            let matchEnvia = false;
+            if (filtroEnvia.startsWith('user_')) {
+                const userId = parseInt(filtroEnvia.replace('user_', ''), 10);
+                if (Array.isArray(rowData.send_user_ids) && rowData.send_user_ids.includes(userId)) {
+                    matchEnvia = true;
+                }
+            } else if (filtroEnvia.startsWith('client_')) {
+                const clientId = parseInt(filtroEnvia.replace('client_', ''), 10);
+                if (Array.isArray(rowData.send_client_ids) && rowData.send_client_ids.includes(clientId)) {
+                    matchEnvia = true;
+                }
+            }
+            if (!matchEnvia) {
+                return false;
+            }
+        }
+
+        // 3. Filtro Usuario que Recibe (Admin o Titular)
+        if (filtroRecibe) {
+            let matchRecibe = false;
+            if (filtroRecibe.startsWith('user_')) {
+                const userId = parseInt(filtroRecibe.replace('user_', ''), 10);
+                if (Array.isArray(rowData.receive_user_ids) && rowData.receive_user_ids.includes(userId)) {
+                    matchRecibe = true;
+                }
+            } else if (filtroRecibe.startsWith('client_')) {
+                const clientId = parseInt(filtroRecibe.replace('client_', ''), 10);
+                if (Array.isArray(rowData.receive_client_ids) && rowData.receive_client_ids.includes(clientId)) {
+                    matchRecibe = true;
+                }
+            }
+            if (!matchRecibe) {
+                return false;
+            }
+        }
+
+        return true;
     });
 
 });
