@@ -59,7 +59,7 @@ class DispatchAdvices extends Model
         'adress'        => 'permit_empty|string|max_length[105]',
         'sequence'      => 'required|integer',
         'city'          => 'permit_empty|integer',
-        'type'          => 'permit_empty|in_list[INTERNO,INGRESO,AJUSTE,REMISION]',
+        'type'          => 'permit_empty|in_list[INTERNO,INGRESO,AJUSTE,REMISION,EXTERNO]',
         'transfer_code' => 'permit_empty|string|max_length[55]',
         'observation'   => 'permit_empty|string|max_length[250]',
         'dispatcher'    => 'permit_empty|integer',

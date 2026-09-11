@@ -605,9 +605,9 @@
                         </label>
                         <select class="form-select form-select-sm" id="filtro_remision_tipo" style="border: 1.5px solid rgba(26, 133, 192, 0.38); border-radius: 6px; background-color: #ffffff; color: #1e293b; font-weight: 500;">
                           <option value="">-- Todos los tipos --</option>
-                          <option value="REMISION">Remisión General / Exterior</option>
-                          <option value="INTERNO">Traslado Interno</option>
                           <option value="INGRESO">Ingreso a Bodega</option>
+                          <option value="EXTERNO">Traslado Externo</option>
+                          <option value="INTERNO">Traslado Interno</option>
                           <option value="AJUSTE">Ajuste de Inventario</option>
                         </select>
                       </div>
@@ -1608,7 +1608,7 @@
               <div class="card-body p-3">
                 <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
                   <div class="d-flex align-items-center">
-                    <span id="transfer_dest_badge_type" class="badge bg-primary me-2 px-2 py-1">Remisión Exterior</span>
+                    <span id="transfer_dest_badge_type" class="badge bg-primary me-2 px-2 py-1">Traslado Externo</span>
                     <h6 class="fw-bold mb-0 text-dark" id="transfer_dest_role_label">Datos del Destinatario (Receptor)</h6>
                   </div>
                   <span class="badge bg-white text-dark border px-2 py-1">

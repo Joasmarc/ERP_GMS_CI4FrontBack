@@ -1207,7 +1207,7 @@ $(document).on('change', '#transfer_dest_warehouse', function () {
     const isExt = !!dest.is_external;
     const badgeType = $('#transfer_dest_badge_type');
     if (isExt) {
-        badgeType.removeClass('bg-info').addClass('bg-primary').text('Remisión Exterior');
+        badgeType.removeClass('bg-info').addClass('bg-primary').text('Traslado Externo');
     } else {
         badgeType.removeClass('bg-primary').addClass('bg-info').text('Traslado Interno');
     }

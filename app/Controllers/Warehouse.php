@@ -147,8 +147,8 @@ class Warehouse extends BaseController
             $typeUpper = strtoupper(trim($w['type'] ?? 'EXTERNA'));
             $isExternal = in_array($typeUpper, ['EXTERNO', 'EXTERNA'], true);
             $w['is_external'] = $isExternal;
-            $w['remision_type'] = $isExternal ? 'REMISION' : 'INTERNO';
-            $w['remision_type_label'] = $isExternal ? 'Remisión Exterior' : 'Traslado Interno';
+            $w['remision_type'] = $isExternal ? 'EXTERNO' : 'INTERNO';
+            $w['remision_type_label'] = $isExternal ? 'Traslado Exterior' : 'Traslado Interno';
 
             $hasTitular = !empty($w['id_client']) && !empty($w['client_name']);
             if ($hasTitular) {
@@ -929,7 +929,7 @@ class Warehouse extends BaseController
         // Determinar si la bodega destino es tipo EXTERNA o INTERNA
         $destType = strtoupper(trim($receivesWarehouse['type'] ?? 'EXTERNA'));
         $isExternalDest = in_array($destType, ['EXTERNO', 'EXTERNA'], true);
-        $remisionType = $isExternalDest ? 'REMISION' : 'INTERNO';
+        $remisionType = $isExternalDest ? 'EXTERNO' : 'INTERNO';
 
         // Determinar datos del receptor: titular de la bodega si existe; en su defecto, usuario administrador
         $receiverName   = '';
@@ -1189,7 +1189,7 @@ class Warehouse extends BaseController
 
         return $this->response->setJSON([
             'status'      => 'success',
-            'message'     => 'Transferencia realizada y ' . ($isExternalDest ? 'Remisión Exterior' : 'Traslado Interno') . ' N° ' . $nextSequence . ' generado correctamente.',
+            'message'     => 'Transferencia realizada y documento tipo ' . ($isExternalDest ? 'EXTERNO' : 'INTERNO') . ' N° ' . $nextSequence . ' generado correctamente.',
             'transfer_id' => $transferId,
             'dispatch_id' => $dispatchId,
             'sequence'    => $nextSequence

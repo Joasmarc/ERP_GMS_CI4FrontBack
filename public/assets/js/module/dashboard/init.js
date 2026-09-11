@@ -109,7 +109,7 @@ $(function () {
                             break;
                         case 'EXTERNO':
                             badgeClass = 'bg-primary';
-                            label = 'Remisión Ext.';
+                            label = 'Externo';
                             break;
                         case 'INGRESO':
                             badgeClass = 'bg-success';
