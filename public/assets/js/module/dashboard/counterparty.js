@@ -326,6 +326,12 @@ function initClientesTable() {
                 }
             },
             { 
+                data: 'city_name',
+                render: function (data) {
+                    return data ? $('<div>').text(data).html() : '<span class="text-muted">-</span>';
+                }
+            },
+            { 
                 data: 'created_at',
                 className: 'text-nowrap small text-muted',
                 render: function (data) {

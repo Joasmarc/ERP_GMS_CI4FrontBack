@@ -557,7 +557,7 @@ function viewWarehouseBalance(warehouseId) {
 
                 // Actualizar títulos e información de cabecera
                 $('#bodega_detail_title').text(warehouse.name || 'Bodega');
-                $('#bodega_detail_adress').text(warehouse.adress || '');
+                $('#bodega_detail_adress').text(warehouse.admin_adress || warehouse.adress || '');
                 
                 if (warehouse && (warehouse.admin_name || warehouse.responsible_name) && (warehouse.admin_name !== 'Sin asignar' || warehouse.id_user_admin)) {
                     const adminTxt = warehouse.admin_name || warehouse.responsible_name;

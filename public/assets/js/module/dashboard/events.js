@@ -807,6 +807,15 @@ $('#modal_add_warehouse_item').on('show.bs.modal', function (e) {
     }
     $('#in_item_warehouse_id').val(currentWarehouseId);
 
+    // Poblar información del administrador de la bodega en la cabecera del ingreso
+    if (currentWarehouseData) {
+        $('#ingreso_warehouse_name').text(currentWarehouseData.name || 'Bodega Principal');
+        $('#ingreso_admin_name').text(currentWarehouseData.admin_name || 'Sin asignar');
+        $('#ingreso_admin_dni').text(currentWarehouseData.admin_dni || 'Sin registrar');
+        $('#ingreso_admin_adress').text(currentWarehouseData.admin_adress || 'Sin registrar');
+        $('#ingreso_admin_city').text(currentWarehouseData.admin_city_name || 'Sin registrar');
+    }
+
     // Si la tabla no tiene filas, añadir la primera fila lista
     if ($('#remision_warehouse_items_body tr').length === 0) {
         addWarehouseRemisionLine();
@@ -1609,6 +1618,14 @@ $('#modal_mass_upload_warehouse').on('show.bs.modal', function (e) {
         return false;
     }
     resetMassUploadModal();
+
+    // Poblar información del administrador de la bodega principal para el cargue masivo
+    if (currentWarehouseData) {
+        $('#mass_upload_admin_name').text(currentWarehouseData.admin_name || 'Sin asignar');
+        $('#mass_upload_admin_dni').text(currentWarehouseData.admin_dni || 'Sin registrar');
+        $('#mass_upload_admin_adress').text(currentWarehouseData.admin_adress || 'Sin registrar');
+        $('#mass_upload_admin_city').text(currentWarehouseData.admin_city_name || 'Sin registrar');
+    }
 });
 $('#modal_mass_upload_warehouse').on('hidden.bs.modal', function () {
     resetMassUploadModal();

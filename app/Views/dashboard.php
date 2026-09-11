@@ -890,22 +890,35 @@
                     </div>
 
                     <div class="row">
-                      <div class="col-md-4">
+                      <div class="col-md-3">
                         <div class="form-group form-group-default">
                           <label for="client_telefono">Teléfono / Celular</label>
                           <input type="text" class="form-control" id="client_telefono" name="telefono_cliente" placeholder="Ej: 3001234567" maxlength="50">
                         </div>
                       </div>
-                      <div class="col-md-4">
+                      <div class="col-md-3">
                         <div class="form-group form-group-default">
                           <label for="client_correo">Correo Electrónico</label>
                           <input type="email" class="form-control" id="client_correo" name="correo_cliente" placeholder="Ej: cliente@empresa.com" maxlength="255">
                         </div>
                       </div>
-                      <div class="col-md-4">
+                      <div class="col-md-3">
                         <div class="form-group form-group-default">
                           <label for="client_direccion">Dirección</label>
                           <input type="text" class="form-control" id="client_direccion" name="direccion_cliente" placeholder="Ej: Calle 100 # 15 - 20" maxlength="255">
+                        </div>
+                      </div>
+                      <div class="col-md-3">
+                        <div class="form-group form-group-default">
+                          <label for="client_city">Ciudad</label>
+                          <select class="form-select" id="client_city" name="city">
+                            <option value="">-- Seleccionar Ciudad --</option>
+                            <?php if (!empty($cities)): ?>
+                              <?php foreach ($cities as $c): ?>
+                                <option value="<?= esc($c['id']) ?>"><?= esc($c['name']) ?><?= !empty($c['code']) ? ' (' . esc($c['code']) . ')' : '' ?></option>
+                              <?php endforeach; ?>
+                            <?php endif; ?>
+                          </select>
                         </div>
                       </div>
                     </div>
@@ -949,6 +962,7 @@
                           <th>Teléfono</th>
                           <th>Correo Electrónico</th>
                           <th>Dirección</th>
+                          <th>Ciudad</th>
                           <th>Fecha Registro</th>
                         </tr>
                       </thead>
@@ -1384,6 +1398,39 @@
             <?= csrf_field() ?>
             <input type="hidden" id="in_item_warehouse_id" name="id_warehouse" value="">
 
+            <!-- Cabecera de Remisión de Ingreso: Información del Administrador de Bodega -->
+            <div class="card border border-success-subtle bg-light rounded-3 mb-4 shadow-none">
+              <div class="card-body p-3">
+                <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+                  <div class="d-flex align-items-center">
+                    <span class="badge bg-success me-2 px-2 py-1">Cabecera de Remisión</span>
+                    <h6 class="fw-bold mb-0 text-dark">Información del Administrador de la Bodega Receptor</h6>
+                  </div>
+                  <span class="badge bg-white text-success border border-success px-2 py-1">
+                    <i class="fas fa-warehouse me-1"></i> <span id="ingreso_warehouse_name">Bodega Principal</span>
+                  </span>
+                </div>
+                <div class="row g-2 small text-dark">
+                  <div class="col-md-3">
+                    <span class="text-muted d-block">Administrador Receptor:</span>
+                    <span id="ingreso_admin_name" class="fw-bold text-primary">Cargando...</span>
+                  </div>
+                  <div class="col-md-3">
+                    <span class="text-muted d-block">Documento / NIT:</span>
+                    <span id="ingreso_admin_dni" class="fw-bold">--</span>
+                  </div>
+                  <div class="col-md-3">
+                    <span class="text-muted d-block">Dirección:</span>
+                    <span id="ingreso_admin_adress" class="fw-bold">--</span>
+                  </div>
+                  <div class="col-md-3">
+                    <span class="text-muted d-block">Ciudad:</span>
+                    <span id="ingreso_admin_city" class="fw-bold">--</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- Artículos dinámicos -->
             <div class="d-flex justify-content-between align-items-center mb-3">
               <div>
@@ -1466,6 +1513,17 @@
               <p class="text-muted small mb-3">
                 Suba el archivo con los datos diligenciados. El sistema registrará automáticamente las existencias en la <strong>Bodega Principal</strong> y generará la respectiva <strong>Remisión de tipo INGRESO</strong> con consecutivo oficial.
               </p>
+
+              <!-- Datos de Cabecera Remisión INGRESO para Cargue Masivo -->
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 p-2 bg-white rounded-3 border border-success-subtle mb-3 small">
+                <div>
+                  <span class="badge bg-success me-1">Receptor</span>
+                  <strong>Admin:</strong> <span id="mass_upload_admin_name" class="text-primary fw-bold">--</span>
+                </div>
+                <div><strong>NIT/CC:</strong> <span id="mass_upload_admin_dni">--</span></div>
+                <div><strong>Dirección:</strong> <span id="mass_upload_admin_adress">--</span></div>
+                <div><strong>Ciudad:</strong> <span id="mass_upload_admin_city">--</span></div>
+              </div>
 
               <!-- Zona Drag & Drop como label interactivo nativo -->
               <label for="in_mass_upload_file" id="mass_upload_dropzone" class="border border-2 border-secondary border-opacity-25 rounded-3 p-4 text-center bg-white d-block mb-0" style="cursor: pointer; transition: all 0.2s ease;">

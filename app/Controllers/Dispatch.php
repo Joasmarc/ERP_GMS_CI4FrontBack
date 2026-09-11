@@ -192,7 +192,15 @@ class Dispatch extends BaseController
             $sendUserIds   = [];
             $sendClientIds = [];
             $sendWarehouseId   = $sendWarehouse ? (int)$sendWarehouse['id'] : null;
-            $sendWarehouseName = $sendWarehouse ? $sendWarehouse['name'] : ($r['dispatcher'] ?? 'N/A');
+
+            $dispatcherUserId = !empty($r['dispatcher']) && is_numeric($r['dispatcher']) ? (int)$r['dispatcher'] : null;
+            $dispatcherUserName = $dispatcherUserId && isset($userMap[$dispatcherUserId]) ? $userMap[$dispatcherUserId]['name'] : null;
+
+            if ($r['type'] === 'INGRESO') {
+                $sendWarehouseName = 'Proveedor / Ingreso';
+            } else {
+                $sendWarehouseName = $sendWarehouse ? $sendWarehouse['name'] : ($dispatcherUserName ?? ($r['dispatcher'] ?? 'N/A'));
+            }
 
             $sendAdminName = null;
             $sendAdminId   = null;
@@ -200,6 +208,10 @@ class Dispatch extends BaseController
                 $sendAdminId = (int)$sendWarehouse['id_user_admin'];
                 $sendUserIds[] = $sendAdminId;
                 $sendAdminName = $userMap[$sendAdminId]['name'] ?? ('Usuario #' . $sendAdminId);
+            } elseif ($dispatcherUserName) {
+                $sendAdminId = $dispatcherUserId;
+                $sendUserIds[] = $dispatcherUserId;
+                $sendAdminName = $dispatcherUserName;
             }
             if ($didUserId && !in_array($didUserId, $sendUserIds, true)) {
                 $sendUserIds[] = $didUserId;
@@ -275,8 +287,9 @@ class Dispatch extends BaseController
         $db = \Config\Database::connect();
 
         $builder = $db->table('dispatch_advice da');
-        $builder->select('da.*, c.name as city_name, c.code as city_code');
+        $builder->select('da.*, c.name as city_name, c.code as city_code, u.name as dispatcher_name, u.dni as dispatcher_dni');
         $builder->join('cities c', 'c.id = da.city', 'left');
+        $builder->join('users u', 'u.id = da.dispatcher', 'left');
         $builder->where('da.id', $id);
 
         $dispatch = $builder->get()->getRowArray();

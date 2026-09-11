@@ -191,16 +191,30 @@ class Warehouse extends BaseController
         $idAdmin = $warehouse['id_user_admin'] ?? $warehouse['id_user'] ?? null;
         if (!empty($idAdmin)) {
             $userModel = new Users();
-            $respUser = $userModel->select('id, name, email')->find($idAdmin);
-            $warehouse['responsible_name'] = $respUser ? $respUser['name'] : 'Sin asignar';
-            $warehouse['responsible_email'] = $respUser ? $respUser['email'] : '';
-            $warehouse['admin_name'] = $warehouse['responsible_name'];
-            $warehouse['admin_email'] = $warehouse['responsible_email'];
+            $respUser = $userModel->select('users.id, users.name, users.email, users.dni, users.adress, users.city, users.phone, cities.name as city_name')
+                ->join('cities', 'cities.id = users.city', 'left')
+                ->find($idAdmin);
+            $warehouse['admin_id'] = $respUser ? $respUser['id'] : null;
+            $warehouse['admin_name'] = $respUser ? $respUser['name'] : 'Sin asignar';
+            $warehouse['admin_email'] = $respUser ? $respUser['email'] : '';
+            $warehouse['admin_dni'] = $respUser ? (string)$respUser['dni'] : '';
+            $warehouse['admin_adress'] = $respUser ? ($respUser['adress'] ?? '') : '';
+            $warehouse['admin_city'] = $respUser ? $respUser['city'] : null;
+            $warehouse['admin_city_name'] = $respUser ? ($respUser['city_name'] ?? '') : '';
+            $warehouse['admin_phone'] = $respUser ? (string)$respUser['phone'] : '';
+            $warehouse['responsible_name'] = $warehouse['admin_name'];
+            $warehouse['responsible_email'] = $warehouse['admin_email'];
         } else {
-            $warehouse['responsible_name'] = 'Sin asignar';
-            $warehouse['responsible_email'] = '';
+            $warehouse['admin_id'] = null;
             $warehouse['admin_name'] = 'Sin asignar';
             $warehouse['admin_email'] = '';
+            $warehouse['admin_dni'] = '';
+            $warehouse['admin_adress'] = '';
+            $warehouse['admin_city'] = null;
+            $warehouse['admin_city_name'] = '';
+            $warehouse['admin_phone'] = '';
+            $warehouse['responsible_name'] = 'Sin asignar';
+            $warehouse['responsible_email'] = '';
         }
 
         if (!empty($warehouse['id_client'])) {
@@ -565,15 +579,47 @@ class Warehouse extends BaseController
         $warehouseModel = new WarehousesBase();
         $warehouseDest = $warehouseModel->find($idWarehouse);
         $destName = $warehouseDest ? $warehouseDest['name'] : 'Bodega Principal';
-        $destAdress = $warehouseDest ? $warehouseDest['adress'] : '';
 
-        // Datos fijos solicitados para cabecera de remisión de ingreso a bodega principal
-        $ciudad = 1;
-        $dispatcher = 'Proveedor';
-        $cliente = $destName;
-        $nit = '1';
-        $adress = $destAdress;
-        $observacion = 'Esta remision es automatica por el sistema para registrar los ingresos a bodega principal.';
+        // Obtener datos del administrador de la bodega desde la tabla users
+        $adminUserId = ($warehouseDest && !empty($warehouseDest['id_user_admin'])) ? (int)$warehouseDest['id_user_admin'] : null;
+        $userModel = new Users();
+        $adminUser = $adminUserId ? $userModel->find($adminUserId) : null;
+
+        // Fallback al usuario actual en sesión si no hay administrador asignado a la bodega
+        if (!$adminUser && session('user_id')) {
+            $adminUser = $userModel->find((int)session('user_id'));
+        }
+
+        $adminName = $adminUser ? $adminUser['name'] : $destName;
+        $adminDni = ($adminUser && !empty($adminUser['dni'])) ? (string)$adminUser['dni'] : '1';
+        $adminAdress = ($adminUser && !empty($adminUser['adress'])) ? $adminUser['adress'] : '';
+        $adminCityId = ($adminUser && !empty($adminUser['city'])) ? (int)$adminUser['city'] : null;
+
+        // Validar que la ciudad exista en la tabla cities para evitar violaciones de clave foránea
+        $db = \Config\Database::connect();
+        $cityRow = null;
+        if ($adminCityId) {
+            $cityRow = $db->table('cities')->where('id', $adminCityId)->where('state', 'ACTIVO')->get()->getRowArray();
+        }
+        if (!$cityRow) {
+            $cityRow = $db->table('cities')->where('state', 'ACTIVO')->orderBy('id', 'ASC')->get()->getRowArray();
+            $adminCityId = $cityRow ? (int)$cityRow['id'] : 1;
+        }
+
+        // El campo dispatcher es clave foránea hacia users(id), se asigna el ID del administrador de la bodega o usuario en sesión
+        $dispatcherUserId = $adminUser ? (int)$adminUser['id'] : (int)session('user_id');
+
+        // Asignar en la cabecera del documento de tipo INGRESO la información del administrador de la bodega
+        $ciudad = $adminCityId;
+        $dispatcher = $dispatcherUserId;
+        $cliente = substr($adminName, 0, 75);
+        $nit = substr($adminDni, 0, 25);
+        $adress = substr($adminAdress, 0, 105);
+        if (empty($observacion)) {
+            $observacion = 'Esta remision es automatica por el sistema para registrar los ingresos a bodega principal.';
+        } else {
+            $observacion = substr($observacion, 0, 250);
+        }
 
         $refIds = $this->request->getPost('id_reference') ?? $this->request->getPost('id_family');
         $familyIds = $this->request->getPost('id_family');
@@ -590,7 +636,7 @@ class Warehouse extends BaseController
             ]);
         }
 
-        // Obtener último consecutivo para la ciudad fija (1)
+        // Obtener último consecutivo para la ciudad de la remisión
         $dispatchModel = new DispatchAdvices();
         $lastDispatch = $dispatchModel->where('city', $ciudad)
             ->orderBy('sequence', 'DESC')
@@ -610,7 +656,7 @@ class Warehouse extends BaseController
             'transfer_code' => 'ING-BOD-' . $idWarehouse,
             'observation'   => $observacion,
             'dispatcher'    => $dispatcher,
-            'did_user'      => session('user_id'),
+            'did_user'      => (int)session('user_id'),
             'created_at'    => $now,
             'updated_at'    => $now
         ];
@@ -844,6 +890,12 @@ class Warehouse extends BaseController
             ]);
         }
 
+        $sendAdminId = !empty($sendWarehouse['id_user_admin']) ? (int)$sendWarehouse['id_user_admin'] : (int)session('user_id');
+        $receivesAdminId = !empty($receivesWarehouse['id_user_admin']) ? (int)$receivesWarehouse['id_user_admin'] : null;
+        $userModel = new Users();
+        $receivesAdmin = $receivesAdminId ? $userModel->find($receivesAdminId) : null;
+        $receivesAdress = $receivesAdmin ? ($receivesAdmin['adress'] ?? '') : '';
+
         // 1.1 Crear remisión oficial automática por el traslado entre bodegas
         $dispatchModel = new DispatchAdvices();
         $lastDispatch = $dispatchModel->where('city', 1)
@@ -860,8 +912,8 @@ class Warehouse extends BaseController
             'type'          => 'INTERNO',
             'transfer_code' => 'TRAS-BOD-' . $idWarehouseSend . '-' . $idWarehouseReceives,
             'observation'   => 'Esta remision es automatica por el sistema para registrar el traslado de ' . $sendName . ' a ' . $receivesName . '.',
-            'dispatcher'    => $sendName,
-            'did_user'      => session('user_id'),
+            'dispatcher'    => $sendAdminId,
+            'did_user'      => (int)session('user_id'),
             'created_at'    => $now,
             'updated_at'    => $now
         ];
@@ -1132,8 +1184,11 @@ class Warehouse extends BaseController
         $now = (new \DateTime('now', $timezone))->format('Y-m-d H:i:s');
 
         $destName = $warehouse['name'];
-        $destAdress = $warehouse['adress'] ?? '';
-        $dispatcher = session('user_name') ?? 'Ajuste de Sistema';
+        $adminUserId = !empty($warehouse['id_user_admin']) ? (int)$warehouse['id_user_admin'] : (int)session('user_id');
+        $userModel = new Users();
+        $adminUser = $userModel->find($adminUserId);
+        $destAdress = $adminUser ? ($adminUser['adress'] ?? '') : '';
+        $dispatcher = $adminUserId;
 
         $headerData = [
             'client'        => 'Ajuste - ' . $destName,
@@ -1145,7 +1200,7 @@ class Warehouse extends BaseController
             'transfer_code' => 'AJUSTE-BOD-' . $idWarehouse,
             'observation'   => $observacion,
             'dispatcher'    => $dispatcher,
-            'did_user'      => session('user_id'),
+            'did_user'      => (int)session('user_id'),
             'created_at'    => $now,
             'updated_at'    => $now
         ];
@@ -1644,21 +1699,45 @@ class Warehouse extends BaseController
             ]);
         }
 
-        // Obtener datos de la bodega principal
+        // Obtener datos de la bodega principal y de su administrador desde la tabla users
         $warehouseModel = new WarehousesBase();
         $warehouseDest = $warehouseModel->find($mainWarehouseId);
         $destName = $warehouseDest ? $warehouseDest['name'] : 'Bodega Principal';
-        $destAdress = $warehouseDest ? $warehouseDest['adress'] : '';
 
-        // Datos oficiales para remisión de tipo INGRESO
-        $ciudad = 1;
-        $dispatcher = 'Proveedor';
-        $cliente = $destName;
-        $nit = '1';
-        $adress = $destAdress;
+        $adminUserId = ($warehouseDest && !empty($warehouseDest['id_user_admin'])) ? (int)$warehouseDest['id_user_admin'] : null;
+        $userModel = new Users();
+        $adminUser = $adminUserId ? $userModel->find($adminUserId) : null;
+
+        if (!$adminUser && session('user_id')) {
+            $adminUser = $userModel->find((int)session('user_id'));
+        }
+
+        $adminName = $adminUser ? $adminUser['name'] : $destName;
+        $adminDni = ($adminUser && !empty($adminUser['dni'])) ? (string)$adminUser['dni'] : '1';
+        $adminAdress = ($adminUser && !empty($adminUser['adress'])) ? $adminUser['adress'] : '';
+        $adminCityId = ($adminUser && !empty($adminUser['city'])) ? (int)$adminUser['city'] : null;
+
+        $db = \Config\Database::connect();
+        $cityRow = null;
+        if ($adminCityId) {
+            $cityRow = $db->table('cities')->where('id', $adminCityId)->where('state', 'ACTIVO')->get()->getRowArray();
+        }
+        if (!$cityRow) {
+            $cityRow = $db->table('cities')->where('state', 'ACTIVO')->orderBy('id', 'ASC')->get()->getRowArray();
+            $adminCityId = $cityRow ? (int)$cityRow['id'] : 1;
+        }
+
+        $dispatcherUserId = $adminUser ? (int)$adminUser['id'] : (int)session('user_id');
+
+        // Datos oficiales para remisión de tipo INGRESO con la información del administrador
+        $ciudad = $adminCityId;
+        $dispatcher = $dispatcherUserId;
+        $cliente = substr($adminName, 0, 75);
+        $nit = substr($adminDni, 0, 25);
+        $adress = substr($adminAdress, 0, 105);
         $observacion = 'Cargue masivo automático a bodega principal desde archivo Excel (' . substr($originalName, 0, 50) . ').';
 
-        // Obtener último consecutivo para la ciudad fija (1)
+        // Obtener último consecutivo para la ciudad
         $dispatchModel = new DispatchAdvices();
         $lastDispatch = $dispatchModel->where('city', $ciudad)
             ->orderBy('sequence', 'DESC')
@@ -1678,7 +1757,7 @@ class Warehouse extends BaseController
             'transfer_code' => 'ING-BOD-' . $mainWarehouseId,
             'observation'   => $observacion,
             'dispatcher'    => $dispatcher,
-            'did_user'      => session('user_id'),
+            'did_user'      => (int)session('user_id'),
             'created_at'    => $now,
             'updated_at'    => $now
         ];

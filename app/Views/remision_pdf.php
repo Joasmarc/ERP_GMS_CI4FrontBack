@@ -501,18 +501,18 @@ $docTitle = $typeTitles[$rawType] ?? 'REMISIÓN';
             </div>
         </header>
 
-        <!-- DATOS DEL CLIENTE / INSTITUCIÓN -->
+        <!-- DATOS DEL CLIENTE / INSTITUCIÓN O ADMINISTRADOR -->
         <section class="customer-card">
-            <!-- Fila 1: Cliente y NIT -->
+            <!-- Fila 1: Cliente / Administrador y NIT/CC -->
             <div class="grid-row row-four-cols">
-                <div class="cell-label">CLIENTE / INSTITUCIÓN:</div>
+                <div class="cell-label"><?= $rawType === 'INGRESO' ? 'ADMINISTRADOR / BODEGA:' : 'CLIENTE / INSTITUCIÓN:' ?></div>
                 <div class="cell-value border-r"><?= esc($dispatch['client'] ?? '') ?></div>
                 <div class="cell-label">NIT/CC:</div>
                 <div class="cell-value"><?= esc($dispatch['nit'] ?? '') ?></div>
             </div>
             <!-- Fila 2: Dirección y Ciudad -->
             <div class="grid-row row-four-cols">
-                <div class="cell-label">DIRECCIÓN DE ENTREGA:</div>
+                <div class="cell-label"><?= $rawType === 'INGRESO' ? 'DIRECCIÓN:' : 'DIRECCIÓN DE ENTREGA:' ?></div>
                 <div class="cell-value border-r"><?= esc($dispatch['adress'] ?? '') ?></div>
                 <div class="cell-label">CIUDAD:</div>
                 <div class="cell-value"><?= esc($dispatch['city_name'] ?? '') ?></div>
@@ -607,18 +607,18 @@ $docTitle = $typeTitles[$rawType] ?? 'REMISIÓN';
         <section class="signatures-grid">
             <!-- Entregado Por -->
             <div class="sig-box sig-box-delivery">
-                <div class="sig-title">ENTREGADO POR / DESPACHADOR:</div>
+                <div class="sig-title"><?= $rawType === 'INGRESO' ? 'ENTREGADO POR / PROVEEDOR:' : 'ENTREGADO POR / DESPACHADOR:' ?></div>
                 <div class="sig-footer">
-                    <p style="font-weight: 600;">Nombre: <?= esc($dispatch['dispatcher'] ?? '') ?></p>
-                    <p style="font-weight: 600; margin-top: 2px;">C.C. / NIT:</p>
+                    <p style="font-weight: 600;">Nombre: <?= esc($dispatch['dispatcher_name'] ?? $dispatch['dispatcher'] ?? '') ?></p>
+                    <p style="font-weight: 600; margin-top: 2px;">C.C. / NIT: <?= esc(!empty($dispatch['dispatcher_dni']) ? $dispatch['dispatcher_dni'] : '') ?></p>
                 </div>
             </div>
             <!-- Recibido Por -->
             <div class="sig-box sig-box-received">
-                <div class="sig-title">RECIBIDO POR (Cliente / Institución):</div>
+                <div class="sig-title"><?= $rawType === 'INGRESO' ? 'RECIBIDO POR (Administrador / Bodega):' : 'RECIBIDO POR (Cliente / Institución):' ?></div>
                 <div class="sig-footer">
-                    <p style="font-weight: 600;">Nombre y Firma:</p>
-                    <p style="font-weight: 600; margin-top: 2px;">C.C. / Fecha / Sello:</p>
+                    <p style="font-weight: 600;">Nombre y Firma: <?= esc($dispatch['client'] ?? '') ?></p>
+                    <p style="font-weight: 600; margin-top: 2px;">C.C. / NIT: <?= esc($dispatch['nit'] ?? '') ?></p>
                 </div>
             </div>
         </section>

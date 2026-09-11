@@ -27,6 +27,8 @@ class Client extends BaseController
         $telefonoCliente  = trim((string)$this->request->getPost('telefono_cliente'));
         $correoCliente    = trim((string)$this->request->getPost('correo_cliente'));
         $direccionCliente = trim((string)$this->request->getPost('direccion_cliente'));
+        $cityRaw          = $this->request->getPost('city');
+        $cityId           = filter_var($cityRaw, FILTER_VALIDATE_INT) ?: null;
 
         // 3.0 Validar campos requeridos
         if (empty($nombreCliente)) {
@@ -67,6 +69,14 @@ class Client extends BaseController
             return $this->response->setJSON(['status' => 'error', 'message' => 'La dirección no puede exceder 255 caracteres.']);
         }
 
+        if ($cityId !== null) {
+            $citiesModel = new \App\Models\Cities();
+            $cityRecord = $citiesModel->find($cityId);
+            if (!$cityRecord) {
+                return $this->response->setJSON(['status' => 'error', 'message' => 'La ciudad seleccionada no es válida.']);
+            }
+        }
+
         $data = [
             'nombre_cliente'    => $nombreCliente,
             'tipo_documento'    => !empty($tipoDocumento) ? $tipoDocumento : null,
@@ -74,6 +84,7 @@ class Client extends BaseController
             'telefono_cliente'  => !empty($telefonoCliente) ? $telefonoCliente : null,
             'correo_cliente'    => !empty($correoCliente) ? $correoCliente : null,
             'direccion_cliente' => !empty($direccionCliente) ? $direccionCliente : null,
+            'city'              => $cityId,
         ];
 
         try {
@@ -105,8 +116,9 @@ class Client extends BaseController
 
         try {
             $model = new Clients();
-            $data = $model->select('id, nombre_cliente, tipo_documento, numero_documento, telefono_cliente, correo_cliente, direccion_cliente, created_at')
-                          ->orderBy('id', 'DESC')
+            $data = $model->select('clients.id, clients.nombre_cliente, clients.tipo_documento, clients.numero_documento, clients.telefono_cliente, clients.correo_cliente, clients.direccion_cliente, clients.city, cities.name as city_name, clients.created_at')
+                          ->join('cities', 'cities.id = clients.city', 'left')
+                          ->orderBy('clients.id', 'DESC')
                           ->findAll();
 
             return $this->response->setJSON([

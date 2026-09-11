@@ -22,7 +22,7 @@ class Main extends BaseController
 
         // 1.3 Obtener lista de ciudades activas
         $citiesModel = new Cities();
-        $cities = $citiesModel->where('state', 'ACTIVO')->findAll();
+        $cities = $citiesModel->where('state', 'ACTIVO')->orderBy('name', 'ASC')->findAll();
 
         // 1.4 Obtener lista de usuarios con credencial para bodegas (credentials[13] === '1')
         $usersModel = new Users();
