@@ -16,6 +16,7 @@ class WarehousesBase extends Model
         'name',
         'adress',
         'state',
+        'type',
         'id_user_admin',
         'id_client',
         'deleted_at'
@@ -27,6 +28,7 @@ class WarehousesBase extends Model
         'name'          => 'string',
         'adress'        => 'string',
         'state'         => 'string',
+        'type'          => 'string',
         'id_user_admin' => '?int',
         'id_client'     => '?int',
         'created_at'    => 'datetime',
@@ -47,6 +49,7 @@ class WarehousesBase extends Model
         'name'          => 'required|string|max_length[55]',
         'adress'        => 'required|string|max_length[55]',
         'state'         => 'permit_empty|in_list[ACTIVE,INACTIVE]',
+        'type'          => 'permit_empty|in_list[EXTERNO,INTERNO]',
         'id_user_admin' => 'permit_empty|integer',
         'id_client'     => 'permit_empty|integer'
     ];
@@ -58,12 +61,12 @@ class WarehousesBase extends Model
      */
     public function getWarehousesWithDetails(): array
     {
-        return $this->select('warehouses_base.id, warehouses_base.name, warehouses_base.adress, warehouses_base.state, warehouses_base.id_user_admin, warehouses_base.id_user_admin as admin, warehouses_base.id_client, warehouses_base.id_client as titular, warehouses_base.created_at, warehouses_base.updated_at, u.name as admin_name, u.email as admin_email, c.nombre_cliente as client_name, COUNT(b.id) as total_items')
+        return $this->select('warehouses_base.id, warehouses_base.name, warehouses_base.adress, warehouses_base.state, warehouses_base.type, warehouses_base.id_user_admin, warehouses_base.id_user_admin as admin, warehouses_base.id_client, warehouses_base.id_client as titular, warehouses_base.created_at, warehouses_base.updated_at, u.name as admin_name, u.email as admin_email, c.nombre_cliente as client_name, COUNT(b.id) as total_items')
             ->join('warehouses_balance b', 'b.id_warehouse = warehouses_base.id AND b.deleted_at IS NULL AND b.quantity > 0', 'left')
             ->join('users u', 'u.id = warehouses_base.id_user_admin', 'left')
             ->join('clients c', 'c.id = warehouses_base.id_client', 'left')
             ->where('warehouses_base.deleted_at IS NULL')
-            ->groupBy('warehouses_base.id, warehouses_base.name, warehouses_base.adress, warehouses_base.state, warehouses_base.id_user_admin, warehouses_base.id_client, warehouses_base.created_at, warehouses_base.updated_at, u.name, u.email, c.nombre_cliente')
+            ->groupBy('warehouses_base.id, warehouses_base.name, warehouses_base.adress, warehouses_base.state, warehouses_base.type, warehouses_base.id_user_admin, warehouses_base.id_client, warehouses_base.created_at, warehouses_base.updated_at, u.name, u.email, c.nombre_cliente')
             ->orderBy('warehouses_base.id', 'ASC')
             ->findAll();
     }
