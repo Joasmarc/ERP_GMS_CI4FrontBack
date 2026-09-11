@@ -11,6 +11,7 @@ use App\Models\DispatchAdvices;
 use App\Models\DispatchAdviceItems;
 use App\Libraries\ExcelHelper;
 use App\Models\Users;
+use App\Models\Clients;
 
 class Warehouse extends BaseController
 {
@@ -124,15 +125,49 @@ class Warehouse extends BaseController
 
         $excludeId = filter_var($excludeId, FILTER_VALIDATE_INT);
 
-        $warehouseModel = new WarehousesBase();
-        $builder = $warehouseModel->where('state', 'ACTIVE')
-            ->where('deleted_at IS NULL');
+        $db = \Config\Database::connect();
+        $builder = $db->table('warehouses_base wb')
+            ->select('wb.id, wb.name, wb.type, wb.state, wb.id_user_admin, wb.id_client,
+                      u.name as admin_name, u.email as admin_email, u.dni as admin_dni, u.adress as admin_adress, u.city as admin_city, c_u.name as admin_city_name,
+                      cl.nombre_cliente as client_name, cl.numero_documento as client_dni, cl.direccion_cliente as client_adress, cl.city as client_city, c_cl.name as client_city_name')
+            ->join('users u', 'u.id = wb.id_user_admin', 'left')
+            ->join('cities c_u', 'c_u.id = u.city', 'left')
+            ->join('clients cl', 'cl.id = wb.id_client', 'left')
+            ->join('cities c_cl', 'c_cl.id = cl.city', 'left')
+            ->where('wb.state', 'ACTIVE')
+            ->where('wb.deleted_at IS NULL');
 
         if ($excludeId) {
-            $builder->where('id !=', $excludeId);
+            $builder->where('wb.id !=', $excludeId);
         }
 
-        $warehouses = $builder->orderBy('name', 'ASC')->findAll();
+        $warehouses = $builder->orderBy('wb.name', 'ASC')->get()->getResultArray();
+
+        foreach ($warehouses as &$w) {
+            $typeUpper = strtoupper(trim($w['type'] ?? 'EXTERNA'));
+            $isExternal = in_array($typeUpper, ['EXTERNO', 'EXTERNA'], true);
+            $w['is_external'] = $isExternal;
+            $w['remision_type'] = $isExternal ? 'REMISION' : 'INTERNO';
+            $w['remision_type_label'] = $isExternal ? 'Remisión Exterior' : 'Traslado Interno';
+
+            $hasTitular = !empty($w['id_client']) && !empty($w['client_name']);
+            if ($hasTitular) {
+                $w['recipient_role'] = 'Titular (Cliente)';
+                $w['recipient_name'] = $w['client_name'];
+                $w['recipient_dni'] = $w['client_dni'] ?? '';
+                $w['recipient_adress'] = $w['client_adress'] ?? '';
+                $w['recipient_city'] = $w['client_city'] ?? null;
+                $w['recipient_city_name'] = $w['client_city_name'] ?? 'Sin ciudad';
+            } else {
+                $w['recipient_role'] = 'Administrador de Bodega';
+                $w['recipient_name'] = $w['admin_name'] ?? 'Sin asignar';
+                $w['recipient_dni'] = !empty($w['admin_dni']) ? (string)$w['admin_dni'] : '';
+                $w['recipient_adress'] = $w['admin_adress'] ?? '';
+                $w['recipient_city'] = $w['admin_city'] ?? null;
+                $w['recipient_city_name'] = $w['admin_city_name'] ?? 'Sin ciudad';
+            }
+        }
+        unset($w);
 
         return $this->response->setJSON([
             'status' => 'success',
@@ -864,7 +899,6 @@ class Warehouse extends BaseController
 
         $sendName = $sendWarehouse ? $sendWarehouse['name'] : ('Bodega #' . $idWarehouseSend);
         $receivesName = $receivesWarehouse ? $receivesWarehouse['name'] : ('Bodega #' . $idWarehouseReceives);
-        $receivesAdress = $receivesWarehouse ? $receivesWarehouse['adress'] : '';
 
         $db = \Config\Database::connect();
         $db->transStart();
@@ -891,27 +925,80 @@ class Warehouse extends BaseController
         }
 
         $sendAdminId = !empty($sendWarehouse['id_user_admin']) ? (int)$sendWarehouse['id_user_admin'] : (int)session('user_id');
-        $receivesAdminId = !empty($receivesWarehouse['id_user_admin']) ? (int)$receivesWarehouse['id_user_admin'] : null;
-        $userModel = new Users();
-        $receivesAdmin = $receivesAdminId ? $userModel->find($receivesAdminId) : null;
-        $receivesAdress = $receivesAdmin ? ($receivesAdmin['adress'] ?? '') : '';
+
+        // Determinar si la bodega destino es tipo EXTERNA o INTERNA
+        $destType = strtoupper(trim($receivesWarehouse['type'] ?? 'EXTERNA'));
+        $isExternalDest = in_array($destType, ['EXTERNO', 'EXTERNA'], true);
+        $remisionType = $isExternalDest ? 'REMISION' : 'INTERNO';
+
+        // Determinar datos del receptor: titular de la bodega si existe; en su defecto, usuario administrador
+        $receiverName   = '';
+        $receiverNit    = '';
+        $receiverAdress = '';
+        $receiverCityId = null;
+
+        $titularClientId = !empty($receivesWarehouse['id_client']) ? (int)$receivesWarehouse['id_client'] : null;
+        $clientRecord = null;
+        if ($titularClientId) {
+            $clientModel = new Clients();
+            $clientRecord = $clientModel->find($titularClientId);
+        }
+
+        if ($clientRecord) {
+            $receiverName   = trim($clientRecord['nombre_cliente'] ?? '');
+            $receiverNit    = trim((string)($clientRecord['numero_documento'] ?? ''));
+            $receiverAdress = trim($clientRecord['direccion_cliente'] ?? '');
+            $receiverCityId = !empty($clientRecord['city']) ? (int)$clientRecord['city'] : null;
+        } else {
+            // Si no tiene titular asignado, se usan los datos del usuario administrador de la bodega
+            $adminUserId = !empty($receivesWarehouse['id_user_admin']) ? (int)$receivesWarehouse['id_user_admin'] : null;
+            $adminUser = null;
+            if ($adminUserId) {
+                $userModel = new Users();
+                $adminUser = $userModel->find($adminUserId);
+            }
+            if ($adminUser) {
+                $receiverName   = trim($adminUser['name'] ?? '');
+                $receiverNit    = !empty($adminUser['dni']) ? (string)$adminUser['dni'] : '';
+                $receiverAdress = trim($adminUser['adress'] ?? '');
+                $receiverCityId = !empty($adminUser['city']) ? (int)$adminUser['city'] : null;
+            } else {
+                $receiverName   = $receivesName;
+                $receiverNit    = '1';
+                $receiverAdress = '';
+                $receiverCityId = null;
+            }
+        }
+
+        // Validar que la ciudad exista en la tabla cities para evitar violaciones de clave foránea
+        $cityRow = null;
+        if ($receiverCityId) {
+            $cityRow = $db->table('cities')->where('id', $receiverCityId)->where('state', 'ACTIVO')->get()->getRowArray();
+        }
+        if (!$cityRow) {
+            $cityRow = $db->table('cities')->where('state', 'ACTIVO')->orderBy('id', 'ASC')->get()->getRowArray();
+            $receiverCityId = $cityRow ? (int)$cityRow['id'] : 1;
+        }
 
         // 1.1 Crear remisión oficial automática por el traslado entre bodegas
         $dispatchModel = new DispatchAdvices();
-        $lastDispatch = $dispatchModel->where('city', 1)
+        $lastDispatch = $dispatchModel->where('city', $receiverCityId)
             ->orderBy('sequence', 'DESC')
             ->first();
         $nextSequence = ($lastDispatch && isset($lastDispatch['sequence'])) ? ((int)$lastDispatch['sequence'] + 1) : 1;
 
+        $destClassification = $isExternalDest ? 'Exterior' : 'Interno';
+        $observation = 'Esta remision es automatica por el sistema para registrar el traslado de ' . $sendName . ' a ' . $receivesName . ' (' . $destClassification . ').';
+
         $dispatchHeader = [
-            'client'        => $receivesName,
-            'nit'           => '1',
-            'adress'        => $receivesAdress,
+            'client'        => substr($receiverName, 0, 75),
+            'nit'           => substr($receiverNit, 0, 25),
+            'adress'        => substr($receiverAdress, 0, 105),
             'sequence'      => $nextSequence,
-            'city'          => 1,
-            'type'          => 'INTERNO',
+            'city'          => $receiverCityId,
+            'type'          => $remisionType,
             'transfer_code' => 'TRAS-BOD-' . $idWarehouseSend . '-' . $idWarehouseReceives,
-            'observation'   => 'Esta remision es automatica por el sistema para registrar el traslado de ' . $sendName . ' a ' . $receivesName . '.',
+            'observation'   => substr($observation, 0, 250),
             'dispatcher'    => $sendAdminId,
             'did_user'      => (int)session('user_id'),
             'created_at'    => $now,
@@ -1102,7 +1189,7 @@ class Warehouse extends BaseController
 
         return $this->response->setJSON([
             'status'      => 'success',
-            'message'     => 'Transferencia realizada y Remisión N° ' . $nextSequence . ' generada correctamente.',
+            'message'     => 'Transferencia realizada y ' . ($isExternalDest ? 'Remisión Exterior' : 'Traslado Interno') . ' N° ' . $nextSequence . ' generado correctamente.',
             'transfer_id' => $transferId,
             'dispatch_id' => $dispatchId,
             'sequence'    => $nextSequence

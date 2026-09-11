@@ -1150,6 +1150,7 @@ $('#btn_open_transfer_modal').on('click', function () {
     // Cargar lista de bodegas destino disponibles
     const selectDest = $('#transfer_dest_warehouse');
     selectDest.html('<option value="">Cargando bodegas...</option>');
+    $('#transfer_dest_preview_card').addClass('d-none');
 
     $.ajax({
         url: SITE_URL + '/warehouse/active_list/' + currentWarehouseId,
@@ -1159,12 +1160,16 @@ $('#btn_open_transfer_modal').on('click', function () {
             if (resp.status === 'success') {
                 selectDest.empty();
                 selectDest.append('<option value="">Seleccione bodega destino...</option>');
-                const list = resp.data || [];
-                if (list.length === 0) {
+                window.activeDestWarehousesList = resp.data || [];
+                if (window.activeDestWarehousesList.length === 0) {
                     selectDest.html('<option value="">No hay otras bodegas activas disponibles</option>');
                 } else {
-                    list.forEach(w => {
-                        selectDest.append(`<option value="${w.id}">${$('<div>').text(w.name).html()} (${$('<div>').text(w.adress).html()})</option>`);
+                    window.activeDestWarehousesList.forEach(w => {
+                        const typeTag = w.is_external ? 'EXTERNA' : 'INTERNA';
+                        const recName = w.recipient_name && w.recipient_name !== 'Sin asignar' ? ` - ${w.recipient_name}` : '';
+                        const cityName = w.recipient_city_name && w.recipient_city_name !== 'Sin ciudad' ? ` (${w.recipient_city_name})` : '';
+                        const optText = `${w.name} [${typeTag}]${recName}${cityName}`;
+                        selectDest.append($('<option>').val(w.id).text(optText));
                     });
                 }
             } else {
@@ -1181,6 +1186,48 @@ $('#btn_open_transfer_modal').on('click', function () {
     addTransferLine();
 
     $('#modal_transfer_warehouse').modal('show');
+});
+
+// Bodegas - Al cambiar la bodega destino en el modal de transferencia, actualizar tarjeta informativa del receptor
+$(document).on('change', '#transfer_dest_warehouse', function () {
+    const selectedId = parseInt($(this).val());
+    const card = $('#transfer_dest_preview_card');
+    if (!selectedId || isNaN(selectedId)) {
+        card.addClass('d-none');
+        return;
+    }
+
+    const list = window.activeDestWarehousesList || [];
+    const dest = list.find(w => parseInt(w.id) === selectedId);
+    if (!dest) {
+        card.addClass('d-none');
+        return;
+    }
+
+    const isExt = !!dest.is_external;
+    const badgeType = $('#transfer_dest_badge_type');
+    if (isExt) {
+        badgeType.removeClass('bg-info').addClass('bg-primary').text('Remisión Exterior');
+    } else {
+        badgeType.removeClass('bg-primary').addClass('bg-info').text('Traslado Interno');
+    }
+
+    $('#transfer_dest_role_label').text(dest.recipient_role ? `Datos del Receptor (${dest.recipient_role})` : 'Datos del Destinatario (Receptor)');
+    $('#transfer_dest_name_badge').text(dest.name || '--');
+    $('#transfer_dest_recipient_title').text((dest.recipient_role ? dest.recipient_role : 'Destinatario') + ':');
+    $('#transfer_dest_recipient_name').text(dest.recipient_name || '--');
+    $('#transfer_dest_recipient_dni').text(dest.recipient_dni || '--');
+    $('#transfer_dest_recipient_adress').text(dest.recipient_adress || 'Sin dirección');
+    $('#transfer_dest_recipient_city').text(dest.recipient_city_name || 'Sin ciudad');
+
+    card.removeClass('d-none');
+});
+
+// Bodegas - Resetear modal de transferencia al cerrarse
+$('#modal_transfer_warehouse').on('hidden.bs.modal', function () {
+    $('#transfer_dest_preview_card').addClass('d-none');
+    $('#transfer_dest_warehouse').val('');
+    $('#transfer_lines_tbody').empty();
 });
 
 // Bodegas - Agregar otra línea de transferencia
@@ -1366,6 +1413,7 @@ $('#btn_submit_transfer').on('click', function () {
             btn.prop('disabled', false).html('<i class="fas fa-exchange-alt me-1"></i> Confirmar Transferencia');
             if (resp.status === 'success') {
                 $('#modal_transfer_warehouse').modal('hide');
+                $('#transfer_dest_preview_card').addClass('d-none');
                 swal("¡Transferencia Exitosa!", resp.message, "success");
                 // Recargar datos de la bodega actual y de la lista principal
                 if (currentWarehouseId) {

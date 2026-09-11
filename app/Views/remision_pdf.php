@@ -4,6 +4,7 @@ $items = (isset($items) && is_array($items)) ? $items : [];
 $rawType = strtoupper(trim($dispatch['type'] ?? 'REMISION'));
 $typeTitles = [
     'REMISION' => 'REMISIÓN',
+    'EXTERNO'  => 'REMISIÓN EXTERIOR',
     'INTERNO'  => 'TRASLADO INTERNO',
     'INGRESO'  => 'INGRESO A BODEGA',
     'AJUSTE'   => 'AJUSTE DE INVENTARIO'
@@ -505,7 +506,7 @@ $docTitle = $typeTitles[$rawType] ?? 'REMISIÓN';
         <section class="customer-card">
             <!-- Fila 1: Cliente / Administrador y NIT/CC -->
             <div class="grid-row row-four-cols">
-                <div class="cell-label"><?= $rawType === 'INGRESO' ? 'ADMINISTRADOR / BODEGA:' : 'CLIENTE / INSTITUCIÓN:' ?></div>
+                <div class="cell-label"><?= $rawType === 'INGRESO' ? 'ADMINISTRADOR / BODEGA:' : ($rawType === 'INTERNO' ? 'RESPONSABLE / BODEGA DESTINO:' : 'CLIENTE / INSTITUCIÓN:') ?></div>
                 <div class="cell-value border-r"><?= esc($dispatch['client'] ?? '') ?></div>
                 <div class="cell-label">NIT/CC:</div>
                 <div class="cell-value"><?= esc($dispatch['nit'] ?? '') ?></div>
@@ -615,7 +616,7 @@ $docTitle = $typeTitles[$rawType] ?? 'REMISIÓN';
             </div>
             <!-- Recibido Por -->
             <div class="sig-box sig-box-received">
-                <div class="sig-title"><?= $rawType === 'INGRESO' ? 'RECIBIDO POR (Administrador / Bodega):' : 'RECIBIDO POR (Cliente / Institución):' ?></div>
+                <div class="sig-title"><?= $rawType === 'INGRESO' ? 'RECIBIDO POR (Administrador / Bodega):' : ($rawType === 'INTERNO' ? 'RECIBIDO POR (Responsable Bodega):' : 'RECIBIDO POR (Cliente / Institución):') ?></div>
                 <div class="sig-footer">
                     <p style="font-weight: 600;">Nombre y Firma: <?= esc($dispatch['client'] ?? '') ?></p>
                     <p style="font-weight: 600; margin-top: 2px;">C.C. / NIT: <?= esc($dispatch['nit'] ?? '') ?></p>

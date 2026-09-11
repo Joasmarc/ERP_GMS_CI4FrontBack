@@ -605,7 +605,7 @@
                         </label>
                         <select class="form-select form-select-sm" id="filtro_remision_tipo" style="border: 1.5px solid rgba(26, 133, 192, 0.38); border-radius: 6px; background-color: #ffffff; color: #1e293b; font-weight: 500;">
                           <option value="">-- Todos los tipos --</option>
-                          <option value="REMISION">Remisión General</option>
+                          <option value="REMISION">Remisión General / Exterior</option>
                           <option value="INTERNO">Traslado Interno</option>
                           <option value="INGRESO">Ingreso a Bodega</option>
                           <option value="AJUSTE">Ajuste de Inventario</option>
@@ -1600,6 +1600,39 @@
                 <select class="form-select" id="transfer_dest_warehouse" name="id_warehouse_receives" required>
                   <option value="">Seleccione bodega destino...</option>
                 </select>
+              </div>
+            </div>
+
+            <!-- Cabecera de Remisión para Traslado: Datos del Receptor (Titular o Administrador) -->
+            <div id="transfer_dest_preview_card" class="card border rounded-3 mb-3 shadow-none d-none" style="background-color: #f8fafc; border-color: #cbd5e1 !important;">
+              <div class="card-body p-3">
+                <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+                  <div class="d-flex align-items-center">
+                    <span id="transfer_dest_badge_type" class="badge bg-primary me-2 px-2 py-1">Remisión Exterior</span>
+                    <h6 class="fw-bold mb-0 text-dark" id="transfer_dest_role_label">Datos del Destinatario (Receptor)</h6>
+                  </div>
+                  <span class="badge bg-white text-dark border px-2 py-1">
+                    <i class="fas fa-warehouse me-1 text-secondary"></i> <span id="transfer_dest_name_badge">--</span>
+                  </span>
+                </div>
+                <div class="row g-2 small text-dark">
+                  <div class="col-md-3">
+                    <span class="text-muted d-block" id="transfer_dest_recipient_title">Titular / Admin:</span>
+                    <span id="transfer_dest_recipient_name" class="fw-bold text-primary">--</span>
+                  </div>
+                  <div class="col-md-3">
+                    <span class="text-muted d-block">NIT / Documento:</span>
+                    <span id="transfer_dest_recipient_dni" class="fw-bold">--</span>
+                  </div>
+                  <div class="col-md-3">
+                    <span class="text-muted d-block">Dirección:</span>
+                    <span id="transfer_dest_recipient_adress" class="fw-bold">--</span>
+                  </div>
+                  <div class="col-md-3">
+                    <span class="text-muted d-block">Ciudad:</span>
+                    <span id="transfer_dest_recipient_city" class="fw-bold">--</span>
+                  </div>
+                </div>
               </div>
             </div>
 

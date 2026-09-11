@@ -115,7 +115,7 @@ class Dispatch extends BaseController
 
         // 1. Obtener listado de bodegas para mapear ID y nombre
         $warehouses = $db->table('warehouses_base')
-            ->select('id, name, adress, id_user_admin, id_client')
+            ->select('id, name, type, id_user_admin, id_client')
             ->where('deleted_at IS NULL')
             ->get()
             ->getResultArray();
