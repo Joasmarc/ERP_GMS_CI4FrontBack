@@ -18,7 +18,10 @@ class Users extends Model
         'pin',
         'credentials',
         'gender',
-        'city'
+        'city',
+        'dni',
+        'adress',
+        'phone'
     ];
 
     // 3.0 Configurar tipos de datos
@@ -30,6 +33,9 @@ class Users extends Model
         'credentials' => '?string',
         'gender'      => '?string',
         'city'        => '?int',
+        'dni'         => 'int',
+        'adress'      => 'string',
+        'phone'       => 'int',
         'created_at'  => 'datetime',
         'updated_at'  => 'datetime'
     ];
@@ -50,7 +56,10 @@ class Users extends Model
         'pin'         => 'permit_empty|string|max_length[255]',
         'credentials' => 'permit_empty|string|max_length[55]',
         'gender'      => 'permit_empty|in_list[male,female]',
-        'city'        => 'permit_empty|integer'
+        'city'        => 'permit_empty|integer',
+        'dni'         => 'permit_empty|integer',
+        'adress'      => 'permit_empty|string|max_length[85]',
+        'phone'       => 'permit_empty|integer'
     ];
 
     // 6.0 Métodos callback de CodeIgniter
