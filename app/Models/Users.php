@@ -17,14 +17,21 @@ class Users extends Model
         'email',
         'pin',
         'credentials',
-        'gender'
+        'gender',
+        'city'
     ];
 
     // 3.0 Configurar tipos de datos
     protected $castings = [
-        'id' => 'int',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime'
+        'id'          => 'int',
+        'name'        => 'string',
+        'email'       => 'string',
+        'pin'         => 'string',
+        'credentials' => '?string',
+        'gender'      => '?string',
+        'city'        => '?int',
+        'created_at'  => 'datetime',
+        'updated_at'  => 'datetime'
     ];
 
     // 4.0 Habilitar timestamps
@@ -38,11 +45,12 @@ class Users extends Model
 
     // 5.0 Validación de datos
     protected $validationRules = [
-        'name' => 'permit_empty|string|min_length[3]',
-        'email' => 'permit_empty|valid_email',
-        'pin' => 'permit_empty|string|max_length[255]',
+        'name'        => 'permit_empty|string|min_length[3]|max_length[100]',
+        'email'       => 'permit_empty|valid_email|max_length[100]',
+        'pin'         => 'permit_empty|string|max_length[255]',
         'credentials' => 'permit_empty|string|max_length[55]',
-        'gender' => 'permit_empty|in_list[male,female]'
+        'gender'      => 'permit_empty|in_list[male,female]',
+        'city'        => 'permit_empty|integer'
     ];
 
     // 6.0 Métodos callback de CodeIgniter
