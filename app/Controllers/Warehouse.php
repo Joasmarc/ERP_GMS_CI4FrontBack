@@ -284,15 +284,15 @@ class Warehouse extends BaseController
         }
 
         $name = trim($this->request->getPost('name') ?? '');
-        $adress = trim($this->request->getPost('adress') ?? '');
         $state = trim($this->request->getPost('state') ?? 'ACTIVE');
+        $typeInput = strtoupper(trim($this->request->getPost('type') ?? 'EXTERNA'));
         $idUserAdmin = filter_var($this->request->getPost('id_user_admin') ?? $this->request->getPost('id_user'), FILTER_VALIDATE_INT);
         $idClient = filter_var($this->request->getPost('id_client'), FILTER_VALIDATE_INT) ?: null;
 
-        if (empty($name) || empty($adress)) {
+        if (empty($name)) {
             return $this->response->setJSON([
                 'status'  => 'error',
-                'message' => 'Nombre y dirección son campos requeridos.'
+                'message' => 'El nombre de la bodega es un campo requerido.'
             ]);
         }
 
@@ -301,6 +301,11 @@ class Warehouse extends BaseController
                 'status'  => 'error',
                 'message' => 'Debe seleccionar un usuario administrador para la bodega.'
             ]);
+        }
+
+        $type = in_array($typeInput, ['INTERNA', 'INTERNO'], true) ? 'INTERNO' : 'EXTERNO';
+        if ($type === 'INTERNO') {
+            $idClient = null;
         }
 
         $userModel = new Users();
@@ -332,8 +337,8 @@ class Warehouse extends BaseController
         $warehouseModel = new WarehousesBase();
         $data = [
             'name'          => $name,
-            'adress'        => $adress,
             'state'         => $state,
+            'type'          => $type,
             'id_user_admin' => $idUserAdmin,
             'id_client'     => $idClient,
             'created_at'    => $now,
@@ -348,9 +353,12 @@ class Warehouse extends BaseController
             ]);
         }
 
+        $errors = $warehouseModel->errors();
+        $errorMessage = !empty($errors) ? implode(', ', $errors) : 'Error al registrar la bodega.';
+
         return $this->response->setJSON([
             'status'  => 'error',
-            'message' => 'Error al registrar la bodega.'
+            'message' => $errorMessage
         ]);
     }
 

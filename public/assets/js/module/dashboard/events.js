@@ -978,15 +978,31 @@ $('#modal_create_warehouse').on('show.bs.modal', function () {
     }
 });
 
+// Bodegas - Alternar visibilidad de Titular según el Tipo de Bodega
+$('#in_warehouse_type').on('change', function () {
+    const selectedType = $(this).val();
+    if (selectedType === 'INTERNA' || selectedType === 'INTERNO') {
+        $('#group_warehouse_client').hide();
+        $('#in_warehouse_client').val('');
+    } else {
+        $('#group_warehouse_client').show();
+    }
+});
+
+$('#modal_create_warehouse').on('hidden.bs.modal', function () {
+    $('#form_create_warehouse')[0].reset();
+    $('#in_warehouse_type').val('EXTERNA').trigger('change');
+});
+
 // Bodegas - Guardar nueva bodega
 $('#btn_save_warehouse').on('click', function () {
     const form = $('#form_create_warehouse');
     const name = $('#in_warehouse_name').val().trim();
-    const adress = $('#in_warehouse_adress').val().trim();
     const idUserAdmin = $('#in_warehouse_user').val();
+    const type = $('#in_warehouse_type').val();
 
-    if (!name || !adress) {
-        swal("Atención", "Por favor ingrese el nombre y la dirección de la bodega.", "warning");
+    if (!name) {
+        swal("Atención", "Por favor ingrese el nombre de la bodega.", "warning");
         return;
     }
 
@@ -1008,6 +1024,7 @@ $('#btn_save_warehouse').on('click', function () {
             if (resp.status === 'success') {
                 $('#modal_create_warehouse').modal('hide');
                 form[0].reset();
+                $('#in_warehouse_type').val('EXTERNA').trigger('change');
                 swal("¡Éxito!", resp.message, "success");
                 reloadBodegasTable();
             } else {

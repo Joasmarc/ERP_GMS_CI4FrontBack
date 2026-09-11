@@ -28,20 +28,20 @@ class DispatchAdvices extends Model
 
     // 3.0 Configurar tipos de datos
     protected $castings = [
-        'id' => 'int',
-        'client' => 'string',
-        'nit' => 'string',
-        'adress' => 'string',
-        'sequence' => 'int',
-        'city' => 'int',
-        'type' => 'string',
-        'transfer_code' => 'string',
-        'observation' => 'string',
-        'dispatcher' => 'string',
-        'did_user' => 'int',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'deleted_at' => 'int'
+        'id'            => 'int',
+        'client'        => '?string',
+        'nit'           => '?string',
+        'adress'        => '?string',
+        'sequence'      => 'int',
+        'city'          => '?int',
+        'type'          => 'string',
+        'transfer_code' => '?string',
+        'observation'   => '?string',
+        'dispatcher'    => '?int',
+        'did_user'      => 'int',
+        'created_at'    => 'datetime',
+        'updated_at'    => 'datetime',
+        'deleted_at'    => '?int'
     ];
 
     // 4.0 Configurar Timestamps
@@ -49,10 +49,7 @@ class DispatchAdvices extends Model
     protected $createdField  = 'created_at';
     protected $updatedField  = 'updated_at';
     
-    // Nota: Como 'deleted_at' es de tipo INT y los otros de tipo DATETIME,
-    // el borrado lógico nativo ($useSoftDeletes = true) lanzará error al
-    // intentar guardar una fecha en formato string. Se recomienda manejarlo
-    // manualmente actualizando el campo, o cambiar el tipo a DATETIME en la DB.
+    // Como 'deleted_at' es de tipo INT, desactivamos el soft deletes nativo
     protected $useSoftDeletes = false;
 
     // 5.0 Validación de datos
@@ -61,11 +58,11 @@ class DispatchAdvices extends Model
         'nit'           => 'permit_empty|string|max_length[25]',
         'adress'        => 'permit_empty|string|max_length[105]',
         'sequence'      => 'required|integer',
-        'city'          => 'required|integer',
+        'city'          => 'permit_empty|integer',
         'type'          => 'permit_empty|in_list[INTERNO,INGRESO,AJUSTE,REMISION]',
         'transfer_code' => 'permit_empty|string|max_length[55]',
         'observation'   => 'permit_empty|string|max_length[250]',
-        'dispatcher'    => 'permit_empty|string|max_length[55]',
+        'dispatcher'    => 'permit_empty|integer',
         'did_user'      => 'permit_empty|integer'
     ];
 }

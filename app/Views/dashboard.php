@@ -1320,10 +1320,6 @@
               <input type="text" class="form-control" id="in_warehouse_name" name="name" maxlength="55" placeholder="Ej: Bodega Principal Norte" required>
             </div>
             <div class="form-group mb-3">
-              <label for="in_warehouse_adress" class="form-label fw-bold">Dirección *</label>
-              <input type="text" class="form-control" id="in_warehouse_adress" name="adress" maxlength="55" placeholder="Ej: Calle 45 # 12-34" required>
-            </div>
-            <div class="form-group mb-3">
               <label for="in_warehouse_user" class="form-label fw-bold">Usuario Administrador *</label>
               <select class="form-select" id="in_warehouse_user" name="id_user_admin" required>
                 <option value="" disabled selected>-- Seleccione el usuario administrador --</option>
@@ -1336,6 +1332,13 @@
               <small class="form-text text-muted">Asigne el administrador que tendrá autorización para operar y gestionar esta bodega.</small>
             </div>
             <div class="form-group mb-3">
+              <label for="in_warehouse_type" class="form-label fw-bold">Tipo *</label>
+              <select class="form-select" id="in_warehouse_type" name="type" required>
+                <option value="EXTERNA" selected>EXTERNA</option>
+                <option value="INTERNA">INTERNA</option>
+              </select>
+            </div>
+            <div class="form-group mb-3" id="group_warehouse_client">
               <label for="in_warehouse_client" class="form-label fw-bold">Titular (Cliente)</label>
               <select class="form-select" id="in_warehouse_client" name="id_client">
                 <option value="" selected>-- Sin titular / Opcional --</option>
