@@ -193,11 +193,19 @@
     }
 
     /* Welcome card: smaller text */
-    #cont_dashboard .card-body h2 {
-        font-size: 1.3rem;
+    #cont_dashboard .card-body h2,
+    .dashboard-welcome-header h2 {
+        font-size: 1.35rem;
     }
-    #cont_dashboard .card-body p {
+    #cont_dashboard .card-body p,
+    .dashboard-welcome-header p {
         font-size: 0.9rem;
+    }
+    .dashboard-wallpaper-img {
+        width: 100%;
+        max-width: 100%;
+        max-height: 75vh;
+        min-height: 250px;
     }
 
     /* Navbar notification dropdown */
@@ -527,4 +535,59 @@
 .remision-family-dropdown-item:hover,
 .remision-family-dropdown-item:focus {
     background-color: #f0fbf4 !important;
+}
+
+/* ======================================================== */
+/*   Dashboard Wallpaper & Welcome Section                  */
+/* ======================================================== */
+.dashboard-wallpaper-card {
+    background: radial-gradient(circle at center, #ffffff 0%, #f4f6fa 60%, #edf1f7 100%);
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 16px !important;
+    box-shadow: 0 8px 30px rgba(15, 23, 42, 0.05) !important;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.dashboard-welcome-header {
+    position: relative;
+    z-index: 2;
+}
+
+.dashboard-welcome-header h2 {
+    font-size: 1.85rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: #1e293b;
+}
+
+.dashboard-welcome-header p {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: #64748b;
+}
+
+.dashboard-wallpaper-display {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px 0 20px 0;
+    position: relative;
+    width: 100%;
+}
+
+.dashboard-wallpaper-img {
+    width: 100%;
+    max-width: 1080px;
+    height: auto;
+    max-height: 85vh;
+    object-fit: contain;
+    border-radius: 16px;
+    box-shadow: 0 14px 40px rgba(15, 23, 42, 0.09);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dashboard-wallpaper-img:hover {
+    transform: translateY(-3px) scale(1.01);
+    box-shadow: 0 20px 48px rgba(15, 23, 42, 0.13);
 }

@@ -322,7 +322,7 @@
                   </div>
                   <span class="profile-username">
                     <span class="op-7">Hola,</span>
-                    <span class="fw-bold"><?= session()->get('name') ?></span>
+                    <span class="fw-bold"><?= esc(session()->get('name') ?? '') ?></span>
                   </span>
                 </a>
                 <ul class="dropdown-menu dropdown-user animated fadeIn">
@@ -336,8 +336,8 @@
                             class="avatar-img rounded" />
                         </div>
                         <div class="u-text">
-                          <h4>Jose</h4>
-                          <p class="text-muted">jose@gmsuministros.com</p>
+                          <h4><?= esc(session()->get('name') ?? '') ?></h4>
+                          <p class="text-muted"><?= esc(session()->get('email') ?? '') ?></p>
                           <a
                             href="#"
                             class="btn btn-round btn-xs btn-secondary btn-sm">Ver Perfil</a>
@@ -388,10 +388,24 @@
           <!-- Ini Dashboard Screen -->
           <div id="cont_dashboard" class="row">
             <div class="col-md-12">
-              <div class="card card-round">
-                <div class="card-body">
-                  <h2 class="fw-bold text-primary">¡Bienvenido al Sistema de Gestión!</h2>
-                  <p class="text-muted">Seleccione una opción del menú lateral para comenzar a administrar sus implementos médicos y visualizar reportes detallados.</p>
+              <div class="card card-round dashboard-wallpaper-card border-0 shadow-sm overflow-hidden">
+                <div class="card-body p-3 p-md-4">
+                  <div class="dashboard-welcome-header mb-3 text-center">
+                    <div class="d-inline-flex align-items-center gap-2 px-3 py-1 mb-2 rounded-pill bg-white shadow-sm border">
+                      <i class="fas fa-boxes text-primary"></i>
+                      <span class="fw-semibold text-dark small">GM Suministros • Panel Principal</span>
+                    </div>
+                    <h2 class="fw-bold text-dark mb-2">¡Bienvenido al Sistema de Gestión!</h2>
+                    <p class="text-muted mx-auto mb-0" style="max-width: 680px;">
+                      Seleccione una opción del menú lateral para comenzar a administrar sus implementos médicos y visualizar reportes detallados.
+                    </p>
+                  </div>
+
+                  <div class="dashboard-wallpaper-display text-center">
+                    <img src="<?= base_url('public/assets/img/backgroundmain.jpg') ?>" 
+                         alt="GM Suministros Wallpaper" 
+                         class="dashboard-wallpaper-img img-fluid" />
+                  </div>
                 </div>
               </div>
             </div>
