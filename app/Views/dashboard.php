@@ -402,9 +402,9 @@
                   </div>
 
                   <div class="dashboard-wallpaper-display text-center">
-                    <img src="<?= base_url('public/assets/img/backgroundmain.jpg') ?>" 
-                         alt="GM Suministros Wallpaper" 
-                         class="dashboard-wallpaper-img img-fluid" />
+                    <img src="<?= base_url('public/assets/img/backgroundmain.jpg') ?>"
+                      alt="GM Suministros Wallpaper"
+                      class="dashboard-wallpaper-img img-fluid" />
                   </div>
                 </div>
               </div>
@@ -1354,16 +1354,16 @@
               <input type="text" class="form-control" id="in_warehouse_name" name="name" maxlength="55" placeholder="Ej: Bodega Principal Norte" required>
             </div>
             <div class="form-group mb-3">
-              <label for="in_warehouse_user" class="form-label fw-bold">Usuario Administrador *</label>
+              <label for="in_warehouse_user" class="form-label fw-bold">Usuario Encargado *</label>
               <select class="form-select" id="in_warehouse_user" name="id_user_admin" required>
-                <option value="" disabled selected>-- Seleccione el usuario administrador --</option>
+                <option value="" disabled selected>-- Seleccione el usuario encargado --</option>
                 <?php if (!empty($warehouseUsers)): ?>
                   <?php foreach ($warehouseUsers as $wUser): ?>
                     <option value="<?= esc($wUser['id']) ?>"><?= esc($wUser['name']) ?> (ID: <?= esc($wUser['id']) ?> - <?= esc($wUser['email']) ?>)</option>
                   <?php endforeach; ?>
                 <?php endif; ?>
               </select>
-              <small class="form-text text-muted">Asigne el administrador que tendrá autorización para operar y gestionar esta bodega.</small>
+              <small class="form-text text-muted">Asigne el encargado que tendrá autorización para operar y gestionar esta bodega.</small>
             </div>
             <div class="form-group mb-3">
               <label for="in_warehouse_type" class="form-label fw-bold">Tipo *</label>
