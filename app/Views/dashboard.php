@@ -734,7 +734,7 @@
                           <th style="width: 50px;">ID</th>
                           <th>Bodega</th>
                           <th>Dirección</th>
-                          <th>Admin</th>
+                          <th>Encargado</th>
                           <th>Titular</th>
                           <th>Estado</th>
                           <th class="text-center">Artículos</th>
