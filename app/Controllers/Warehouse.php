@@ -429,7 +429,9 @@ class Warehouse extends BaseController
         $builder = $refModel->select('families_reference.id as id, families_reference.id as reference_id, families_reference.reference, families_reference.id_family, families.keyword as family_name, CONCAT(families_reference.reference, " - ", families.keyword) as keyword')
             ->join('families', 'families.id = families_reference.id_family AND families.deleted_at IS NULL', 'inner')
             ->where('families.state', 'ACTIVO')
-            ->where('families_reference.status', 'ACTIVE');
+            ->where('families_reference.status', 'ACTIVE')
+            ->notLike('families_reference.reference', 'Producto gen', 'after')
+            ->notLike('families_reference.reference', 'productogenerico', 'both');
 
         if (!empty($term)) {
             $builder->groupStart()

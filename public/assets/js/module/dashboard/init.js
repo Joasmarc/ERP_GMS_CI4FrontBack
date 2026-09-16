@@ -20,7 +20,28 @@ $(function () {
             type: 'GET',
             dataType: 'json',
             success: function (resp) {
-                GLOBAL_PRODUCTS_DATA = resp.data || [];
+                const rawList = resp.data || [];
+                // Filtrar solo productos con "active": true y descartar la referencia "Producto genérico"
+                GLOBAL_PRODUCTS_DATA = rawList.filter(p => {
+                    if (p.active !== undefined && p.active !== true && p.active !== 'true' && p.active !== 1) {
+                        return false;
+                    }
+                    const normalize = (str) => String(str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+                    const refStr = normalize(p.reference);
+                    const nomStr = normalize(p.nombre);
+                    const codeStr = normalize(p.id_marca);
+                    if (
+                        refStr.includes('producto generico') ||
+                        nomStr.includes('producto generico') ||
+                        refStr === 'productogenericonube' ||
+                        codeStr === 'productogenericonube' ||
+                        refStr === 'registromanual'
+                    ) {
+                        return false;
+                    }
+                    return true;
+                });
+
                 // 2.0 Procesar productos obtenidos - Verificar si hay productos
                 MACRO_INIT.contenedor_catalogo.empty();
                 if (GLOBAL_PRODUCTS_DATA.length === 0) {

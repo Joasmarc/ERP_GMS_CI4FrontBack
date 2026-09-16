@@ -325,14 +325,15 @@ class SiigoService
                 continue;
             }
             $code = strtolower(trim((string)($p['code'] ?? '')));
-            if (in_array($code, ['productogenericonube', 'registromanual'], true)) {
+            $cleanNameNoAccents = str_replace(['á', 'é', 'í', 'ó', 'ú', 'ü'], ['a', 'e', 'i', 'o', 'u', 'u'], mb_strtolower($rawFamilyName, 'UTF-8'));
+            if (in_array($code, ['productogenericonube', 'registromanual'], true) || str_contains($cleanNameNoAccents, 'producto generico')) {
                 continue;
             }
 
             $normKey = $normalizeKey($rawFamilyName);
             $familiesSeenInSiigo[$normKey] = true;
 
-            $isProductActive = !isset($p['active']) || $p['active'] !== false;
+            $isProductActive = isset($p['active']) && ($p['active'] === true || $p['active'] === 'true' || $p['active'] === 1);
             if ($isProductActive) {
                 $familiesActiveInSiigo[$normKey] = true;
             }
@@ -404,8 +405,8 @@ class SiigoService
             }
 
             // El estado de la referencia depende del producto de Siigo y de la familia:
-            // Si la familia completa está inactiva, la referencia también debe ser INACTIVE
-            $isProductActive = !isset($p['active']) || $p['active'] !== false;
+            // Si la familia completa está inactiva o el producto no está activo, la referencia debe ser INACTIVE
+            $isProductActive = isset($p['active']) && ($p['active'] === true || $p['active'] === 'true' || $p['active'] === 1);
             $isFamilyActive = ($family['state'] ?? 'ACTIVO') === 'ACTIVO';
             $refStatus = ($isProductActive && $isFamilyActive) ? 'ACTIVE' : 'INACTIVE';
 
@@ -516,8 +517,15 @@ class SiigoService
                 $famVal = $normalizeKey((string)($dbRef['keyword'] ?? ''));
                 $refId = (int)$dbRef['id'];
 
-                // A. Purgar datos corruptos (referencia vacía, sin familia, o idéntica al nombre de la familia)
-                if ($refVal === $famVal || empty($refVal) || empty($dbRef['id_family'])) {
+                $refNoAccents = str_replace(['á', 'é', 'í', 'ó', 'ú', 'ü'], ['a', 'e', 'i', 'o', 'u', 'u'], $refVal);
+                // A. Purgar datos corruptos (referencia vacía, sin familia, idéntica al nombre de la familia, o referencia de producto genérico)
+                if (
+                    $refVal === $famVal ||
+                    empty($refVal) ||
+                    empty($dbRef['id_family']) ||
+                    str_contains($refNoAccents, 'producto generico') ||
+                    in_array($refNoAccents, ['productogenericonube', 'registromanual'], true)
+                ) {
                     $idsToDelete[] = $refId;
                 }
                 // B. Si la familia está inactiva O la referencia NO vino en Siigo: INACTIVAR la referencia
@@ -599,6 +607,11 @@ class SiigoService
         }
 
         if ($rawRef === '') {
+            return null;
+        }
+
+        $cleanRefCheck = str_replace(['á', 'é', 'í', 'ó', 'ú', 'ü'], ['a', 'e', 'i', 'o', 'u', 'u'], mb_strtolower($rawRef, 'UTF-8'));
+        if (str_contains($cleanRefCheck, 'producto generico') || in_array($cleanRefCheck, ['productogenericonube', 'registromanual'], true)) {
             return null;
         }
 

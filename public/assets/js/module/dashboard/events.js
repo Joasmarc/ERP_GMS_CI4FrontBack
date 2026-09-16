@@ -116,7 +116,22 @@ $(document).on('click', '[data-selector="abrir"]', function () {
     let nombre_base = MACRO.fila_producto.nombre ? MACRO.fila_producto.nombre.toLowerCase().trim() : 'sin nombre';
     let lista_variantes = GLOBAL_PRODUCTS_DATA.filter(p => {
         let n = p.nombre ? p.nombre.toLowerCase().trim() : 'sin nombre';
-        return n === nombre_base;
+        if (n !== nombre_base) return false;
+        // Nunca mostrar la referencia "Producto genérico"
+        const normalize = (str) => String(str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+        const refStr = normalize(p.reference);
+        const nomStr = normalize(p.nombre);
+        const codeStr = normalize(p.id_marca);
+        if (
+            refStr.includes('producto generico') ||
+            nomStr.includes('producto generico') ||
+            refStr === 'productogenericonube' ||
+            codeStr === 'productogenericonube' ||
+            refStr === 'registromanual'
+        ) {
+            return false;
+        }
+        return true;
     });
 
     // 2.0 Renderizar variantes del producto
@@ -404,7 +419,26 @@ $(document).on('click', '#btn_upload_image', function () {
                     type: 'GET',
                     dataType: 'json',
                     success: function (catalog_resp) {
-                        GLOBAL_PRODUCTS_DATA = catalog_resp.data || [];
+                        const rawCatalog = catalog_resp.data || [];
+                        GLOBAL_PRODUCTS_DATA = rawCatalog.filter(p => {
+                            if (p.active !== undefined && p.active !== true && p.active !== 'true' && p.active !== 1) {
+                                return false;
+                            }
+                            const normalize = (str) => String(str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+                            const refStr = normalize(p.reference);
+                            const nomStr = normalize(p.nombre);
+                            const codeStr = normalize(p.id_marca);
+                            if (
+                                refStr.includes('producto generico') ||
+                                nomStr.includes('producto generico') ||
+                                refStr === 'productogenericonube' ||
+                                codeStr === 'productogenericonube' ||
+                                refStr === 'registromanual'
+                            ) {
+                                return false;
+                            }
+                            return true;
+                        });
                         // Recargar imágenes del producto
                         const familyId = $('#btn_upload_pdf').data('family-id');
                         if (familyId) {

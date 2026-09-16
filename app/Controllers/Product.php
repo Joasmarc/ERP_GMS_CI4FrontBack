@@ -82,7 +82,47 @@ class Product extends BaseController
 
         // 3.2 Formatear datos para la interfaz y DataTables
         $finalData = [];
+
+        $isGenericReference = static function($product, $ref, $rawName): bool {
+            $checkStrings = [
+                $ref,
+                $product['reference'] ?? '',
+                $rawName,
+                $product['code'] ?? '',
+            ];
+
+            foreach ($checkStrings as $str) {
+                if (empty($str)) {
+                    continue;
+                }
+                $normalized = mb_strtolower(trim((string)$str), 'UTF-8');
+                $normalized = str_replace(
+                    ['á', 'é', 'í', 'ó', 'ú', 'ü', 'ñ'],
+                    ['a', 'e', 'i', 'o', 'u', 'u', 'n'],
+                    $normalized
+                );
+                $normalized = preg_replace('/\s+/', ' ', $normalized);
+
+                if (
+                    str_contains($normalized, 'producto generico') ||
+                    str_contains($normalized, 'productogenerico') ||
+                    $normalized === 'productogenericonube' ||
+                    $normalized === 'registromanual'
+                ) {
+                    return true;
+                }
+            }
+
+            return false;
+        };
+
         foreach ($rawProducts as $product) {
+            // Mostrar únicamente productos que vengan con el atributo "active": true
+            $isActive = isset($product['active']) && ($product['active'] === true || $product['active'] === 'true' || $product['active'] === 1);
+            if (!$isActive) {
+                continue;
+            }
+
             $rawName = trim($product['name'] ?? '');
             $normKey = mb_strtolower($rawName, 'UTF-8');
             $family = $existingFamilies[$normKey] ?? null;
@@ -95,6 +135,11 @@ class Product extends BaseController
             $cleanRef = $siigoService->extractCleanReference($product, $rawName);
             $ref = $cleanRef !== null ? $cleanRef : (!empty($product['reference']) ? trim($product['reference']) : trim($product['code'] ?? ''));
 
+            // La referencia "Producto genérico" nunca debe mostrarse
+            if ($isGenericReference($product, $ref, $rawName)) {
+                continue;
+            }
+
             $finalData[] = [
                 'id'           => $product['id'] ?? '',
                 'nombre'       => $rawName,
@@ -104,7 +149,8 @@ class Product extends BaseController
                 'reference'    => $ref,
                 'observacion'  => $product['description'] ?? '',
                 'img'          => $family['img_path'] ?? null,
-                'family_id'    => $family['id'] ?? null
+                'family_id'    => $family['id'] ?? null,
+                'active'       => true
             ];
         }
 

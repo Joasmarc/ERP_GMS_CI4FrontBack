@@ -102,6 +102,8 @@ class FamiliesReference extends Model
             ->join('families', 'families.id = families_reference.id_family AND families.deleted_at IS NULL', 'inner')
             ->where('families.state', 'ACTIVO')
             ->where('families_reference.status', 'ACTIVE')
+            ->notLike('families_reference.reference', 'Producto gen', 'after')
+            ->notLike('families_reference.reference', 'productogenerico', 'both')
             ->orderBy('families.keyword', 'ASC')
             ->orderBy('families_reference.reference', 'ASC')
             ->findAll();
