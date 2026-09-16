@@ -778,6 +778,12 @@
                     </div>
                   </div>
                   <div class="card-tools mt-2 mt-sm-0">
+                    <button class="btn btn-round btn-outline-primary btn-sm me-2" id="btn_refresh_bodega_balance" title="Actualizar referencias de bodega">
+                      <span class="btn-label">
+                        <i class="fas fa-sync-alt me-1"></i>
+                      </span>
+                      Actualizar
+                    </button>
                     <button class="btn btn-round btn-info btn-sm me-2 text-white" id="btn_export_warehouse_report" title="Descargar Informe de Inventario y Saldos">
                       <span class="btn-label">
                         <i class="fas fa-file-excel me-1"></i>

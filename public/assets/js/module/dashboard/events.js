@@ -1161,6 +1161,18 @@ $('#btn_save_warehouse_item').on('click', function () {
     });
 });
 
+// Bodegas - Actualizar referencias y balance de la bodega
+$(document).on('click', '#btn_refresh_bodega_balance', function () {
+    if (currentWarehouseId) {
+        const $icon = $(this).find('i');
+        $icon.addClass('fa-spin');
+        viewWarehouseBalance(currentWarehouseId);
+        setTimeout(function () {
+            $icon.removeClass('fa-spin');
+        }, 1000);
+    }
+});
+
 // Bodegas - Descargar informe Excel de la bodega (Inventario y Saldos)
 $(document).on('click', '#btn_export_warehouse_report', function (e) {
     e.preventDefault();
