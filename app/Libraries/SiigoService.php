@@ -528,8 +528,8 @@ class SiigoService
                 ) {
                     $idsToDelete[] = $refId;
                 }
-                // B. Si la familia está inactiva O la referencia NO vino en Siigo: INACTIVAR la referencia
-                elseif (!isset($cleanRefsInSiigo[$refVal]) || ($dbRef['family_state'] ?? '') === 'INACTIVO') {
+                // B. Si la familia está inactiva, la referencia NO vino en Siigo o viene inactiva: INACTIVAR la referencia
+                elseif (!isset($cleanRefsInSiigo[$refVal]) || ($cleanRefsInSiigo[$refVal]['status'] ?? '') === 'INACTIVE' || ($dbRef['family_state'] ?? '') === 'INACTIVO') {
                     if (($dbRef['status'] ?? 'ACTIVE') === 'ACTIVE') {
                         $idsToInactivate[] = $refId;
                     }

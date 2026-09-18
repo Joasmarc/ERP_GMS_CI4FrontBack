@@ -51,12 +51,12 @@ class WarehousesBalance extends Model
         'quantity'        => 'permit_empty|integer',
         'lot'             => 'permit_empty|string|max_length[25]',
         'expiration_date' => 'permit_empty|valid_date',
-        'status'          => 'permit_empty|in_list[MUESTRA,PRUEBA,VENTA,DISPONIBLE]'
+        'status'          => 'permit_empty|in_list[CONSIGNACION,PRUEBA,VENTA,DISPONIBLE]'
     ];
 
     protected $validationMessages = [
         'status' => [
-            'in_list' => 'El estado debe ser MUESTRA, PRUEBA, VENTA o DISPONIBLE'
+            'in_list' => 'El estado debe ser CONSIGNACION, PRUEBA, VENTA o DISPONIBLE'
         ]
     ];
 

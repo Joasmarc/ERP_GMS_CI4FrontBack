@@ -1344,7 +1344,7 @@ $(document).on('change', '.transfer-item-select', function () {
         row.find('.lot-text').text(lot);
 
         let statusBadgeClass = 'badge-success';
-        if (status === 'MUESTRA') statusBadgeClass = 'badge-info';
+        if (status === 'CONSIGNACION') statusBadgeClass = 'badge-info';
         else if (status === 'PRUEBA') statusBadgeClass = 'badge-warning text-dark';
         else if (status === 'VENTA') statusBadgeClass = 'badge-primary';
 

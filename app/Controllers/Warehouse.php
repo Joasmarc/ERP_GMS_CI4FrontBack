@@ -471,7 +471,7 @@ class Warehouse extends BaseController
         $expDateRaw  = trim($this->request->getPost('expiration_date') ?? '');
         $expirationDate = null;
         $statusRaw   = trim($this->request->getPost('status') ?? '');
-        $status      = in_array($statusRaw, ['MUESTRA', 'PRUEBA', 'VENTA', 'DISPONIBLE']) ? $statusRaw : 'DISPONIBLE';
+        $status      = in_array($statusRaw, ['CONSIGNACION', 'PRUEBA', 'VENTA', 'DISPONIBLE']) ? $statusRaw : 'DISPONIBLE';
 
         if (!$this->canOperateWarehouse((int)$idWarehouse)) {
             return $this->response->setJSON([
@@ -1067,7 +1067,7 @@ class Warehouse extends BaseController
             }
 
             // Validar estado destino seleccionado por el usuario o tomar el estado de origen
-            $allowedStatuses = ['MUESTRA', 'PRUEBA', 'VENTA', 'DISPONIBLE'];
+            $allowedStatuses = ['CONSIGNACION', 'PRUEBA', 'VENTA', 'DISPONIBLE'];
             $targetStatus = in_array($rawTargetStatus, $allowedStatuses, true) 
                 ? $rawTargetStatus 
                 : (!empty($originBalance['status']) ? $originBalance['status'] : 'DISPONIBLE');
@@ -1799,18 +1799,28 @@ class Warehouse extends BaseController
         // Asegurar que families y families_reference estén sincronizadas
         $siigoService = new \App\Libraries\SiigoService();
         try {
-            $siigoService->ensureSynced();
+            $siigoService->syncFamiliesAndReferences();
         } catch (\Throwable $t) {
-            log_message('error', 'Error en ensureSynced para plantilla: ' . $t->getMessage());
+            log_message('error', 'Error en syncFamiliesAndReferences para plantilla: ' . $t->getMessage());
         }
+
+        // Obtener mapa de referencias activas según el consumido de catálogo
+        $activeCatalogMap = $this->getActiveReferencesMapFromCatalog();
 
         // Consultar referencias activas directamente desde families_reference con families
         $activeReferences = $refModel->getAllActiveWithFamilies();
 
-        // Formatear filas para Excel: [ID_REFERENCIA, REFERENCIA, FAMILIA, CANTIDAD, LOTE, FECHA_VENCIMIENTO]
+        // Formatear filas para Excel: solo incluir referencias activas en el catálogo consumido
         $excelRows = [];
         if (!empty($activeReferences)) {
             foreach ($activeReferences as $item) {
+                $refLower = mb_strtolower(trim($item['reference'] ?? ''), 'UTF-8');
+
+                // Si se obtuvo el catálogo consumido, descartar las referencias inactivas
+                if (!empty($activeCatalogMap) && !isset($activeCatalogMap[$refLower])) {
+                    continue;
+                }
+
                 $excelRows[] = [
                     (int)$item['reference_id'],
                     $item['reference'],
@@ -1823,6 +1833,96 @@ class Warehouse extends BaseController
         }
 
         return $excelRows;
+    }
+
+    /**
+     * Obtener el conjunto de referencias activas validadas según el catálogo consumido de Siigo
+     * (con active = true, familia activa y excluyendo genéricos)
+     *
+     * @return array Mapa [normalized_reference => true]
+     */
+    private function getActiveReferencesMapFromCatalog(): array
+    {
+        $siigoService = new \App\Libraries\SiigoService();
+        $token = $siigoService->getAuthToken();
+        if (!$token) {
+            return [];
+        }
+
+        $rawProducts = $siigoService->fetchProducts($token);
+        if (empty($rawProducts)) {
+            return [];
+        }
+
+        $familiesModel = new \App\Models\Families();
+        $familiesData = $familiesModel->where('deleted_at IS NULL')->findAll();
+        $existingFamilies = [];
+        foreach ($familiesData as $family) {
+            $key = mb_strtolower(trim($family['keyword'] ?? ''), 'UTF-8');
+            $existingFamilies[$key] = $family;
+        }
+
+        $isGenericReference = static function($product, $ref, $rawName): bool {
+            $checkStrings = [
+                $ref,
+                $product['reference'] ?? '',
+                $rawName,
+                $product['code'] ?? '',
+            ];
+
+            foreach ($checkStrings as $str) {
+                if (empty($str)) {
+                    continue;
+                }
+                $normalized = mb_strtolower(trim((string)$str), 'UTF-8');
+                $normalized = str_replace(
+                    ['á', 'é', 'í', 'ó', 'ú', 'ü', 'ñ'],
+                    ['a', 'e', 'i', 'o', 'u', 'u', 'n'],
+                    $normalized
+                );
+                $normalized = preg_replace('/\s+/', ' ', $normalized);
+
+                if (
+                    str_contains($normalized, 'producto generico') ||
+                    str_contains($normalized, 'productogenerico') ||
+                    $normalized === 'productogenericonube' ||
+                    $normalized === 'registromanual'
+                ) {
+                    return true;
+                }
+            }
+
+            return false;
+        };
+
+        $activeRefs = [];
+        foreach ($rawProducts as $product) {
+            // Validar estado de las referencias como en el consumido de catálogo: solo active === true
+            $isActive = isset($product['active']) && ($product['active'] === true || $product['active'] === 'true' || $product['active'] === 1);
+            if (!$isActive) {
+                continue;
+            }
+
+            $rawName = trim($product['name'] ?? '');
+            $normKey = mb_strtolower($rawName, 'UTF-8');
+            $family = $existingFamilies[$normKey] ?? null;
+
+            if ($family && ($family['state'] ?? '') === 'INACTIVO') {
+                continue;
+            }
+
+            $cleanRef = $siigoService->extractCleanReference($product, $rawName);
+            $ref = $cleanRef !== null ? $cleanRef : (!empty($product['reference']) ? trim($product['reference']) : trim($product['code'] ?? ''));
+
+            if (empty($ref) || $isGenericReference($product, $ref, $rawName)) {
+                continue;
+            }
+
+            $normRef = mb_strtolower(trim($ref), 'UTF-8');
+            $activeRefs[$normRef] = true;
+        }
+
+        return $activeRefs;
     }
 
     /**
@@ -2005,17 +2105,22 @@ class Warehouse extends BaseController
         $refModel = new \App\Models\FamiliesReference();
         $siigoService = new \App\Libraries\SiigoService();
         try {
-            $siigoService->ensureSynced();
+            $siigoService->syncFamiliesAndReferences();
         } catch (\Throwable $t) {
-            log_message('error', 'Error en ensureSynced para importación: ' . $t->getMessage());
+            log_message('error', 'Error en syncFamiliesAndReferences para importación: ' . $t->getMessage());
         }
 
+        $activeCatalogMap = $this->getActiveReferencesMapFromCatalog();
         $activeReferences = $refModel->getAllActiveWithFamilies();
         $refsById = [];
         $refsByCode = [];
         foreach ($activeReferences as $r) {
+            $refLower = mb_strtolower(trim($r['reference']), 'UTF-8');
+            if (!empty($activeCatalogMap) && !isset($activeCatalogMap[$refLower])) {
+                continue;
+            }
             $refsById[(int)$r['reference_id']] = $r;
-            $refsByCode[mb_strtolower(trim($r['reference']), 'UTF-8')] = $r;
+            $refsByCode[$refLower] = $r;
         }
 
         // Procesar y validar filas

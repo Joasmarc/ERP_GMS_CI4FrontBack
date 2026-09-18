@@ -497,7 +497,7 @@ function addTransferLine() {
             <td class="text-center">
                 <select name="target_status[]" class="form-select form-select-sm transfer-target-status-select" required disabled>
                     <option value="DISPONIBLE" selected>DISPONIBLE</option>
-                    <option value="MUESTRA">MUESTRA</option>
+                    <option value="CONSIGNACION">CONSIGNACION</option>
                     <option value="PRUEBA">PRUEBA</option>
                     <option value="VENTA">VENTA</option>
                 </select>
@@ -723,7 +723,7 @@ function formatFamilySubLines(rowData) {
         
         const status = v.status || 'DISPONIBLE';
         let statusBadgeClass = 'badge-success';
-        if (status === 'MUESTRA') statusBadgeClass = 'badge-info';
+        if (status === 'CONSIGNACION') statusBadgeClass = 'badge-info';
         else if (status === 'PRUEBA') statusBadgeClass = 'badge-warning text-dark';
         else if (status === 'VENTA') statusBadgeClass = 'badge-primary';
         const safeStatus = `<span class="badge ${statusBadgeClass} ms-1" style="font-size:0.75rem;">${$('<div>').text(status).html()}</span>`;
@@ -848,7 +848,7 @@ function renderBalanceTable(items, precomputedGroupedData = null) {
                         const lot = variations[0].lot;
                         const status = variations[0].status || 'DISPONIBLE';
                         let statusBadgeClass = 'badge-success';
-                        if (status === 'MUESTRA') statusBadgeClass = 'badge-info';
+                        if (status === 'CONSIGNACION') statusBadgeClass = 'badge-info';
                         else if (status === 'PRUEBA') statusBadgeClass = 'badge-warning text-dark';
                         else if (status === 'VENTA') statusBadgeClass = 'badge-primary';
                         
