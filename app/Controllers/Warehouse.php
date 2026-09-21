@@ -768,7 +768,7 @@ class Warehouse extends BaseController
             $actualRefId = (int)$refRecord['id'];
             $actualRefCode = $refRecord['reference'];
             $familyName = $refRecord['family_name'] ?? ($refRecord['family_keyword'] ?? 'Producto');
-            $description = $familyName . ' [' . $actualRefCode . ']';
+            $description = $familyName . ' - ' . $actualRefCode;
 
             // 1. Guardar item de la remisión
             $itemData = [
@@ -1242,7 +1242,7 @@ class Warehouse extends BaseController
                 $lot = $item['lot'];
                 $lotStr = ($lot !== null && $lot !== '') ? ' [Lote: ' . $lot . ']' : '';
                 // En todas las remisiones todas las líneas (referencia) no mostrar el estado, solo la información de la referencia
-                $displayName = $familyName . ' [' . $refCode . ']' . $lotStr;
+                $displayName = $familyName . ' - ' . $refCode . $lotStr;
 
                 $dispatchItemsModel->insert([
                     'id_base'         => $currentDispatchId,
@@ -1546,7 +1546,7 @@ class Warehouse extends BaseController
                 $familyName = $item['family_name'];
                 $lot = $item['lot'];
                 $lotStr = ($lot !== null && $lot !== '') ? ' [Lote: ' . $lot . ']' : '';
-                $description = $ref ? ($familyName . ' [' . $ref . ']' . $lotStr) : $familyName;
+                $description = $ref ? ($familyName . ' - ' . $ref . $lotStr) : $familyName;
 
                 $itemData = [
                     'id_base'         => $currentDispatchId,
@@ -2526,7 +2526,7 @@ class Warehouse extends BaseController
             $itemData = [
                 'id_base'         => $dispatchId,
                 'reference'       => $item['reference'],
-                'description'     => $item['name'] . ' [' . $item['reference'] . ']',
+                'description'     => $item['name'] . ' - ' . $item['reference'],
                 'batch'           => $item['batch_dispatch'],
                 'expiration_date' => $item['expiration_date'],
                 'quiantity'       => $item['quantity'],

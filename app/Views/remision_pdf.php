@@ -10,6 +10,30 @@ $typeTitles = [
     'AJUSTE'   => 'AJUSTE DE INVENTARIO'
 ];
 $docTitle = $typeTitles[$rawType] ?? 'REMISIÓN';
+
+// Preparación y paginación: estrictamente 15 referencias por hoja
+$itemsList = is_array($items) ? array_values($items) : [];
+$itemsPerPage = 15;
+$totalItems = count($itemsList);
+$totalPages = max(1, (int)ceil($totalItems / $itemsPerPage));
+
+// Cálculo del total acumulado de insumos de toda la remisión
+$totalGlobalCantidad = 0;
+foreach ($itemsList as $it) {
+    $q = isset($it['quiantity']) ? (int)$it['quiantity'] : (isset($it['quantity']) ? (int)$it['quantity'] : 0);
+    $totalGlobalCantidad += $q;
+}
+
+// Consecutivo formateado
+$cityCode = !empty($dispatch['city_code']) ? $dispatch['city_code'] : (!empty($dispatch['city_name']) ? substr($dispatch['city_name'], 0, 3) : 'GM');
+$consecutivoFormatted = 'N° ' . esc($cityCode) . '-' . str_pad(esc($dispatch['sequence'] ?? '1'), 3, '0', STR_PAD_LEFT);
+
+// Fecha de elaboración formateada
+$fechaElab = '';
+if (!empty($dispatch['created_at'])) {
+    $ts = strtotime($dispatch['created_at']);
+    $fechaElab = $ts ? date('Y-m-d', $ts) : esc($dispatch['created_at']);
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -44,14 +68,14 @@ $docTitle = $typeTitles[$rawType] ?? 'REMISIÓN';
             background-color: #525659;
             color: var(--text-main);
             padding: 20px 10px;
-            font-size: 11.5px;
+            font-size: 11px;
             line-height: 1.35;
         }
 
         /* Barra de acciones superior para visualización en pantalla */
         .print-toolbar {
             max-width: 840px;
-            margin: 0 auto 12px auto;
+            margin: 0 auto 14px auto;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -98,12 +122,16 @@ $docTitle = $typeTitles[$rawType] ?? 'REMISIÓN';
         /* Contenedor Principal (Hoja Carta) */
         .sheet {
             max-width: 840px;
-            margin: 0 auto;
+            margin: 0 auto 24px auto;
             background: #ffffff;
-            padding: 32px 36px;
+            padding: 26px 32px;
             box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
             border-radius: 4px;
             position: relative;
+        }
+
+        .sheet:last-child {
+            margin-bottom: 24px;
         }
 
         /* Encabezado del Documento */
@@ -111,20 +139,20 @@ $docTitle = $typeTitles[$rawType] ?? 'REMISIÓN';
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 12px;
             gap: 15px;
         }
 
         .header-logo-col {
-            flex: 0 0 240px;
+            flex: 0 0 230px;
             display: flex;
             align-items: center;
             justify-content: flex-start;
         }
 
         .header-logo-col img {
-            max-width: 230px;
-            max-height: 95px;
+            max-width: 220px;
+            max-height: 80px;
             width: auto;
             height: auto;
             object-fit: contain;
@@ -134,13 +162,13 @@ $docTitle = $typeTitles[$rawType] ?? 'REMISIÓN';
         .header-company-col {
             flex: 1;
             text-align: center;
-            font-size: 11.5px;
+            font-size: 11px;
             color: #374151;
-            line-height: 1.45;
+            line-height: 1.4;
         }
 
         .header-company-col h1 {
-            font-size: 15px;
+            font-size: 14.5px;
             font-weight: 700;
             color: var(--primary);
             text-transform: uppercase;
@@ -173,8 +201,8 @@ $docTitle = $typeTitles[$rawType] ?? 'REMISIÓN';
             background-color: var(--secondary);
             color: #ffffff;
             font-weight: 700;
-            font-size: 13px;
-            padding: 6px 0;
+            font-size: 12px;
+            padding: 5px 0;
             letter-spacing: 1.5px;
             text-transform: uppercase;
         }
@@ -182,19 +210,30 @@ $docTitle = $typeTitles[$rawType] ?? 'REMISIÓN';
         .badge-remision-number {
             color: #dc2626;
             font-weight: 700;
-            font-size: 18px;
-            padding: 6px 0;
-            letter-spacing: 1.5px;
+            font-size: 16px;
+            padding: 4px 0;
+            letter-spacing: 1px;
             background: #ffffff;
+        }
+
+        .badge-remision-page {
+            background-color: var(--accent-blue);
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 10.5px;
+            padding: 3px 0;
+            letter-spacing: 1px;
+            border-top: 1px solid var(--border-green);
+            text-transform: uppercase;
         }
 
         /* Cuadrícula de Datos del Cliente */
         .customer-card {
             border: 1px solid var(--border-blue);
             border-radius: 3px;
-            margin-bottom: 16px;
+            margin-bottom: 10px;
             overflow: hidden;
-            font-size: 11px;
+            font-size: 10.5px;
         }
 
         .grid-row {
@@ -218,14 +257,14 @@ $docTitle = $typeTitles[$rawType] ?? 'REMISIÓN';
             background-color: var(--accent-blue);
             color: var(--primary);
             font-weight: 700;
-            padding: 5px 8px;
+            padding: 4px 8px;
             border-right: 1px solid var(--border-blue);
             display: flex;
             align-items: center;
         }
 
         .cell-value {
-            padding: 5px 8px;
+            padding: 4px 8px;
             display: flex;
             align-items: center;
             color: #111827;
@@ -238,16 +277,17 @@ $docTitle = $typeTitles[$rawType] ?? 'REMISIÓN';
 
         /* Tabla de Insumos */
         .table-container {
-            margin-bottom: 16px;
+            margin-bottom: 10px;
             overflow-x: auto;
         }
 
         .items-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 11px;
+            font-size: 10.5px;
             border: 1px solid var(--border-blue);
             background: #ffffff;
+            table-layout: fixed;
         }
 
         .items-table thead tr {
@@ -256,10 +296,10 @@ $docTitle = $typeTitles[$rawType] ?? 'REMISIÓN';
         }
 
         .items-table th {
-            padding: 6px 6px;
+            padding: 4.5px 5px;
             font-weight: 700;
             border-right: 1px solid rgba(255, 255, 255, 0.25);
-            font-size: 10.5px;
+            font-size: 10px;
             letter-spacing: 0.3px;
         }
 
@@ -268,10 +308,15 @@ $docTitle = $typeTitles[$rawType] ?? 'REMISIÓN';
         }
 
         .items-table td {
-            padding: 5px 6px;
+            padding: 3.5px 5px;
             border-right: 1px solid var(--border-blue);
             border-bottom: 1px solid var(--border-light);
             color: #1f2937;
+            height: 18.5px;
+            line-height: 1.25;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .items-table td:last-child {
@@ -287,7 +332,8 @@ $docTitle = $typeTitles[$rawType] ?? 'REMISIÓN';
 
         .items-table tr.total-row td {
             border-bottom: none;
-            padding: 6px 8px;
+            padding: 4.5px 8px;
+            white-space: normal;
         }
 
         .col-item { width: 42px; text-align: center; }
@@ -305,8 +351,8 @@ $docTitle = $typeTitles[$rawType] ?? 'REMISIÓN';
         .obs-card {
             border: 1px solid var(--border-blue);
             border-radius: 3px;
-            margin-bottom: 16px;
-            font-size: 11px;
+            margin-bottom: 10px;
+            font-size: 10.5px;
             overflow: hidden;
         }
 
@@ -314,13 +360,16 @@ $docTitle = $typeTitles[$rawType] ?? 'REMISIÓN';
             background-color: var(--accent-blue);
             color: var(--primary);
             font-weight: 700;
-            padding: 4px 8px;
+            padding: 3px 8px;
             border-bottom: 1px solid var(--border-blue);
+            font-size: 10px;
         }
 
         .obs-body {
-            min-height: 38px;
-            padding: 6px 8px;
+            min-height: 28px;
+            max-height: 48px;
+            overflow: hidden;
+            padding: 4px 8px;
             color: #374151;
             white-space: pre-wrap;
             word-break: break-word;
@@ -330,18 +379,18 @@ $docTitle = $typeTitles[$rawType] ?? 'REMISIÓN';
         .signatures-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 16px;
-            font-size: 11px;
+            gap: 16px;
+            margin-bottom: 10px;
+            font-size: 10.5px;
         }
 
         .sig-box {
             border-radius: 3px;
-            padding: 8px 10px;
+            padding: 6px 8px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            height: 96px;
+            height: 78px;
             box-sizing: border-box;
         }
 
@@ -358,7 +407,7 @@ $docTitle = $typeTitles[$rawType] ?? 'REMISIÓN';
 
         .sig-box-delivery .sig-footer {
             border-top: 1px solid var(--border-blue);
-            padding-top: 4px;
+            padding-top: 3px;
             margin-top: auto;
             color: var(--primary);
         }
@@ -376,7 +425,7 @@ $docTitle = $typeTitles[$rawType] ?? 'REMISIÓN';
 
         .sig-box-received .sig-footer {
             border-top: 1px solid var(--border-green);
-            padding-top: 4px;
+            padding-top: 3px;
             margin-top: auto;
             color: var(--secondary);
         }
@@ -384,10 +433,10 @@ $docTitle = $typeTitles[$rawType] ?? 'REMISIÓN';
         /* Pie de Página Legal */
         .doc-footer {
             text-align: center;
-            font-size: 9.5px;
+            font-size: 9px;
             color: #6b7280;
-            line-height: 1.4;
-            padding-top: 6px;
+            line-height: 1.35;
+            padding-top: 4px;
         }
 
         .doc-footer p {
@@ -405,11 +454,11 @@ $docTitle = $typeTitles[$rawType] ?? 'REMISIÓN';
 
         /* Reglas Estrictas de Impresión (Tamaño Carta) */
         @media print {
-            body {
+            html, body {
                 background: #ffffff !important;
                 padding: 0 !important;
                 margin: 0 !important;
-                font-size: 10.5pt !important;
+                font-size: 10pt !important;
             }
 
             .print-toolbar,
@@ -429,6 +478,15 @@ $docTitle = $typeTitles[$rawType] ?? 'REMISIÓN';
                 width: 100% !important;
                 margin: 0 !important;
                 border-radius: 0 !important;
+                page-break-after: always;
+                break-after: page;
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+
+            .sheet:last-child {
+                page-break-after: auto;
+                break-after: auto;
             }
 
             * {
@@ -447,6 +505,7 @@ $docTitle = $typeTitles[$rawType] ?? 'REMISIÓN';
             .signatures-grid,
             .doc-header {
                 page-break-inside: avoid;
+                break-inside: avoid;
             }
         }
     </style>
@@ -457,7 +516,10 @@ $docTitle = $typeTitles[$rawType] ?? 'REMISIÓN';
     <!-- BARRA SUPERIOR PARA VISUALIZACIÓN E IMPRESIÓN (OCULTA AL IMPRIMIR) -->
     <div class="print-toolbar no-print">
         <div class="doc-info">
-            <span>📄 <?= esc($docTitle) ?> N° <?= esc(!empty($dispatch['city_code']) ? $dispatch['city_code'] : (!empty($dispatch['city_name']) ? substr($dispatch['city_name'], 0, 3) : 'GM')) ?>-<?= str_pad(esc($dispatch['sequence'] ?? '1'), 3, '0', STR_PAD_LEFT) ?></span>
+            <span>📄 <?= esc($docTitle) ?> <?= $consecutivoFormatted ?></span>
+            <?php if ($totalPages > 1): ?>
+                <span style="font-size: 11px; font-weight: normal; color: #4b5563; margin-left: 8px;">(<?= $totalPages ?> Páginas &bull; 15 referencias por hoja)</span>
+            <?php endif; ?>
         </div>
         <button id="btn_print_remision" class="btn-print-action" type="button">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -469,7 +531,18 @@ $docTitle = $typeTitles[$rawType] ?? 'REMISIÓN';
         </button>
     </div>
 
-    <!-- CONTENEDOR PRINCIPAL (HOJA) -->
+    <!-- CICLO DE PÁGINAS (ESTRICTAMENTE 15 REFERENCIAS POR HOJA) -->
+    <?php for ($pageIndex = 0; $pageIndex < $totalPages; $pageIndex++): 
+        $pageStart = $pageIndex * $itemsPerPage;
+        $pageItems = array_slice($itemsList, $pageStart, $itemsPerPage);
+        $pageQty = 0;
+        foreach ($pageItems as $pit) {
+            $q = isset($pit['quiantity']) ? (int)$pit['quiantity'] : (isset($pit['quantity']) ? (int)$pit['quantity'] : 0);
+            $pageQty += $q;
+        }
+        $currentPageNumber = $pageIndex + 1;
+    ?>
+    <!-- HOJA <?= $currentPageNumber ?> DE <?= $totalPages ?> -->
     <div class="sheet">
 
         <!-- ENCABEZADO DE LA EMPRESA Y DOCUMENTO -->
@@ -489,14 +562,17 @@ $docTitle = $typeTitles[$rawType] ?? 'REMISIÓN';
                 <p>Email: administracion@gmsuministros.com</p>
             </div>
 
-            <!-- Consecutivo de Remisión -->
+            <!-- Consecutivo de Remisión y Enumerador de Página -->
             <div class="header-badge-col">
                 <div class="badge-remision">
                     <div class="badge-remision-title">
                         <?= esc($docTitle) ?>
                     </div>
                     <div class="badge-remision-number">
-                        N° <?= esc(!empty($dispatch['city_code']) ? $dispatch['city_code'] : (!empty($dispatch['city_name']) ? substr($dispatch['city_name'], 0, 3) : 'GM')) ?>-<?= str_pad(esc($dispatch['sequence'] ?? '1'), 3, '0', STR_PAD_LEFT) ?>
+                        <?= $consecutivoFormatted ?>
+                    </div>
+                    <div class="badge-remision-page">
+                        PÁGINA <?= $currentPageNumber ?> DE <?= $totalPages ?>
                     </div>
                 </div>
             </div>
@@ -521,20 +597,11 @@ $docTitle = $typeTitles[$rawType] ?? 'REMISIÓN';
             <!-- Fila 3: Fecha de Elaboración -->
             <div class="grid-row row-two-cols">
                 <div class="cell-label">FECHA DE ELABORACIÓN:</div>
-                <div class="cell-value">
-                    <?php 
-                        $fechaElab = '';
-                        if (!empty($dispatch['created_at'])) {
-                            $ts = strtotime($dispatch['created_at']);
-                            $fechaElab = $ts ? date('Y-m-d', $ts) : esc($dispatch['created_at']);
-                        }
-                        echo esc($fechaElab);
-                    ?>
-                </div>
+                <div class="cell-value"><?= esc($fechaElab) ?></div>
             </div>
         </section>
 
-        <!-- TABLA DE INSUMOS -->
+        <!-- TABLA DE INSUMOS (EXACTAMENTE 15 REFERENCIAS POR PÁGINA) -->
         <section class="table-container">
             <table class="items-table">
                 <thead>
@@ -549,53 +616,60 @@ $docTitle = $typeTitles[$rawType] ?? 'REMISIÓN';
                 </thead>
                 <tbody>
                     <?php 
-                        $totalCantidad = 0;
-                        $itemsList = is_array($items) ? $items : [];
-                        $rows = count($itemsList);
-                        $minRows = 12;
-                        $iterRows = max($rows, $minRows);
+                    for ($r = 0; $r < $itemsPerPage; $r++):
+                        $hasData = isset($pageItems[$r]);
+                        $itemNumber = $pageStart + $r + 1;
+                        $qty = 0;
+                        $ref = '';
+                        $desc = '';
+                        $batch = '';
+                        $fVenc = '';
 
-                        for ($i = 0; $i < $iterRows; $i++):
-                            $hasData = isset($itemsList[$i]);
-                            $qty = 0;
-                            $ref = '';
-                            $desc = '';
-                            $batch = '';
-                            $fVenc = '';
-
-                            if ($hasData) {
-                                $item = $itemsList[$i];
-                                $qty = isset($item['quiantity']) ? (int)$item['quiantity'] : (isset($item['quantity']) ? (int)$item['quantity'] : 0);
-                                $totalCantidad += $qty;
-                                $ref = $item['reference'] ?? '';
-                                $desc = $item['description'] ?? '';
-                                $batch = $item['batch'] ?? '';
-                                if (!empty($item['expiration_date']) && $item['expiration_date'] !== '0000-00-00') {
-                                    $fVenc = date('Y-m-d', strtotime($item['expiration_date']));
-                                }
-
-                                // En todas las remisiones todas las líneas (referencia) eliminar lo que dice el estado, el estado no puede ir en la remisión
-                                $desc = preg_replace('/\s*\[\s*Estado\s*:[^\]]*\]/i', '', $desc);
-                                $desc = trim($desc);
+                        if ($hasData) {
+                            $item = $pageItems[$r];
+                            $qty = isset($item['quiantity']) ? (int)$item['quiantity'] : (isset($item['quantity']) ? (int)$item['quantity'] : 0);
+                            $ref = $item['reference'] ?? '';
+                            $desc = $item['description'] ?? '';
+                            $batch = $item['batch'] ?? '';
+                            if (!empty($item['expiration_date']) && $item['expiration_date'] !== '0000-00-00') {
+                                $fVenc = date('Y-m-d', strtotime($item['expiration_date']));
                             }
+
+                            // En todas las remisiones todas las líneas (referencia) eliminar lo que dice el estado
+                            $desc = preg_replace('/\s*\[\s*Estado\s*:[^\]]*\]/i', '', $desc);
+
+                            // En las referencias no usar [] sino '-'
+                            $ref = trim(str_replace(['[', ']'], '', $ref));
+                            if (!empty($ref)) {
+                                $desc = preg_replace('/\s*\[\s*' . preg_quote($ref, '/') . '\s*\]/i', ' - ' . $ref, $desc);
+                            }
+                            $desc = preg_replace('/\s*\[(?!Lote\b)([^\]]+)\]/i', ' - $1', $desc);
+                            $desc = trim($desc);
+                        }
                     ?>
                         <tr>
-                            <td class="col-item <?= !$hasData ? 'text-muted' : '' ?>"><?= $hasData ? ($i + 1) : '' ?></td>
-                            <td class="col-ref"><?= $hasData ? esc($ref) : '' ?></td>
-                            <td class="col-desc"><?= $hasData ? esc($desc) : '' ?></td>
-                            <td class="col-lote"><?= $hasData ? esc($batch) : '' ?></td>
-                            <td class="col-venc"><?= $hasData ? esc($fVenc) : '' ?></td>
-                            <td class="col-cant" style="font-weight: 500;"><?= ($hasData && $qty !== 0) ? esc($qty) : '' ?></td>
+                            <td class="col-item <?= !$hasData ? 'text-muted' : '' ?>"><?= $hasData ? $itemNumber : '&nbsp;' ?></td>
+                            <td class="col-ref"><?= $hasData ? esc($ref) : '&nbsp;' ?></td>
+                            <td class="col-desc"><?= $hasData ? esc($desc) : '&nbsp;' ?></td>
+                            <td class="col-lote"><?= $hasData ? esc($batch) : '&nbsp;' ?></td>
+                            <td class="col-venc"><?= $hasData ? esc($fVenc) : '&nbsp;' ?></td>
+                            <td class="col-cant" style="font-weight: 500;"><?= ($hasData && $qty !== 0) ? esc((string)$qty) : '&nbsp;' ?></td>
                         </tr>
                     <?php endfor; ?>
-                    
+
                     <!-- Fila de Total -->
                     <tr class="total-row">
                         <td colspan="5" class="text-right" style="padding-right: 12px; text-transform: uppercase;">
-                            TOTAL CANTIDAD DE INSUMOS:
+                            <?php if ($totalPages > 1): ?>
+                                <span>CANTIDAD PÁGINA <?= $currentPageNumber ?>: <strong><?= esc((string)$pageQty) ?></strong></span>
+                                <span style="margin: 0 10px; opacity: 0.6;">|</span>
+                                <span>TOTAL CANTIDAD REMISIÓN:</span>
+                            <?php else: ?>
+                                TOTAL CANTIDAD DE INSUMOS:
+                            <?php endif; ?>
                         </td>
-                        <td class="col-cant" style="font-size: 13px;">
-                            <?= esc((string)$totalCantidad) ?>
+                        <td class="col-cant" style="font-size: 12px;">
+                            <?= esc((string)$totalGlobalCantidad) ?>
                         </td>
                     </tr>
                 </tbody>
@@ -631,10 +705,11 @@ $docTitle = $typeTitles[$rawType] ?? 'REMISIÓN';
         <!-- PIE DE PÁGINA -->
         <footer class="doc-footer">
             <p>Favor revisar la mercancía/insumos antes de firmar. El presente documento es constancia de entrega y no constituye una factura de venta.</p>
-            <p>Formato Controlado - Grupo Monzant SAS - V1</p>
+            <p>Formato Controlado - Grupo Monzant SAS - V1 &bull; Página <?= $currentPageNumber ?> de <?= $totalPages ?></p>
         </footer>
 
     </div>
+    <?php endfor; ?>
 
     <script>
         document.getElementById('btn_print_remision')?.addEventListener('click', function () {
