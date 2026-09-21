@@ -405,15 +405,13 @@ function addWarehouseRemisionLine() {
  * Agregar una nueva fila de artículo a la tabla del modal de ajuste de bodega
  */
 function addWarehouseAdjustLine() {
-    let optionsHtml = '<option value="">Seleccione una referencia / lote / estado...</option>';
+    let optionsHtml = '<option value="">Seleccione una referencia / lote...</option>';
     if (typeof currentWarehouseItems !== 'undefined' && currentWarehouseItems && currentWarehouseItems.length > 0) {
         currentWarehouseItems.forEach(item => {
             const refCode = item.reference || ('Ref #' + (item.id_reference || item.id));
             const famName = item.family_name || item.name_item || '';
             const itemName = famName ? `${refCode} - ${famName}` : refCode;
             const lotInfo = (item.lot && item.lot.trim() !== '') ? ` [Lote: ${item.lot.trim()}]` : ' [Sin Lote]';
-            const statusVal = item.status ? item.status : 'DISPONIBLE';
-            const statusInfo = ` [Estado: ${statusVal}]`;
             let expInfo = '';
             if (item.expiration_date && item.expiration_date !== '0000-00-00' && item.expiration_date.trim() !== '') {
                 const expOnly = item.expiration_date.split(' ')[0];
@@ -421,10 +419,9 @@ function addWarehouseAdjustLine() {
             }
             const safeItemName = $('<div>').text(itemName).html();
             const safeLotInfo = $('<div>').text(lotInfo).html();
-            const safeStatusInfo = $('<div>').text(statusInfo).html();
             const safeExpInfo = $('<div>').text(expInfo).html();
             const currentQty = parseInt(item.quantity || 0);
-            optionsHtml += `<option value="${item.id}" data-quantity="${currentQty}">${safeItemName}${safeLotInfo}${safeStatusInfo}${safeExpInfo} (Saldo: ${currentQty})</option>`;
+            optionsHtml += `<option value="${item.id}" data-quantity="${currentQty}">${safeItemName}${safeLotInfo}${safeExpInfo} (Saldo: ${currentQty})</option>`;
         });
     } else {
         optionsHtml = '<option value="">No hay referencias registradas con saldo en esta bodega</option>';
@@ -460,14 +457,12 @@ function addWarehouseAdjustLine() {
  * Agregar una nueva fila de artículo a la tabla del modal de transferencia
  */
 function addTransferLine() {
-    let optionsHtml = '<option value="">Seleccione una referencia / lote / estado...</option>';
+    let optionsHtml = '<option value="">Seleccione una referencia / lote...</option>';
     (currentWarehouseItems || []).forEach(item => {
         const refCode = item.reference || ('Ref #' + (item.id_reference || item.id));
         const famName = item.family_name || item.name_item || '';
         const itemName = famName ? `${refCode} - ${famName}` : refCode;
         const lotInfo = (item.lot && item.lot.trim() !== '') ? ` [Lote: ${item.lot.trim()}]` : ' [Sin Lote]';
-        const statusVal = item.status ? item.status : 'DISPONIBLE';
-        const statusInfo = ` [Estado: ${statusVal}]`;
         let expInfo = '';
         if (item.expiration_date && item.expiration_date !== '0000-00-00' && item.expiration_date.trim() !== '') {
             const expOnly = item.expiration_date.split(' ')[0];
@@ -475,10 +470,9 @@ function addTransferLine() {
         }
         const safeItemName = $('<div>').text(itemName).html();
         const safeLotInfo = $('<div>').text(lotInfo).html();
-        const safeStatusInfo = $('<div>').text(statusInfo).html();
         const safeExpInfo = $('<div>').text(expInfo).html();
         const currentQty = parseInt(item.quantity || 0);
-        optionsHtml += `<option value="${item.id}" data-name="${safeItemName}" data-quantity="${currentQty}">${safeItemName}${safeLotInfo}${safeStatusInfo}${safeExpInfo} (Disp: ${currentQty})</option>`;
+        optionsHtml += `<option value="${item.id}" data-name="${safeItemName}" data-quantity="${currentQty}">${safeItemName}${safeLotInfo}${safeExpInfo} (Disp: ${currentQty})</option>`;
     });
 
     const rowHtml = `

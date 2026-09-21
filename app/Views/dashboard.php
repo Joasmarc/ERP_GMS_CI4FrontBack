@@ -1688,7 +1688,9 @@
                   </tbody>
                 </table>
               </div>
-              <small class="text-muted mt-1 d-block"><i class="fas fa-info-circle me-1"></i> Solo se pueden transferir artículos con saldo disponible en la bodega origen.</small>
+              <small class="text-muted mt-1 d-block">
+                <i class="fas fa-info-circle me-1 text-primary"></i> Si selecciona referencias con diferentes estados (<strong>Consignación</strong>, <strong>Prueba</strong>, <strong>Venta</strong>, <strong>Disponible</strong>), el sistema generará automáticamente remisiones independientes para cada estado.
+              </small>
             </div>
           </form>
         </div>

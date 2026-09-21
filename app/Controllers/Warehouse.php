@@ -982,49 +982,25 @@ class Warehouse extends BaseController
             $receiverCityId = $cityRow ? (int)$cityRow['id'] : 1;
         }
 
-        // 1.1 Crear remisión oficial automática por el traslado entre bodegas
-        $dispatchModel = new DispatchAdvices();
-        $lastDispatch = $dispatchModel->where('city', $receiverCityId)
-            ->orderBy('sequence', 'DESC')
-            ->first();
-        $nextSequence = ($lastDispatch && isset($lastDispatch['sequence'])) ? ((int)$lastDispatch['sequence'] + 1) : 1;
-
+        // 1.1 Preparar modelos y contenedores para el traslado y las remisiones separadas por estado
         $destClassification = $isExternalDest ? 'Exterior' : 'Interno';
-        $observation = 'Esta remision es automatica por el sistema para registrar el traslado de ' . $sendName . ' a ' . $receivesName . ' (' . $destClassification . ').';
-
-        $dispatchHeader = [
-            'client'        => substr($receiverName, 0, 75),
-            'nit'           => substr($receiverNit, 0, 25),
-            'adress'        => substr($receiverAdress, 0, 105),
-            'sequence'      => $nextSequence,
-            'city'          => $receiverCityId,
-            'type'          => $remisionType,
-            'transfer_code' => 'TRAS-BOD-' . $idWarehouseSend . '-' . $idWarehouseReceives,
-            'observation'   => substr($observation, 0, 250),
-            'dispatcher'    => $sendAdminId,
-            'did_user'      => (int)session('user_id'),
-            'created_at'    => $now,
-            'updated_at'    => $now
-        ];
-
-        $dispatchModel->insert($dispatchHeader);
-        $dispatchId = $dispatchModel->getInsertID();
-
-        if (!$dispatchId) {
-            $db->transRollback();
-            return $this->response->setJSON([
-                'status'  => 'error',
-                'message' => 'Error al generar la remisión de la transferencia.'
-            ]);
-        }
 
         $balanceModel = new WarehousesBalance();
         $transferItemsModel = new WarehousesTransferItems();
         $dispatchItemsModel = new DispatchAdviceItems();
+        $dispatchModel = new DispatchAdvices();
         $familyModel = new Families();
+        $famRefModel = new \App\Models\FamiliesReference();
 
         $processedCount = 0;
         $itemsCount = count($itemsList);
+        $allowedStatuses = ['CONSIGNACION', 'PRUEBA', 'VENTA', 'DISPONIBLE'];
+        $groupedDispatchItems = [
+            'CONSIGNACION' => [],
+            'PRUEBA'       => [],
+            'VENTA'        => [],
+            'DISPONIBLE'   => []
+        ];
 
         for ($i = 0; $i < $itemsCount; $i++) {
             $rawId = $balanceIds[$i] ?? null;
@@ -1046,7 +1022,6 @@ class Warehouse extends BaseController
             }
 
             if (!$originBalance && !empty($rawName)) {
-                $famRefModel = new \App\Models\FamiliesReference();
                 $refMatch = $famRefModel->where('reference', $rawName)->where('status', 'ACTIVE')->first();
                 if ($refMatch) {
                     $originBalance = $balanceModel->where('id_warehouse', $idWarehouseSend)
@@ -1067,10 +1042,10 @@ class Warehouse extends BaseController
             }
 
             // Validar estado destino seleccionado por el usuario o tomar el estado de origen
-            $allowedStatuses = ['CONSIGNACION', 'PRUEBA', 'VENTA', 'DISPONIBLE'];
+            $originStatus = !empty($originBalance['status']) ? strtoupper(trim($originBalance['status'])) : 'DISPONIBLE';
             $targetStatus = in_array($rawTargetStatus, $allowedStatuses, true) 
                 ? $rawTargetStatus 
-                : (!empty($originBalance['status']) ? $originBalance['status'] : 'DISPONIBLE');
+                : (in_array($originStatus, $allowedStatuses, true) ? $originStatus : 'DISPONIBLE');
 
             // 3.0 Descontar saldo en bodega origen
             $newOriginQty = (int)$originBalance['quantity'] - $qty;
@@ -1142,32 +1117,36 @@ class Warehouse extends BaseController
                 }
             }
 
-            // 5.0 Registrar línea del item transferido con id_reference
+            // 5.0 Registrar línea del item transferido con id_reference en transfer_items
             $transferItemsModel->insert([
                 'id_warehouse_transfer' => $transferId,
                 'id_reference'          => $originBalance['id_reference'],
                 'quantity'              => $qty
             ]);
 
-            // 5.1 Registrar línea correspondiente en la remisión de traslado
-            $famRefModel = new \App\Models\FamiliesReference();
+            // 5.1 Datos de la referencia para las remisiones
             $refRecord = $famRefModel->getWithFamilyById((int)$originBalance['id_reference']);
             $refCode = $refRecord ? $refRecord['reference'] : ('REF-' . $originBalance['id_reference']);
             $familyName = $refRecord ? ($refRecord['family_name'] ?? $refRecord['family_keyword']) : (!empty($rawName) ? $rawName : ('Referencia #' . $originBalance['id_reference']));
-            $originStatus = !empty($originBalance['status']) ? $originBalance['status'] : 'DISPONIBLE';
-            $statusLabel = ($originStatus === $targetStatus) ? $targetStatus : "{$originStatus} → {$targetStatus}";
-            $displayName = $familyName . ' [' . $refCode . ']' . (($itemLot !== null && $itemLot !== '') ? ' [Lote: ' . $itemLot . ']' : '') . ' [Estado: ' . $statusLabel . ']';
 
-            $dispatchItemsModel->insert([
-                'id_base'         => $dispatchId,
-                'reference'       => $refCode,
-                'description'     => $displayName,
-                'batch'           => $itemLot ?? '',
+            // Clasificar por estado: Según el estado que tendrá el insumo al transferirse a destino
+            $groupKey = in_array($targetStatus, $allowedStatuses, true) ? $targetStatus : 'DISPONIBLE';
+            $isConsignacion = ($groupKey === 'CONSIGNACION');
+
+            if (!isset($groupedDispatchItems[$groupKey])) {
+                $groupedDispatchItems[$groupKey] = [];
+            }
+
+            $groupedDispatchItems[$groupKey][] = [
+                'ref_code'        => $refCode,
+                'family_name'     => $familyName,
+                'lot'             => $itemLot,
                 'expiration_date' => $originBalance['expiration_date'] ?? null,
-                'quiantity'       => $qty,
-                'created_at'      => $now,
-                'updated_at'      => $now
-            ]);
+                'quantity'        => $qty,
+                'origin_status'   => $originStatus,
+                'target_status'   => $targetStatus,
+                'is_consignacion' => $isConsignacion
+            ];
 
             $processedCount++;
         }
@@ -1180,6 +1159,109 @@ class Warehouse extends BaseController
             ]);
         }
 
+        // 6.0 Generar remisiones oficiales por separado según los estados utilizados
+        // Filtrar solo los grupos con items presentes
+        $activeGroups = array_filter($groupedDispatchItems, function ($items) {
+            return !empty($items);
+        });
+
+        $hasMultipleRemisiones = count($activeGroups) > 1;
+
+        // Obtener último consecutivo para la ciudad de destino
+        $lastDispatch = $dispatchModel->where('city', $receiverCityId)
+            ->orderBy('sequence', 'DESC')
+            ->first();
+        $nextSeqCounter = ($lastDispatch && isset($lastDispatch['sequence'])) ? ((int)$lastDispatch['sequence']) : 0;
+
+        $createdDispatches = [];
+
+        $statusSuffixes = [
+            'CONSIGNACION' => '-CONSIG',
+            'PRUEBA'       => '-PRUEBA',
+            'VENTA'        => '-VENTA',
+            'DISPONIBLE'   => '-DISP'
+        ];
+
+        $statusFriendlyNames = [
+            'CONSIGNACION' => 'Consignación',
+            'PRUEBA'       => 'Prueba',
+            'VENTA'        => 'Venta',
+            'DISPONIBLE'   => 'Disponible'
+        ];
+
+        foreach ($activeGroups as $statusKey => $items) {
+            $nextSeqCounter++;
+            $currentSequence = $nextSeqCounter;
+
+            // Código de transferencia con sufijo si hay múltiples remisiones
+            $codeSuffix = $hasMultipleRemisiones ? ($statusSuffixes[$statusKey] ?? ('-' . substr($statusKey, 0, 5))) : '';
+            $transferCode = 'TRAS-BOD-' . $idWarehouseSend . '-' . $idWarehouseReceives . $codeSuffix;
+
+            // Observación correspondiente según el estado
+            if ($statusKey === 'CONSIGNACION') {
+                $observation = 'Esta remision es automatica por el sistema para registrar el traslado en Consignacion de ' . $sendName . ' a ' . $receivesName . ' (' . $destClassification . ').';
+            } elseif ($statusKey === 'PRUEBA') {
+                $observation = 'Esta remision es automatica por el sistema para registrar el traslado en Prueba de ' . $sendName . ' a ' . $receivesName . ' (' . $destClassification . ').';
+            } elseif ($statusKey === 'VENTA') {
+                $observation = 'Esta remision es automatica por el sistema para registrar el traslado para Venta de ' . $sendName . ' a ' . $receivesName . ' (' . $destClassification . ').';
+            } else {
+                $obsDetail = $hasMultipleRemisiones ? ' (Disponible)' : '';
+                $observation = 'Esta remision es automatica por el sistema para registrar el traslado' . $obsDetail . ' de ' . $sendName . ' a ' . $receivesName . ' (' . $destClassification . ').';
+            }
+
+            $dispatchHeader = [
+                'client'        => substr($receiverName, 0, 75),
+                'nit'           => substr($receiverNit, 0, 25),
+                'adress'        => substr($receiverAdress, 0, 105),
+                'sequence'      => $currentSequence,
+                'city'          => $receiverCityId,
+                'type'          => $remisionType,
+                'transfer_code' => $transferCode,
+                'observation'   => substr($observation, 0, 250),
+                'dispatcher'    => $sendAdminId,
+                'did_user'      => (int)session('user_id'),
+                'created_at'    => $now,
+                'updated_at'    => $now
+            ];
+
+            $dispatchModel->insert($dispatchHeader);
+            $currentDispatchId = $dispatchModel->getInsertID();
+
+            if (!$currentDispatchId) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'status'  => 'error',
+                    'message' => 'Error al registrar la remisión oficial de la transferencia.'
+                ]);
+            }
+
+            // Registrar las líneas de insumos para esta remisión específica
+            foreach ($items as $item) {
+                $refCode = $item['ref_code'];
+                $familyName = $item['family_name'];
+                $lot = $item['lot'];
+                $lotStr = ($lot !== null && $lot !== '') ? ' [Lote: ' . $lot . ']' : '';
+                // En todas las remisiones todas las líneas (referencia) no mostrar el estado, solo la información de la referencia
+                $displayName = $familyName . ' [' . $refCode . ']' . $lotStr;
+
+                $dispatchItemsModel->insert([
+                    'id_base'         => $currentDispatchId,
+                    'reference'       => $refCode,
+                    'description'     => $displayName,
+                    'batch'           => $lot ?? '',
+                    'expiration_date' => $item['expiration_date'],
+                    'quiantity'       => $item['quantity'],
+                    'created_at'      => $now,
+                    'updated_at'      => $now
+                ]);
+            }
+
+            $createdDispatches[$statusKey] = [
+                'dispatch_id' => $currentDispatchId,
+                'sequence'    => $currentSequence
+            ];
+        }
+
         $db->transComplete();
 
         if ($db->transStatus() === false) {
@@ -1189,12 +1271,39 @@ class Warehouse extends BaseController
             ]);
         }
 
+        $dispatchIdsList = array_column($createdDispatches, 'dispatch_id');
+        $sequencesList = array_column($createdDispatches, 'sequence');
+        $mainDispatchId = reset($dispatchIdsList);
+        $mainSequence = implode(', ', $sequencesList);
+
+        if (count($createdDispatches) === 1) {
+            $onlyStatus = key($createdDispatches);
+            $onlySeq = $createdDispatches[$onlyStatus]['sequence'];
+            $stName = $statusFriendlyNames[$onlyStatus] ?? ucfirst(strtolower($onlyStatus));
+            if ($onlyStatus === 'CONSIGNACION') {
+                $respMsg = 'Transferencia realizada y remisión de Consignación N° ' . $onlySeq . ' generada correctamente.';
+            } else {
+                $respMsg = 'Transferencia realizada y documento tipo ' . ($isExternalDest ? 'EXTERNO' : 'INTERNO') . ' (' . $stName . ') N° ' . $onlySeq . ' generado correctamente.';
+            }
+        } else {
+            $parts = [];
+            foreach ($createdDispatches as $st => $dispData) {
+                $stName = $statusFriendlyNames[$st] ?? ucfirst(strtolower($st));
+                $parts[] = "N° {$dispData['sequence']} ({$stName})";
+            }
+            $partsText = implode(', ', $parts);
+            $countDocs = count($createdDispatches);
+            $respMsg = "Transferencia realizada exitosamente. Se generaron {$countDocs} remisiones por separado: {$partsText}.";
+        }
+
         return $this->response->setJSON([
-            'status'      => 'success',
-            'message'     => 'Transferencia realizada y documento tipo ' . ($isExternalDest ? 'EXTERNO' : 'INTERNO') . ' N° ' . $nextSequence . ' generado correctamente.',
-            'transfer_id' => $transferId,
-            'dispatch_id' => $dispatchId,
-            'sequence'    => $nextSequence
+            'status'       => 'success',
+            'message'      => $respMsg,
+            'transfer_id'  => $transferId,
+            'dispatch_id'  => $mainDispatchId,
+            'sequence'     => $mainSequence,
+            'dispatch_ids' => $dispatchIdsList,
+            'sequences'    => $sequencesList
         ]);
     }
 
@@ -1264,10 +1373,9 @@ class Warehouse extends BaseController
 
         $ciudad = 1;
         $dispatchModel = new DispatchAdvices();
-        $lastDispatch = $dispatchModel->where('city', $ciudad)
-            ->orderBy('sequence', 'DESC')
-            ->first();
-        $nextSequence = ($lastDispatch && isset($lastDispatch['sequence'])) ? ((int)$lastDispatch['sequence'] + 1) : 1;
+        $itemsModel = new DispatchAdviceItems();
+        $balanceModel = new WarehousesBalance();
+        $famRefModel = new \App\Models\FamiliesReference();
 
         $timezone = new \DateTimeZone('America/Bogota');
         $now = (new \DateTime('now', $timezone))->format('Y-m-d H:i:s');
@@ -1279,41 +1387,17 @@ class Warehouse extends BaseController
         $destAdress = $adminUser ? ($adminUser['adress'] ?? '') : '';
         $dispatcher = $adminUserId;
 
-        $headerData = [
-            'client'        => 'Ajuste - ' . $destName,
-            'nit'           => '1',
-            'adress'        => $destAdress,
-            'sequence'      => $nextSequence,
-            'city'          => $ciudad,
-            'type'          => 'AJUSTE',
-            'transfer_code' => 'AJUSTE-BOD-' . $idWarehouse,
-            'observation'   => $observacion,
-            'dispatcher'    => $dispatcher,
-            'did_user'      => (int)session('user_id'),
-            'created_at'    => $now,
-            'updated_at'    => $now
-        ];
-
         $db = \Config\Database::connect();
         $db->transStart();
 
-        $dispatchModel->insert($headerData);
-        $dispatchId = $dispatchModel->getInsertID();
-
-        if (!$dispatchId) {
-            $db->transRollback();
-            return $this->response->setJSON([
-                'status'  => 'error',
-                'message' => 'Error al registrar la cabecera del documento de ajuste.'
-            ]);
-        }
-
-        $itemsModel = new DispatchAdviceItems();
-        $balanceModel = new WarehousesBalance();
-        $familyModel = new Families();
-
         $itemsCount = count($cantidades);
         $processedCount = 0;
+        $groupedAdjustItems = [
+            'CONSIGNACION' => [],
+            'PRUEBA'       => [],
+            'VENTA'        => [],
+            'DISPONIBLE'   => []
+        ];
 
         for ($i = 0; $i < $itemsCount; $i++) {
             $balId = filter_var($balanceIds[$i] ?? null, FILTER_VALIDATE_INT);
@@ -1352,31 +1436,34 @@ class Warehouse extends BaseController
             $refId = !empty($existing['id_reference']) ? (int)$existing['id_reference'] : null;
             $refRecord = null;
             if ($refId) {
-                $famRefModel = new \App\Models\FamiliesReference();
                 $refRecord = $famRefModel->getWithFamilyById($refId);
             }
             $ref = $refRecord ? $refRecord['reference'] : '';
             $familyName = $refRecord ? ($refRecord['family_name'] ?? $refRecord['family_keyword']) : ('Referencia #' . $balId);
-            $description = $ref ? ($familyName . ' [' . $ref . ']') : $familyName;
 
-            // 1. Guardar item del ajuste (dispatch_advice_items) para auditoría y remisión
-            $itemData = [
-                'id_base'         => $dispatchId,
-                'reference'       => $ref,
-                'description'     => $description,
-                'batch'           => $existing['lot'] ?? '',
-                'expiration_date' => $existing['expiration_date'] ?? null,
-                'quiantity'       => $qty,
-                'created_at'      => $now,
-                'updated_at'      => $now
-            ];
-            $itemsModel->insert($itemData);
-
-            // 2. Actualizar existencias en warehouses_balance
+            // Actualizar existencias en warehouses_balance
             $balanceModel->update($existing['id'], [
                 'quantity'   => $newQty,
                 'updated_at' => $now
             ]);
+
+            // Clasificar por estado: Agrupar según el estado del registro de inventario
+            $balStatus = !empty($existing['status']) ? strtoupper(trim($existing['status'])) : 'DISPONIBLE';
+            $groupKey = in_array($balStatus, ['CONSIGNACION', 'PRUEBA', 'VENTA', 'DISPONIBLE'], true) ? $balStatus : 'DISPONIBLE';
+
+            if (!isset($groupedAdjustItems[$groupKey])) {
+                $groupedAdjustItems[$groupKey] = [];
+            }
+
+            $groupedAdjustItems[$groupKey][] = [
+                'ref_code'        => $ref,
+                'family_name'     => $familyName,
+                'lot'             => $existing['lot'] ?? '',
+                'expiration_date' => $existing['expiration_date'] ?? null,
+                'quantity'        => $qty,
+                'status'          => $groupKey,
+                'is_consignacion' => ($groupKey === 'CONSIGNACION')
+            ];
 
             $processedCount++;
         }
@@ -1389,6 +1476,97 @@ class Warehouse extends BaseController
             ]);
         }
 
+        // Generar documentos de ajuste por separado según los estados utilizados
+        $activeGroups = array_filter($groupedAdjustItems, function ($items) {
+            return !empty($items);
+        });
+
+        $hasMultipleDocs = count($activeGroups) > 1;
+
+        $lastDispatch = $dispatchModel->where('city', $ciudad)
+            ->orderBy('sequence', 'DESC')
+            ->first();
+        $nextSeqCounter = ($lastDispatch && isset($lastDispatch['sequence'])) ? ((int)$lastDispatch['sequence']) : 0;
+
+        $createdDispatches = [];
+
+        $statusSuffixes = [
+            'CONSIGNACION' => '-CONSIG',
+            'PRUEBA'       => '-PRUEBA',
+            'VENTA'        => '-VENTA',
+            'DISPONIBLE'   => '-DISP'
+        ];
+
+        $statusFriendlyNames = [
+            'CONSIGNACION' => 'Consignación',
+            'PRUEBA'       => 'Prueba',
+            'VENTA'        => 'Venta',
+            'DISPONIBLE'   => 'Disponible'
+        ];
+
+        foreach ($activeGroups as $statusKey => $items) {
+            $nextSeqCounter++;
+            $currentSequence = $nextSeqCounter;
+
+            $codeSuffix = $hasMultipleDocs ? ($statusSuffixes[$statusKey] ?? ('-' . substr($statusKey, 0, 5))) : '';
+            $transferCode = 'AJUSTE-BOD-' . $idWarehouse . $codeSuffix;
+
+            $friendlyName = $statusFriendlyNames[$statusKey] ?? ucfirst(strtolower($statusKey));
+            $obsDetail = $hasMultipleDocs ? " ({$friendlyName})" : '';
+            $docObservation = $observacion . $obsDetail;
+
+            $headerData = [
+                'client'        => 'Ajuste - ' . $destName,
+                'nit'           => '1',
+                'adress'        => $destAdress,
+                'sequence'      => $currentSequence,
+                'city'          => $ciudad,
+                'type'          => 'AJUSTE',
+                'transfer_code' => $transferCode,
+                'observation'   => substr($docObservation, 0, 250),
+                'dispatcher'    => $dispatcher,
+                'did_user'      => (int)session('user_id'),
+                'created_at'    => $now,
+                'updated_at'    => $now
+            ];
+
+            $dispatchModel->insert($headerData);
+            $currentDispatchId = $dispatchModel->getInsertID();
+
+            if (!$currentDispatchId) {
+                $db->transRollback();
+                return $this->response->setJSON([
+                    'status'  => 'error',
+                    'message' => 'Error al registrar la cabecera del documento de ajuste.'
+                ]);
+            }
+
+            foreach ($items as $item) {
+                $ref = $item['ref_code'];
+                $familyName = $item['family_name'];
+                $lot = $item['lot'];
+                $lotStr = ($lot !== null && $lot !== '') ? ' [Lote: ' . $lot . ']' : '';
+                $description = $ref ? ($familyName . ' [' . $ref . ']' . $lotStr) : $familyName;
+
+                $itemData = [
+                    'id_base'         => $currentDispatchId,
+                    'reference'       => $ref,
+                    'description'     => $description,
+                    'batch'           => $item['lot'] ?? '',
+                    'expiration_date' => $item['expiration_date'] ?? null,
+                    'quiantity'       => $item['quantity'],
+                    'created_at'      => $now,
+                    'updated_at'      => $now
+                ];
+                $itemsModel->insert($itemData);
+            }
+
+            $createdDispatches[$statusKey] = [
+                'dispatch_id' => $currentDispatchId,
+                'sequence'    => $currentSequence
+            ];
+        }
+
         $db->transComplete();
         if ($db->transStatus() === false) {
             return $this->response->setJSON([
@@ -1397,11 +1575,31 @@ class Warehouse extends BaseController
             ]);
         }
 
+        $dispatchIdsList = array_column($createdDispatches, 'dispatch_id');
+        $sequencesList = array_column($createdDispatches, 'sequence');
+        $mainDispatchId = reset($dispatchIdsList);
+        $mainSequence = implode(', ', $sequencesList);
+
+        if (count($createdDispatches) === 1) {
+            $respMsg = 'Ajuste registrado exitosamente (Documento N° ' . $mainSequence . ') e inventario actualizado.';
+        } else {
+            $parts = [];
+            foreach ($createdDispatches as $st => $dispData) {
+                $friendlyName = $statusFriendlyNames[$st] ?? ucfirst(strtolower($st));
+                $parts[] = "N° {$dispData['sequence']} ({$friendlyName})";
+            }
+            $partsText = implode(', ', $parts);
+            $countDocs = count($createdDispatches);
+            $respMsg = "Ajuste registrado exitosamente. Se generaron {$countDocs} documentos por separado: {$partsText}.";
+        }
+
         return $this->response->setJSON([
-            'status'      => 'success',
-            'message'     => 'Ajuste registrado exitosamente (Documento N° ' . $nextSequence . ') e inventario actualizado.',
-            'sequence'    => $nextSequence,
-            'dispatch_id' => $dispatchId
+            'status'       => 'success',
+            'message'      => $respMsg,
+            'sequence'     => $mainSequence,
+            'dispatch_id'  => $mainDispatchId,
+            'dispatch_ids' => $dispatchIdsList,
+            'sequences'    => $sequencesList
         ]);
     }
 

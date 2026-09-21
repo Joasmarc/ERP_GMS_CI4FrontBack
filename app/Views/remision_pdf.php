@@ -573,6 +573,10 @@ $docTitle = $typeTitles[$rawType] ?? 'REMISIÓN';
                                 if (!empty($item['expiration_date']) && $item['expiration_date'] !== '0000-00-00') {
                                     $fVenc = date('Y-m-d', strtotime($item['expiration_date']));
                                 }
+
+                                // En todas las remisiones todas las líneas (referencia) eliminar lo que dice el estado, el estado no puede ir en la remisión
+                                $desc = preg_replace('/\s*\[\s*Estado\s*:[^\]]*\]/i', '', $desc);
+                                $desc = trim($desc);
                             }
                     ?>
                         <tr>
